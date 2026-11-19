@@ -1,18 +1,19 @@
 import { PROJECT_VERSION } from './core.js?v=__BUILD__';
-import { state } from './state.js?v=__BUILD__';
+import { state, projectName } from './state.js?v=__BUILD__';
 import { $, notice } from './dom.js?v=__BUILD__';
+import { t } from './i18n.js?v=__BUILD__';
 
 let saveTimer,
   db = null,
   saveChain = Promise.resolve();
 export function save() {
   clearTimeout(saveTimer);
-  $('saveState').textContent = 'Збереження…';
+  $('saveState').textContent = t('save.saving');
   saveTimer = setTimeout(persist, 550);
 }
 export function persist() {
   if (!db) {
-    $('saveState').textContent = 'Збережи проєкт файлом';
+    $('saveState').textContent = t('save.useFile');
     return;
   }
   const data = structuredClone(state.project);
@@ -28,12 +29,10 @@ export function persist() {
           tx.onabort = () => reject(tx.error);
         }),
     )
-    .then(() => ($('saveState').textContent = 'Чернетку збережено'))
+    .then(() => ($('saveState').textContent = t('save.saved')))
     .catch(() => {
-      $('saveState').textContent = 'Не вдалося зберегти';
-      notice(
-        'Браузер не зміг зберегти чернетку. Завантаж проєкт файлом, щоб не втратити фото та точки.',
-      );
+      $('saveState').textContent = t('save.failed');
+      notice(t('save.failedNotice'));
     });
 }
 export async function openDB() {
@@ -54,14 +53,14 @@ export async function restore() {
       r.onerror = () => reject(r.error);
     });
     if (stored?.format === 'PunktScan' && stored.version === PROJECT_VERSION) {
-      state.project = stored;
+      state.project = { ...stored, name: projectName(stored.name) };
       state.selected = state.project.sources[0]?.id || null;
       $('projectName').value = state.project.name;
-      $('saveState').textContent = 'Чернетку відновлено';
+      $('saveState').textContent = t('save.restored');
     }
   } catch {
-    $('saveState').textContent = 'Збереження файлом';
-    notice('Локальне збереження недоступне. Користуйся кнопкою «Зберегти проєкт».');
+    $('saveState').textContent = t('save.fileOnly');
+    notice(t('save.unavailable'));
   }
 }
 // Writes the draft immediately; the returned promise settles when IndexedDB is done.

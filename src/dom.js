@@ -1,3 +1,4 @@
+import { t } from './i18n.js?v=__BUILD__';
 export const $ = (id) => document.getElementById(id);
 export const esc = (s) =>
   String(s ?? '').replace(
@@ -19,12 +20,7 @@ export async function imageFrom(url) {
   return new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () =>
-      reject(
-        new Error(
-          'Не вдалося прочитати зображення. Для HEIC збережи копію JPG або зроби скриншот.',
-        ),
-      );
+    im.onerror = () => reject(new Error(t('image.unreadable')));
     im.src = url;
   });
 }

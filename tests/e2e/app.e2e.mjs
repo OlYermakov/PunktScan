@@ -1,6 +1,6 @@
 // End-to-end checks of the built app (dist/) in headless Chromium.
 // Run after `npm run build`: `npm run test:e2e`.
-// Set E2E_OCR=1 to also run the slower real-OCR check on the demo photos.
+// Set E2E_OCR=1 to also run the slower real-OCR check on the test photos in tests/fixtures.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -64,7 +64,7 @@ function stubWakeLock() {
 
 async function openApp(options = {}) {
   const context = await browser.newContext({ acceptDownloads: true, ...options.context });
-  if (options.init) await context.addInitScript(options.init);
+  if (options.init) await context.addInitScript(...[options.init].flat());
   const page = await context.newPage();
   const problems = [];
   page.on('pageerror', (e) => problems.push('pageerror: ' + e.message));
@@ -77,6 +77,14 @@ async function openApp(options = {}) {
   await page.goto(base);
   await page.locator('#emptyState').waitFor();
   return { context, page, problems };
+}
+
+// Adds the two test tables (tests/fixtures) through the regular file input.
+async function addTestPhotos(page) {
+  await page
+    .locator('#photoInput')
+    .setInputFiles(['tests/fixtures/table-1.jpg', 'tests/fixtures/table-2.jpg']);
+  await page.locator('#sourceCount', { hasText: '2' }).waitFor();
 }
 
 async function verifyAll(page, count) {
@@ -102,7 +110,8 @@ async function downloadGsi(page) {
 
 test('app loads under /PunktScan/ without errors and registers the service worker', async () => {
   const { context, page, problems } = await openApp();
-  assert.equal(await page.title(), 'PunktScan — фото в GSI');
+  assert.equal(await page.title(), 'PunktScan — Foto zu GSI');
+  assert.equal(await page.locator('html').getAttribute('lang'), 'de');
   await page.evaluate(() => navigator.serviceWorker.ready);
   assert.equal(await page.locator('#exportBtn').isDisabled(), true);
   assert.deepEqual(problems, []);
@@ -111,8 +120,8 @@ test('app loads under /PunktScan/ without errors and registers the service worke
 
 test('pasted reference table → review every point → GSI matches the reference file', async () => {
   const { context, page, problems } = await openApp();
-  const reference = await fs.readFile('examples/demo-reference.GSI', 'latin1');
-  const table = (await fs.readFile('examples/demo-points.csv', 'utf8')).replace(/^\ufeff/, '');
+  const reference = await fs.readFile('examples/test-reference.GSI', 'latin1');
+  const table = (await fs.readFile('examples/test-points.csv', 'utf8')).replace(/^\ufeff/, '');
   const count = reference.trimEnd().split('\r\n').length;
 
   await page.locator('#pasteBtn').click();
@@ -136,15 +145,14 @@ test('pasted reference table → review every point → GSI matches the referenc
 });
 
 test(
-  'real OCR on the demo photos finds all 14 rows',
+  'real OCR on the test photos finds all 14 rows',
   { skip: !process.env.E2E_OCR && 'set E2E_OCR=1 to run', timeout: 300000 },
   async () => {
     const { context, page, problems } = await openApp({ init: stubWakeLock });
-    await page.locator('#demoBtn').click();
-    await page.locator('#sourceCount', { hasText: '2' }).waitFor();
+    await addTestPhotos(page);
     await page.locator('#recognizeAllBtn').click();
     await page.locator('#awakeHint').waitFor();
-    assert.match(await page.locator('#nextStepBtn').textContent(), /^Розпізнавання… \d+%$/);
+    assert.match(await page.locator('#nextStepBtn').textContent(), /^Erkennung… \d+ %$/);
     assert.equal(await page.locator('#nextStepBtn').isDisabled(), true);
     await page.locator('#progressArea').waitFor({ state: 'hidden', timeout: 280000 });
     assert.equal(await page.locator('#pointsBody tr[data-row]').count(), 14);
@@ -171,8 +179,7 @@ test(
 
 test('photo cards are keyboard buttons and the remove button is separate', async () => {
   const { context, page, problems } = await openApp();
-  await page.locator('#demoBtn').click();
-  await page.locator('#sourceCount', { hasText: '2' }).waitFor();
+  await addTestPhotos(page);
   const cards = page.locator('button.source-select');
   assert.equal(await cards.count(), 2);
   assert.equal(await page.locator('[role="button"][data-source]').count(), 0);
@@ -192,7 +199,7 @@ test('draft survives a reload; an opened project file must be reviewed again', a
   await page.locator('#pasteText').fill('P1;10.000;20.000;\nP2;11.000;21.000;5.5');
   await page.locator('#pasteApply').click();
   await verifyAll(page, 2);
-  await page.locator('#saveState', { hasText: 'Чернетку збережено' }).waitFor();
+  await page.locator('#saveState', { hasText: 'Entwurf gespeichert' }).waitFor();
   await page.reload();
   await page.locator('#pointCount', { hasText: '2' }).waitFor();
   assert.equal(await page.locator('#exportBtn').isDisabled(), false, 'review state restored');
@@ -203,7 +210,7 @@ test('draft survives a reload; an opened project file must be reviewed again', a
   ]);
   page.once('dialog', (d) => d.accept());
   await page.locator('#projectInput').setInputFiles(await download.path());
-  await page.locator('#notice', { hasText: 'Проєкт відкрито' }).waitFor();
+  await page.locator('#notice', { hasText: 'Projekt geöffnet' }).waitFor();
   assert.equal(await page.locator('#pointCount').textContent(), '2');
   assert.equal(await page.locator('#exportBtn').isDisabled(), true, 'imported points need review');
   assert.deepEqual(problems, []);
@@ -291,8 +298,8 @@ test('on a phone the bottom button walks through every step to the GSI file', as
   const caption = page.locator('#nextStepCaption'),
     next = page.locator('#nextStepBtn');
   assert.equal(await page.locator('#nextStepBar').isVisible(), true);
-  assert.equal(await caption.textContent(), 'Крок 1 з 4 · Фото');
-  assert.equal(await next.textContent(), 'Додати фото');
+  assert.equal(await caption.textContent(), 'Schritt 1 von 4 · Foto');
+  assert.equal(await next.textContent(), 'Foto hinzufügen');
   // Rarely used actions live in the ⋯ menu on phones.
   assert.equal(await page.locator('#saveProjectBtn').isVisible(), false);
   await page.locator('#moreBtn').click();
@@ -300,20 +307,20 @@ test('on a phone the bottom button walks through every step to the GSI file', as
   assert.equal(await page.locator('#moreMenu').isHidden(), true);
   await page.locator('#pasteText').fill('A;1.000;2.000\nB;x;2.000');
   await page.locator('#pasteApply').click();
-  assert.equal(await caption.textContent(), 'Крок 3 з 4 · Звіряння');
-  assert.equal(await next.textContent(), 'Звірити точки · залишилось 2');
+  assert.equal(await caption.textContent(), 'Schritt 3 von 4 · Prüfung');
+  assert.equal(await next.textContent(), 'Punkte prüfen · noch 2');
   // Rows with errors come first.
   await next.click();
   assert.equal(await page.locator('#review-name').inputValue(), 'B');
   await page.locator('#review-e').fill('3.000');
-  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Звірено · наступна');
+  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Geprüft · weiter');
   await page.locator('#verifyNextBtn').click();
   // The dialog moves on to the point that still needs checking, then closes after the last one.
   assert.equal(await page.locator('#review-name').inputValue(), 'A');
-  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Звірено');
+  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Geprüft');
   await page.locator('#verifyNextBtn').click();
   await page.locator('#dialog').waitFor({ state: 'hidden' });
-  assert.equal(await caption.textContent(), 'Крок 4 з 4 · Файл');
+  assert.equal(await caption.textContent(), 'Schritt 4 von 4 · Datei');
   assert.equal(
     await page.locator('#flowSteps .done').count(),
     3,
@@ -331,7 +338,78 @@ test('on a desktop the step bar is shown without the phone-only bottom bar and m
   assert.equal(await page.locator('#nextStepBar').isVisible(), false);
   assert.equal(await page.locator('#moreBtn').isVisible(), false);
   assert.equal(await page.locator('#saveProjectBtn').isVisible(), true);
-  assert.equal(await page.locator('#flowSteps [aria-current="step"]').textContent(), '1Фото');
+  assert.equal(
+    (await page.locator('#flowSteps [aria-current="step"]').textContent()).replace(/\s+/g, ''),
+    '1Foto',
+  );
   assert.deepEqual(problems, []);
   await context.close();
+});
+
+test('German by default; switching the language translates the app and is remembered', async () => {
+  const { context, page, problems } = await openApp();
+  assert.equal(await page.locator('#langSelect').inputValue(), 'de');
+  assert.equal(await page.locator('#helpBtn .help-text').textContent(), 'Anleitung');
+  assert.equal(await page.locator('#langSelect option').count(), 7);
+  // Unfinished work survives the reload that applies the language.
+  await page.locator('#pasteBtn').click();
+  await page.locator('#pasteText').fill('P1;10.000;20.000');
+  await page.locator('#pasteApply').click();
+  for (const [code, help, html] of [
+    ['en', 'Guide', 'en'],
+    ['pl', 'Instrukcja', 'pl'],
+    ['uk', 'Інструкція', 'uk'],
+  ]) {
+    await Promise.all([page.waitForEvent('load'), page.locator('#langSelect').selectOption(code)]);
+    await page.locator('#helpBtn .help-text', { hasText: help }).waitFor();
+    assert.equal(await page.locator('html').getAttribute('lang'), html);
+    assert.equal(await page.locator('#pointCount').textContent(), '1', 'draft kept');
+  }
+  await page.reload();
+  assert.equal(await page.locator('#langSelect').inputValue(), 'uk', 'choice remembered');
+  assert.equal(await page.locator('#exportStatus').textContent(), 'Залишилося звірити: 1');
+  // Plural forms follow the language (Ukrainian: 1 точка, 2 точки, 5 точок).
+  await page.locator('#pasteBtn').click();
+  await page
+    .locator('#pasteText')
+    .fill('P2;11.000;21.000\nP3;12.000;22.000\nP4;13.000;23.000\nP5;14.000;24.000');
+  await page.locator('#pasteApply').click();
+  await verifyAll(page, 5);
+  assert.equal(await page.locator('#exportStatus').textContent(), 'Готово до експорту: 5 точок');
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('only one "add photo" button is offered at a time', async () => {
+  const visible = (page) =>
+    page
+      .locator('#uploadBtn, #nextStepBtn[data-action="photo"]')
+      .evaluateAll((list) => list.filter((el) => el.checkVisibility()).length);
+  const desktop = await openApp();
+  assert.equal(await visible(desktop.page), 1);
+  assert.equal(await desktop.page.locator('#demoBtn, #startBtn').count(), 0);
+  await desktop.context.close();
+  const phone = await openApp({ context: devices['iPhone 13'] });
+  assert.equal(await visible(phone.page), 1);
+  assert.equal(await phone.page.locator('#nextStepBtn').isVisible(), true);
+  // After the first photo the bottom button moves on and the sidebar offers adding more.
+  await addTestPhotos(phone.page);
+  assert.equal(await phone.page.locator('#uploadBtn').isVisible(), true);
+  assert.notEqual(await phone.page.locator('#nextStepBtn').getAttribute('data-action'), 'photo');
+  await phone.context.close();
+});
+
+test('every language fits a 320 px phone without sideways scrolling', async () => {
+  for (const code of ['de', 'en', 'fr', 'it', 'es', 'pl', 'uk']) {
+    const { context, page, problems } = await openApp({
+      context: devices['iPhone SE'],
+      init: [(l) => localStorage.setItem('punktscan-lang', l), code],
+    });
+    await addTestPhotos(page);
+    await page.evaluate(() => scrollTo(0, 0));
+    const width = await page.evaluate(() => document.documentElement.scrollWidth);
+    assert.ok(width <= 320, `${code}: page is ${width}px wide`);
+    assert.deepEqual(problems, [], code);
+    await context.close();
+  }
 });

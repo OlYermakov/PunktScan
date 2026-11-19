@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="uk">
+<html lang="de">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <title>PunktScan — фото в GSI</title>
+    <title>PunktScan — Foto zu GSI</title>
     <meta
       name="description"
-      content="Таблиці координат із фотографій у Leica GSI-16. Локальне розпізнавання, звіряння точок і точний експорт без підстановки висот."
+      content="Koordinatentabellen aus Fotos in Leica GSI-16. Lokale Texterkennung, Punktprüfung und exakter Export ohne erfundene Höhen."
     />
     <meta name="theme-color" content="#172e30" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,36 +17,66 @@
     <script defer src="./vendor/tesseract.min.js"></script>
     <script type="module" src="./app.js?v=__BUILD__"></script>
   </head>
+  <!-- Text below is German (the default language); app.js translates it via data-i18n keys. -->
   <body>
     <header class="topbar">
-      <a class="brand" href="./" aria-label="PunktScan, головна"
+      <a class="brand" href="./" data-i18n-attr="aria-label:brand.home"
         ><img src="./icon.svg" alt="" width="38" height="38" /><span
-          >Punkt<span class="brand-light">Scan</span><small>ФОТО В КООРДИНАТИ</small></span
+          >Punkt<span class="brand-light">Scan</span
+          ><small data-i18n="brand.tagline">FOTO ZU KOORDINATEN</small></span
         ></a
       >
       <div class="top-actions">
-        <span class="private-label"><span class="live-dot"></span>Обробка на пристрої</span
-        ><button class="top-btn" id="offlineBtn" title="Підготувати для роботи без інтернету">
-          Офлайн</button
-        ><button class="top-btn" id="helpBtn">Інструкція</button>
+        <span class="private-label"
+          ><span class="live-dot"></span
+          ><span data-i18n="top.private">Verarbeitung auf dem Gerät</span></span
+        ><label class="lang-picker"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path
+              d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"
+            /></svg
+          ><span id="langCode">DE</span
+          ><select id="langSelect" data-i18n-attr="aria-label:lang.label"></select></label
+        ><button
+          class="top-btn"
+          id="offlineBtn"
+          data-i18n="top.offline"
+          data-i18n-attr="title:top.offlineTitle"
+        >
+          Offline</button
+        ><button class="top-btn" id="helpBtn" data-i18n-attr="aria-label:top.help">
+          <span class="help-icon" aria-hidden="true">?</span
+          ><span class="help-text" data-i18n="top.help">Anleitung</span>
+        </button>
       </div>
     </header>
     <div class="app-shell">
       <aside class="sidebar">
         <div class="sidebar-heading">
-          <h2>Джерела</h2>
+          <h2 data-i18n="side.sources">Quellen</h2>
           <span id="sourceCount" class="count">0</span>
         </div>
         <button class="dropzone" id="uploadBtn">
-          <span class="upload-mark">＋</span><strong>Додати фото</strong
-          ><span>або перетягни сюди</span><small>JPG, PNG, WebP · до 20 МБ</small>
+          <span class="upload-mark">＋</span
+          ><strong data-i18n="side.addPhoto">Foto hinzufügen</strong
+          ><span data-i18n="side.dropHint">oder hierher ziehen</span
+          ><small data-i18n="side.formats">JPG, PNG, WebP · bis 20 MB</small>
         </button>
         <input hidden id="photoInput" type="file" accept="image/*" multiple />
         <input hidden id="projectInput" type="file" accept=".json,application/json" />
         <div class="source-list" id="sourceList"></div>
         <div class="sidebar-tools">
-          <button id="pasteBtn" class="side-btn">Вставити текст</button
-          ><button id="openProjectBtn" class="side-btn">Відкрити проєкт</button>
+          <button id="pasteBtn" class="side-btn" data-i18n="side.paste">Text einfügen</button
+          ><button id="openProjectBtn" class="side-btn" data-i18n="side.openProject">
+            Projekt öffnen
+          </button>
         </div>
         <div class="local-note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -54,8 +84,10 @@
             <path d="m8 12 3 3 5-6" />
           </svg>
           <div>
-            <strong>Твої фото — на твоєму пристрої</strong>
-            <p>Без завантаження на сервер. Чернетка зберігається в цьому браузері.</p>
+            <strong data-i18n="side.privacyTitle">Deine Fotos bleiben auf deinem Gerät</strong>
+            <p data-i18n="side.privacyText">
+              Kein Upload auf einen Server. Der Entwurf wird in diesem Browser gespeichert.
+            </p>
           </div>
         </div>
         <span class="sidebar-version">PunktScan 1.0 · Leica GSI-16</span>
@@ -63,34 +95,37 @@
       <main>
         <section class="project-head">
           <div>
-            <label class="eyebrow" for="projectName">РОБОЧИЙ ПРОЄКТ</label
+            <label class="eyebrow" for="projectName" data-i18n="project.eyebrow"
+              >ARBEITSPROJEKT</label
             ><input
               id="projectName"
               class="project-name"
-              value="Новий об’єкт"
+              value=""
               maxlength="100"
-              aria-label="Назва проєкту"
+              placeholder="Neues Objekt"
+              data-i18n-attr="aria-label:project.nameLabel;placeholder:project.untitled"
             />
             <div class="project-meta">
-              <span id="saveState">Локальна чернетка</span><span class="meta-sep">·</span
-              ><span>Метри · 3 десяткові знаки</span>
+              <span id="saveState" data-i18n="save.local">Lokaler Entwurf</span
+              ><span class="meta-sep">·</span
+              ><span data-i18n="project.units">Meter · 3 Dezimalstellen</span>
             </div>
           </div>
           <div class="project-actions">
             <button
               id="undoBtn"
               class="icon-btn"
-              title="Скасувати останню зміну"
-              aria-label="Скасувати останню зміну"
+              data-i18n-attr="title:project.undo;aria-label:project.undo"
               disabled
             >
               ↶</button
-            ><button id="saveProjectBtn" class="button subtle">Зберегти проєкт</button
-            ><button id="newProjectBtn" class="button subtle">Новий</button
+            ><button id="saveProjectBtn" class="button subtle" data-i18n="project.save">
+              Projekt speichern</button
+            ><button id="newProjectBtn" class="button subtle" data-i18n="project.new">Neu</button
             ><button
               id="moreBtn"
               class="icon-btn more-btn"
-              aria-label="Інші дії з проєктом"
+              data-i18n-attr="aria-label:project.more"
               aria-haspopup="true"
               aria-expanded="false"
               aria-controls="moreMenu"
@@ -98,43 +133,56 @@
               ⋯
             </button>
             <div id="moreMenu" class="more-menu" hidden>
-              <button data-proxy="saveProjectBtn">Зберегти проєкт у файл</button
-              ><button data-proxy="openProjectBtn">Відкрити проєкт</button
-              ><button data-proxy="pasteBtn">Вставити текст</button
-              ><button data-proxy="newProjectBtn">Новий проєкт</button>
+              <button data-proxy="saveProjectBtn" data-i18n="menu.save">
+                Projekt als Datei speichern</button
+              ><button data-proxy="openProjectBtn" data-i18n="menu.open">Projekt öffnen</button
+              ><button data-proxy="pasteBtn" data-i18n="menu.paste">Text einfügen</button
+              ><button data-proxy="newProjectBtn" data-i18n="menu.new">Neues Projekt</button>
             </div>
           </div>
         </section>
-        <nav aria-label="Кроки роботи">
+        <nav data-i18n-attr="aria-label:steps.label">
           <ol id="flowSteps" class="flow-steps">
             <li>
-              <button data-step-target="uploadBtn"><b>1</b>Фото</button>
+              <button data-step-target="uploadBtn">
+                <b>1</b><span data-i18n="step.photo">Foto</span>
+              </button>
             </li>
             <li>
-              <button data-step-target="imageWorkspace"><b>2</b>Рамка</button>
+              <button data-step-target="imageWorkspace">
+                <b>2</b><span data-i18n="step.frame">Rahmen</span>
+              </button>
             </li>
             <li>
-              <button data-step-target="pointsSection"><b>3</b>Звіряння</button>
+              <button data-step-target="pointsSection">
+                <b>3</b><span data-i18n="step.review">Prüfung</span>
+              </button>
             </li>
             <li>
-              <button data-step-target="exportBar"><b>4</b>Файл</button>
+              <button data-step-target="exportBar">
+                <b>4</b><span data-i18n="step.file">Datei</span>
+              </button>
             </li>
           </ol>
         </nav>
         <div id="notice" class="notice" role="status" hidden></div>
         <div id="updateBar" class="notice update-bar" role="status" hidden>
-          <span>Доступна нова версія PunktScan. Чернетку буде збережено.</span
-          ><button id="updateBtn" class="button primary">Оновити</button>
+          <span data-i18n="update.text"
+            >Eine neue Version von PunktScan ist verfügbar. Der Entwurf wird gespeichert.</span
+          ><button id="updateBtn" class="button primary" data-i18n="update.button">
+            Aktualisieren
+          </button>
         </div>
         <section id="emptyState" class="empty-state">
           <div class="empty-copy">
-            <span class="eyebrow">ВІД ПЛАНУ ДО ПРИЛАДУ</span>
-            <h1>Координати з фото.<br /><em>Без ручного переписування.</em></h1>
-            <p>Додай знімок таблиці, звір розпізнані точки та збережи файл для CAPLAN або Leica.</p>
-            <div class="empty-actions">
-              <button class="button primary" id="startBtn">Додати перше фото</button
-              ><button class="button subtle" id="demoBtn">Спробувати на прикладі</button>
-            </div>
+            <span class="eyebrow" data-i18n="empty.eyebrow">VOM PLAN ZUM INSTRUMENT</span>
+            <h1 data-i18n-html="empty.titleHtml">
+              Koordinaten aus Fotos.<br /><em>Ohne Abtippen.</em>
+            </h1>
+            <p data-i18n="empty.text">
+              Füge ein Foto der Tabelle hinzu, prüfe die erkannten Punkte und speichere die Datei
+              für CAPLAN oder Leica.
+            </p>
           </div>
           <div class="preview-illustration" aria-hidden="true">
             <div class="crosshair c1"></div>
@@ -148,22 +196,30 @@
                 ><code>5600556.545</code>
               </div>
               <div class="scan-line"></div>
-              <div class="paper-footer"><span>КОЖНА ЦИФРА ПІД КОНТРОЛЕМ</span><span>＋</span></div>
+              <div class="paper-footer">
+                <span data-i18n="empty.paperFooter">JEDE ZIFFER UNTER KONTROLLE</span
+                ><span>＋</span>
+              </div>
             </div>
-            <div class="file-tag"><span>✓</span> Точний формат GSI</div>
+            <div class="file-tag">
+              <span>✓</span> <span data-i18n="empty.fileTag">Exaktes GSI-Format</span>
+            </div>
           </div>
           <div class="workflow">
             <div>
-              <span class="step-icon">▧</span><strong>Фото таблиці</strong>
-              <p>Кілька знімків в одному проєкті.</p>
+              <span class="step-icon">▧</span
+              ><strong data-i18n="empty.card1Title">Foto der Tabelle</strong>
+              <p data-i18n="empty.card1Text">Mehrere Aufnahmen in einem Projekt.</p>
             </div>
             <div>
-              <span class="step-icon">◎</span><strong>Звіряння з оригіналом</strong>
-              <p>Фрагмент фото для кожної точки.</p>
+              <span class="step-icon">◎</span
+              ><strong data-i18n="empty.card2Title">Abgleich mit dem Original</strong>
+              <p data-i18n="empty.card2Text">Ein Fotoausschnitt für jeden Punkt.</p>
             </div>
             <div>
-              <span class="step-icon">↓</span><strong>Готовий файл</strong>
-              <p>GSI для приладу. CSV для Excel.</p>
+              <span class="step-icon">↓</span
+              ><strong data-i18n="empty.card3Title">Fertige Datei</strong>
+              <p data-i18n="empty.card3Text">GSI für das Instrument. CSV für Excel.</p>
             </div>
           </div>
         </section>
@@ -171,126 +227,158 @@
           <div class="photo-panel panel">
             <div class="panel-toolbar">
               <div class="segmented" id="viewTabs">
-                <button class="active" data-view="original">Оригінал</button
-                ><button data-view="frame">Межі</button
-                ><button data-view="processed">Вирівняне</button>
+                <button class="active" data-view="original" data-i18n="photo.viewOriginal">
+                  Original</button
+                ><button data-view="frame" data-i18n="photo.viewFrame">Rahmen</button
+                ><button data-view="processed" data-i18n="photo.viewProcessed">Entzerrt</button>
               </div>
               <div class="photo-tools">
                 <button
                   class="icon-btn"
                   id="rotateBtn"
-                  aria-label="Повернути фото на 90 градусів"
-                  title="Повернути на 90°"
+                  data-i18n-attr="aria-label:photo.rotate;title:photo.rotateTitle"
                 >
                   ↻</button
-                ><button class="icon-btn" id="zoomOutBtn" aria-label="Зменшити фото">−</button
-                ><button class="icon-btn" id="zoomInBtn" aria-label="Збільшити фото">＋</button>
+                ><button class="icon-btn" id="zoomOutBtn" data-i18n-attr="aria-label:photo.zoomOut">
+                  −</button
+                ><button class="icon-btn" id="zoomInBtn" data-i18n-attr="aria-label:photo.zoomIn">
+                  ＋
+                </button>
               </div>
             </div>
             <div class="photo-viewport" id="photoViewport">
               <div class="photo-wrap" id="photoWrap">
-                <img id="previewImg" alt="Фото таблиці координат" draggable="false" /><svg
+                <img id="previewImg" alt="" data-i18n-attr="alt:photo.alt" draggable="false" /><svg
                   id="frameOverlay"
                   viewBox="0 0 1000 1000"
                   preserveAspectRatio="none"
-                  aria-label="Межі таблиці"
+                  data-i18n-attr="aria-label:photo.frameLabel"
                 ></svg>
               </div>
             </div>
             <div class="photo-caption">
               <span id="photoCaption"></span
-              ><button id="resetFrameBtn" class="text-btn">Усе фото</button>
+              ><button id="resetFrameBtn" class="text-btn" data-i18n="photo.resetFrame">
+                Ganzes Foto
+              </button>
             </div>
           </div>
           <aside class="recognition-panel panel">
-            <span class="eyebrow">РОЗПІЗНАВАННЯ</span>
-            <h2>Підготуй таблицю</h2>
-            <p class="small">
-              Перевір, що всі рядки всередині рамки. На вкладці «Межі» перетягни її кути.
+            <span class="eyebrow" data-i18n="recog.eyebrow">ERKENNUNG</span>
+            <h2 data-i18n="recog.title">Tabelle vorbereiten</h2>
+            <p class="small" data-i18n="recog.hint">
+              Prüfe, dass alle Zeilen im Rahmen liegen. Im Reiter „Rahmen“ kannst du die Ecken
+              ziehen.
             </p>
-            <button id="autoFrameBtn" class="button subtle full">Знайти межі автоматично</button>
-            <label class="field-label" for="columnOrder">Порядок координат на фото</label
+            <button id="autoFrameBtn" class="button subtle full" data-i18n="recog.autoFrame">
+              Rahmen automatisch finden
+            </button>
+            <label class="field-label" for="columnOrder" data-i18n="recog.orderLabel"
+              >Reihenfolge der Koordinaten im Foto</label
             ><select id="columnOrder">
-              <option value="auto">За заголовками · типово E, N</option>
-              <option value="en">Rechtswert (E), Hochwert (N)</option>
-              <option value="ne">Hochwert (N), Rechtswert (E)</option>
+              <option value="auto" data-i18n="recog.orderAuto">
+                Nach Überschriften · standardmäßig E, N
+              </option>
+              <option value="en" data-i18n="recog.orderEN">Rechtswert (E), Hochwert (N)</option>
+              <option value="ne" data-i18n="recog.orderNE">Hochwert (N), Rechtswert (E)</option>
             </select>
             <label class="checkbox-label"
               ><input id="enhanceInput" type="checkbox" checked /><span
-                >Очищення муару та сітки<small>Для фото екрана й паперових таблиць</small></span
+                ><span data-i18n="recog.enhance">Moiré und Gitter entfernen</span
+                ><small data-i18n="recog.enhanceHint"
+                  >Für Bildschirmfotos und Papiertabellen</small
+                ></span
               ></label
             >
-            <button id="recognizeBtn" class="button primary full">Розпізнати фото</button
-            ><button id="recognizeAllBtn" class="text-btn full">Розпізнати всі нові фото</button>
+            <button id="recognizeBtn" class="button primary full" data-i18n="recog.run">
+              Foto erkennen</button
+            ><button id="recognizeAllBtn" class="text-btn full" data-i18n="recog.runAll">
+              Alle neuen Fotos erkennen
+            </button>
             <div id="progressArea" hidden>
               <div class="progress-label">
-                <span id="progressText">Підготовка…</span
-                ><button id="cancelOcrBtn" class="text-btn">Зупинити</button>
+                <span id="progressText" data-i18n="recog.preparing">Vorbereitung…</span
+                ><button id="cancelOcrBtn" class="text-btn" data-i18n="recog.stop">Stopp</button>
               </div>
               <progress id="ocrProgress" max="1" value="0"></progress>
-              <p id="awakeHint" class="small awake-hint" hidden>
-                Не блокуй екран і не перемикайся на інші застосунки до завершення.
+              <p id="awakeHint" class="small awake-hint" data-i18n="recog.awake" hidden>
+                Sperre den Bildschirm nicht und wechsle bis zum Abschluss nicht in andere Apps.
               </p>
             </div>
-            <p class="engine-note" id="engineNote">
-              Перше розпізнавання завантажує локальний модуль. Фото не надсилаються.
+            <p class="engine-note" id="engineNote" data-i18n="recog.engineNote">
+              Die erste Erkennung lädt das lokale Modul. Fotos werden nicht gesendet.
             </p>
           </aside>
         </section>
         <section id="pointsSection" class="points-section panel">
           <div class="points-heading">
             <div>
-              <h2>Точки <span id="pointCount" class="light-count">0</span></h2>
-              <p id="pointSummary">Тут з’являться розпізнані координати.</p>
+              <h2>
+                <span data-i18n="points.title">Punkte</span>
+                <span id="pointCount" class="light-count">0</span>
+              </h2>
+              <p id="pointSummary" data-i18n="points.summaryEmpty">
+                Hier erscheinen die erkannten Koordinaten.
+              </p>
             </div>
-            <button id="addPointBtn" class="button subtle">＋ Точка</button>
+            <button id="addPointBtn" class="button subtle" data-i18n="points.add">＋ Punkt</button>
           </div>
           <div class="table-tools">
             <div class="filter-tabs" id="filters">
-              <button data-filter="all" class="active">Усі</button
-              ><button data-filter="review">До звірки <span id="reviewCount">0</span></button
-              ><button data-filter="errors">Помилки <span id="errorCount">0</span></button>
+              <button data-filter="all" class="active" data-i18n="filter.all">Alle</button
+              ><button data-filter="review">
+                <span data-i18n="filter.review">Zu prüfen</span>
+                <span id="reviewCount">0</span></button
+              ><button data-filter="errors">
+                <span data-i18n="filter.errors">Fehler</span> <span id="errorCount">0</span>
+              </button>
             </div>
             <input
               type="search"
               id="searchInput"
-              placeholder="Знайти точку…"
-              aria-label="Пошук точок"
+              placeholder="Punkt suchen…"
+              data-i18n-attr="placeholder:search.placeholder;aria-label:search.label"
             />
           </div>
           <div class="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th class="status-col">Звірка</th>
-                  <th>Точка</th>
-                  <th>Rechtswert <small>E · м</small></th>
-                  <th>Hochwert <small>N · м</small></th>
-                  <th>Höhe <small>H · м</small></th>
+                  <th class="status-col" data-i18n="table.status">Prüfung</th>
+                  <th data-i18n="table.point">Punkt</th>
+                  <th>Rechtswert <small>E · m</small></th>
+                  <th>Hochwert <small>N · m</small></th>
+                  <th>Höhe <small>H · m</small></th>
                   <th class="delete-col"></th>
                 </tr>
               </thead>
               <tbody id="pointsBody"></tbody>
             </table>
-            <div id="tableEmpty" class="table-empty">
-              Додай фото або встав готову таблицю текстом.
+            <div id="tableEmpty" class="table-empty" data-i18n="table.emptyNone">
+              Füge ein Foto hinzu oder füge eine fertige Tabelle als Text ein.
             </div>
           </div>
           <div class="table-bottom">
-            <span>Висота порожня — у GSI її не буде.</span
-            ><button id="mapBtn" class="text-btn" disabled>Схема точок</button
-            ><button id="rawTextBtn" class="text-btn" hidden>Результат розпізнавання</button>
+            <span data-i18n="table.heightNote"
+              >Leere Höhe — sie wird nicht ins GSI geschrieben.</span
+            ><button id="mapBtn" class="text-btn" data-i18n="table.map" disabled>
+              Punkteskizze</button
+            ><button id="rawTextBtn" class="text-btn" data-i18n="table.raw" hidden>
+              Erkennungsergebnis
+            </button>
           </div>
         </section>
         <section id="exportBar" class="export-bar">
           <div>
-            <strong id="exportStatus">Файл ще не готовий</strong>
-            <p id="exportHint">Звір кожну точку з оригіналом перед експортом.</p>
+            <strong id="exportStatus" data-i18n="export.notReady">Datei noch nicht bereit</strong>
+            <p id="exportHint" data-i18n="export.hintStart">
+              Prüfe vor dem Export jeden Punkt mit dem Original.
+            </p>
           </div>
           <div>
             <button id="csvBtn" class="button subtle" disabled>CSV</button
             ><button id="exportBtn" class="button export-button" disabled>
-              Завантажити GSI <span>↓</span>
+              <span data-i18n="export.gsi">GSI herunterladen</span> <span>↓</span>
             </button>
           </div>
         </section>
@@ -298,13 +386,16 @@
           <span id="nextStepCaption"></span>
           <button id="nextStepBtn" class="button primary"></button>
         </div>
-        <footer class="main-footer">
-          Координати зберігаються у вихідній системі. Перетворення систем координат не виконується.
+        <footer class="main-footer" data-i18n="footer.text">
+          Koordinaten bleiben im Ausgangssystem. Es wird keine Koordinatentransformation
+          durchgeführt.
         </footer>
       </main>
     </div>
     <dialog id="dialog"><div id="dialogContent"></div></dialog>
     <div id="toast" class="toast" role="status" hidden></div>
-    <noscript>Для розпізнавання й експорту потрібно дозволити JavaScript у браузері.</noscript>
+    <noscript>
+      PunktScan benötigt JavaScript. · PunktScan needs JavaScript. · PunktScan потребує JavaScript.
+    </noscript>
   </body>
 </html>

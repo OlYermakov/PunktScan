@@ -2,14 +2,10 @@
 import { validate } from './core.js?v=__BUILD__';
 import { state, source, ready } from './state.js?v=__BUILD__';
 import { $ } from './dom.js?v=__BUILD__';
+import { t } from './i18n.js?v=__BUILD__';
 
 // Recognition is a single tap on a checked frame, so it belongs to the frame step.
-export const STEPS = [
-  { id: 'photo', label: 'Фото' },
-  { id: 'frame', label: 'Рамка' },
-  { id: 'review', label: 'Звіряння' },
-  { id: 'file', label: 'Файл' },
-];
+export const STEPS = ['photo', 'frame', 'review', 'file'];
 
 export function flowStep() {
   const { sources, rows } = state.project,
@@ -33,33 +29,34 @@ export function nextAction() {
   const step = flowStep(),
     s = source(),
     pending = state.project.sources.filter((x) => !x.recognized).length;
-  if (step === 'photo') return { step, label: 'Додати фото', action: 'photo' };
+  if (step === 'photo') return { step, label: t('flow.addPhoto'), action: 'photo' };
   if (step === 'frame') {
     if (state.recognizing)
       return {
         step,
-        label: `Розпізнавання… ${Math.round($('ocrProgress').value * 100)}%`,
+        label: t('flow.recognizing', { pct: Math.round($('ocrProgress').value * 100) }),
         action: null,
       };
     if (pending > 1)
-      return { step, label: `Розпізнати нові фото (${pending})`, action: 'recognizeAll' };
+      return { step, label: t('recog.runAllCount', { n: pending }), action: 'recognizeAll' };
     return {
       step,
-      label: s?.recognized ? 'Розпізнати повторно' : 'Розпізнати фото',
+      label: t(s?.recognized ? 'recog.rerun' : 'recog.run'),
       action: 'recognize',
     };
   }
   if (step === 'review') {
     const values = validate(state.project.rows),
       left = values.filter((v) => v.issues.length || !v.row.verified).length;
-    return { step, label: `Звірити точки · залишилось ${left}`, action: 'review' };
+    return { step, label: t('flow.review', { n: left }), action: 'review' };
   }
-  return { step, label: 'Завантажити GSI', action: 'export' };
+  return { step, label: t('flow.export'), action: 'export' };
 }
 
 export function renderFlow() {
   const next = nextAction(),
-    current = STEPS.findIndex((x) => x.id === next.step);
+    current = STEPS.indexOf(next.step);
+  document.body.dataset.step = next.step;
   for (const [i, li] of [...$('flowSteps').children].entries()) {
     li.classList.toggle('done', i < current);
     li.classList.toggle('current', i === current);
@@ -68,8 +65,11 @@ export function renderFlow() {
     else button.removeAttribute('aria-current');
     button.disabled = i > current;
   }
-  $('nextStepCaption').textContent =
-    `Крок ${current + 1} з ${STEPS.length} · ${STEPS[current].label}`;
+  $('nextStepCaption').textContent = t('flow.caption', {
+    n: current + 1,
+    total: STEPS.length,
+    label: t('step.' + next.step),
+  });
   $('nextStepBtn').textContent = next.label;
   $('nextStepBtn').dataset.action = next.action ?? '';
   $('nextStepBtn').disabled = !next.action || state.busy;

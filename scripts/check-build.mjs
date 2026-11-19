@@ -87,3 +87,11 @@ assert.match(
 );
 for (const variant of ['', '-simd', '-relaxedsimd'])
   assert.ok(cores.includes(`tesseract-core${variant}-lstm.wasm.js`), 'Missing core' + variant);
+// Language dictionaries are loaded with import(): they must carry the same version too.
+for (const file of modules) {
+  const text = await fs.readFile(path.join(root, file), 'utf8');
+  for (const [, url] of text.matchAll(/import\(\s*[`'"](\.\/[^`'"]+)[`'"]\s*\)/g))
+    assert.ok(url.endsWith('?v=' + version), `Unversioned dynamic import in ${file}: ${url}`);
+}
+const languages = modules.filter((f) => /^lang-[a-z]{2}\.js$/.test(f));
+assert.ok(languages.length >= 7, 'Missing language dictionaries: ' + languages.join(', '));

@@ -10,6 +10,7 @@ import { uid, state, source } from './state.js?v=__BUILD__';
 import { $, toast, notice, canvas, pixelsFor, canvasFrom } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
 import { renderFlow } from './flow.js?v=__BUILD__';
+import { t, tp } from './i18n.js?v=__BUILD__';
 import { snapshot, render, renderSources, renderPhoto, setBusy } from './render.js?v=__BUILD__';
 
 let ocrController = null,
@@ -44,9 +45,8 @@ export function progress(text, value) {
 }
 export async function getWorker(signal) {
   if (worker) return worker;
-  if (!window.Tesseract)
-    throw new Error('Модуль розпізнавання не завантажився. Онови сторінку з інтернетом.');
-  progress('Завантаження модуля…', 0.02);
+  if (!window.Tesseract) throw new Error(t('ocr.notLoaded'));
+  progress(t('ocr.loading'), 0.02);
   const w = await Tesseract.createWorker('eng', 1, {
     workerPath: new URL('./vendor/worker.min.js', location.href).href,
     corePath: new URL('./vendor/core/', location.href).href,
@@ -54,7 +54,7 @@ export async function getWorker(signal) {
     cacheMethod: 'none',
     logger: (m) => {
       if (!signal.aborted && /loading|initializing/.test(m.status))
-        progress('Підготовка локального модуля…', 0.02 + 0.08 * (m.progress || 0));
+        progress(t('ocr.preparing'), 0.02 + 0.08 * (m.progress || 0));
     },
   });
   if (signal.aborted) {
@@ -66,9 +66,9 @@ export async function getWorker(signal) {
 }
 export async function recognizeOne(s, signal) {
   if (signal.aborted) throw new Error('cancel');
-  if (!validQuad(s.quad)) throw new Error('Кути рамки перетинаються. Виправ межі таблиці.');
+  if (!validQuad(s.quad)) throw new Error(t('ocr.crossed'));
   const w = await getWorker(signal);
-  progress('Вирівнювання таблиці…', 0.1);
+  progress(t('ocr.aligning'), 0.1);
   await new Promise((r) => setTimeout(r, 10));
   const input = await pixelsFor(s),
     plain = rectify(input.data, s.width, s.height, s.quad, false),
@@ -91,7 +91,7 @@ export async function recognizeOne(s, signal) {
       for (let j = 0; j < band.length; j++) {
         if (signal.aborted) throw new Error('cancel');
         progress(
-          `Клітинка ${i * band.length + j + 1} / ${grid.rows.length * band.length}`,
+          t('ocr.cell', { i: i * band.length + j + 1, total: grid.rows.length * band.length }),
           0.15 + 0.8 * ((i * band.length + j) / (grid.rows.length * band.length)),
         );
         // Header cells are read with letters; data cells are read with a restricted numeric alphabet.
@@ -242,7 +242,7 @@ export async function recognizeOne(s, signal) {
         if (row.cells.length > 2) [row.cells[1], row.cells[2]] = [row.cells[2], row.cells[1]];
       }
   } else {
-    progress('Читання таблиці…', 0.25);
+    progress(t('ocr.reading'), 0.25);
     await w.setParameters({
       tessedit_pageseg_mode: '6',
       preserve_interword_spaces: '1',
@@ -277,14 +277,12 @@ export async function recognizeOne(s, signal) {
   state.view = 'processed';
   state.zoom = 1;
   const message = rows.length
-    ? `Розпізнано ${rows.length} точок. Звір їх із фото, включно з назвами та десятковими крапками.`
-    : 'Точки не знайдено. Виправ рамку, вимкни очищення або встав таблицю текстом.';
+    ? t('ocr.found', { points: tp('n.points', rows.length) })
+    : t('ocr.none');
   notice(
     message +
-      (!autoOrder && s.order === 'auto'
-        ? ' Порядок E, N використано за замовчуванням: перевір заголовки.'
-        : '') +
-      (skipped.length ? ' Є пропущені рядки — відкрий «Результат розпізнавання».' : ''),
+      (!autoOrder && s.order === 'auto' ? t('ocr.defaultOrder') : '') +
+      (skipped.length ? t('ocr.skipped') : ''),
   );
   render();
   save();
@@ -294,9 +292,7 @@ export async function recognize(all = false) {
   const list = all ? state.project.sources.filter((s) => !s.recognized) : [source()];
   if (
     list.some((s) => state.project.rows.some((r) => r.sourceId === s.id)) &&
-    !confirm(
-      'Повторне розпізнавання замінить точки з цього фото, включно з ручними виправленнями. Продовжити?',
-    )
+    !confirm(t('ocr.replaceConfirm'))
   )
     return;
   setBusy(true);
@@ -320,11 +316,10 @@ export async function recognize(all = false) {
       renderPhoto();
       await Promise.race([recognizeOne(s, controller.signal), interrupted]);
     }
-    if (!controller.signal.aborted) progress('Готово', 1);
+    if (!controller.signal.aborted) progress(t('ocr.done'), 1);
   } catch (e) {
-    if (cancelled || e.message === 'cancel')
-      toast('Розпізнавання зупинено. Завершені фото збережено.');
-    else notice('Не вдалося розпізнати фото. ' + e.message);
+    if (cancelled || e.message === 'cancel') toast(t('ocr.stopped'));
+    else notice(t('ocr.failed') + e.message);
   } finally {
     state.recognizing = false;
     releaseWakeLock();

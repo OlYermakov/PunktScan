@@ -4,6 +4,7 @@ import { state, errors, source } from './state.js?v=__BUILD__';
 import { $, esc, toast } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
 import { renderFlow } from './flow.js?v=__BUILD__';
+import { t, tp } from './i18n.js?v=__BUILD__';
 
 export function snapshot() {
   state.history.push({
@@ -21,7 +22,7 @@ export function undo() {
   $('projectName').value = state.project.name;
   render();
   save();
-  toast('Останню зміну скасовано.');
+  toast(t('undo.done'));
 }
 export function render() {
   renderSources();
@@ -36,7 +37,7 @@ export function renderSources() {
   $('sourceList').innerHTML = state.project.sources
     .map(
       (s) =>
-        `<div class="source-card ${s.id === state.selected ? 'selected' : ''}"><button type="button" class="source-select" data-source="${esc(s.id)}" aria-current="${s.id === state.selected}"><img src="${s.image}" alt=""><span class="source-info"><strong>${esc(s.name)}</strong><small>${s.recognized ? state.project.rows.filter((r) => r.sourceId === s.id).length + ' точок' : 'Готове до розпізнавання'}</small></span></button><button type="button" class="source-remove" data-remove="${esc(s.id)}" aria-label="Видалити фото ${esc(s.name)}">×</button></div>`,
+        `<div class="source-card ${s.id === state.selected ? 'selected' : ''}"><button type="button" class="source-select" data-source="${esc(s.id)}" aria-current="${s.id === state.selected}"><img src="${s.image}" alt=""><span class="source-info"><strong>${esc(s.name)}</strong><small>${s.recognized ? tp('n.points', state.project.rows.filter((r) => r.sourceId === s.id).length) : t('photo.ready')}</small></span></button><button type="button" class="source-remove" data-remove="${esc(s.id)}" aria-label="${esc(t('photo.remove', { name: s.name }))}">×</button></div>`,
     )
     .join('');
 }
@@ -51,7 +52,7 @@ export function renderPhoto() {
   if (state.view === 'frame') {
     const q = s.quad || fullQuad();
     $('frameOverlay').innerHTML =
-      `<polygon points="${q.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')}" fill="#c8ef6915" stroke="#bcf34e" stroke-width="3" vector-effect="non-scaling-stroke"/>${q.map((p, i) => `<ellipse class="frame-handle" data-corner="${i}" cx="${p.x * 1000}" cy="${p.y * 1000}" rx="14" ry="${14 * (s.width / s.height)}" role="slider" tabindex="0" aria-label="Кут ${i + 1}; стрілками можна змістити межу"/>`).join('')}`;
+      `<polygon points="${q.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')}" fill="#c8ef6915" stroke="#bcf34e" stroke-width="3" vector-effect="non-scaling-stroke"/>${q.map((p, i) => `<ellipse class="frame-handle" data-corner="${i}" cx="${p.x * 1000}" cy="${p.y * 1000}" rx="14" ry="${14 * (s.width / s.height)}" role="slider" tabindex="0" aria-label="${t('photo.corner', { n: i + 1 })}"/>`).join('')}`;
   }
   for (const b of $('viewTabs').children) {
     b.classList.toggle('active', b.dataset.view === state.view);
@@ -59,12 +60,12 @@ export function renderPhoto() {
   }
   $('photoCaption').textContent =
     state.view === 'frame'
-      ? 'Перетягни 4 кути до меж таблиці'
+      ? t('photo.captionFrame')
       : state.view === 'processed'
-        ? 'Зображення, використане для розпізнавання'
+        ? t('photo.captionProcessed')
         : s.name;
   $('resetFrameBtn').hidden = state.view !== 'frame';
-  $('recognizeBtn').textContent = s.recognized ? 'Розпізнати повторно' : 'Розпізнати фото';
+  $('recognizeBtn').textContent = t(s.recognized ? 'recog.rerun' : 'recog.run');
   $('columnOrder').value = s.order || 'auto';
   $('enhanceInput').checked = s.enhance !== false;
   $('recognizeAllBtn').hidden = state.project.sources.filter((s) => !s.recognized).length < 2;
@@ -77,8 +78,9 @@ export function renderRows(paint = true) {
   $('reviewCount').textContent = values.length - done;
   $('errorCount').textContent = bad;
   $('pointSummary').textContent = values.length
-    ? `${done} із ${values.length} звірено${bad ? ' · ' + bad + ' з помилками' : ''}`
-    : 'Тут з’являться розпізнані координати.';
+    ? t('points.summary', { done, total: values.length }) +
+      (bad ? t('points.summaryErrors', { bad }) : '')
+    : t('points.summaryEmpty');
   const query = $('searchInput').value.trim().toLocaleLowerCase();
   const shown = values.filter(
     (v) =>
@@ -91,7 +93,7 @@ export function renderRows(paint = true) {
     $('pointsBody').innerHTML = shown
       .map((v) => {
         const r = v.row;
-        return `<tr data-row="${esc(r.id)}" class="${r.verified ? 'row-reviewed' : ''}"><td class="cell-status"><button class="review-btn ${v.issues.length ? 'bad' : r.verified ? 'good' : ''}" data-review="${esc(r.id)}" title="${r.verified ? 'Звірено; відкрити точку' : 'Звірити з оригіналом'}" aria-label="Звірити ${esc(r.name || 'точку')}">${v.issues.length ? '!' : r.verified ? '✓' : '○'}</button></td>${[
+        return `<tr data-row="${esc(r.id)}" class="${r.verified ? 'row-reviewed' : ''}"><td class="cell-status"><button class="review-btn ${v.issues.length ? 'bad' : r.verified ? 'good' : ''}" data-review="${esc(r.id)}" title="${t(r.verified ? 'row.reviewTitleDone' : 'row.reviewTitle')}" aria-label="${esc(t('row.reviewLabel', { name: r.name || t('row.pointFallback') }))}">${v.issues.length ? '!' : r.verified ? '✓' : '○'}</button></td>${[
           'name',
           'e',
           'n',
@@ -99,11 +101,11 @@ export function renderRows(paint = true) {
         ]
           .map((k) => {
             const issue = v.issues.find((x) => x.field === k);
-            return `<td class="cell-${k}" data-label="${{ name: '', e: 'E · Rechtswert', n: 'N · Hochwert', h: 'H · Höhe' }[k]}"><input data-field="${k}" data-id="${esc(r.id)}" aria-label="${{ name: 'Назва', e: 'Rechtswert', n: 'Hochwert', h: 'Висота' }[k]} ${esc(r.name)}" value="${esc(r[k])}" class="${issue ? 'invalid' : ''}" placeholder="${k === 'h' ? '—' : ''}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${issue ? `<small class="cell-error">${errors[issue.code]}</small>` : ''}</td>`;
+            return `<td class="cell-${k}" data-label="${{ name: '', e: 'E · Rechtswert', n: 'N · Hochwert', h: 'H · Höhe' }[k]}"><input data-field="${k}" data-id="${esc(r.id)}" aria-label="${esc(t('field.' + k) + ' ' + r.name)}" value="${esc(r[k])}" class="${issue ? 'invalid' : ''}" placeholder="${k === 'h' ? '—' : ''}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${issue ? `<small class="cell-error">${errors[issue.code]}</small>` : ''}</td>`;
           })
           .join(
             '',
-          )}<td class="cell-delete"><button class="delete-row" data-delete-row="${esc(r.id)}" aria-label="Видалити ${esc(r.name || 'точку')}">×</button></td></tr>`;
+          )}<td class="cell-delete"><button class="delete-row" data-delete-row="${esc(r.id)}" aria-label="${esc(t('row.delete', { name: r.name || t('row.pointFallback') }))}">×</button></td></tr>`;
       })
       .join('');
   for (const tr of $('pointsBody').querySelectorAll('tr[data-row]')) {
@@ -127,7 +129,7 @@ export function renderRows(paint = true) {
           (k !== 'name' && k !== 'h' && coordinate(v.row[k]).short));
       input.classList.toggle('invalid', !!issue);
       input.classList.toggle('uncertain', !!unsure);
-      input.title = unsure ? 'Невпевнене розпізнавання — звір з оригіналом' : '';
+      input.title = unsure ? t('row.uncertain') : '';
       let message = input.parentElement.querySelector('.cell-error');
       if (issue) {
         if (!message) {
@@ -140,24 +142,22 @@ export function renderRows(paint = true) {
     }
   }
   $('tableEmpty').hidden = shown.length > 0;
-  $('tableEmpty').textContent = values.length
-    ? 'Немає точок за цим фільтром.'
-    : 'Додай фото або встав готову таблицю текстом.';
+  $('tableEmpty').textContent = values.length ? t('table.emptyFilter') : t('table.emptyNone');
   for (const b of $('filters').children)
     b.classList.toggle('active', b.dataset.filter === state.filter);
   const isReady = values.length > 0 && done === values.length && !bad;
   $('exportBtn').disabled = !isReady || state.busy;
   $('csvBtn').disabled = !isReady || state.busy;
   $('exportStatus').textContent = isReady
-    ? `${values.length} точок готові до експорту`
+    ? t('export.ready', { points: tp('n.points', values.length) })
     : values.length
-      ? `Залишилося звірити: ${values.length - done}`
-      : 'Файл ще не готовий';
+      ? t('export.remaining', { n: values.length - done })
+      : t('export.notReady');
   $('exportHint').textContent = bad
-    ? 'Спочатку виправ позначені помилки.'
+    ? t('export.hintErrors')
     : isReady
-      ? 'GSI-16 · метри · без зміни системи координат'
-      : 'Натисни кружечок біля точки, щоб відкрити звіряння.';
+      ? t('export.hintReady')
+      : t('export.hintReview');
   $('mapBtn').disabled = !values.some((v) => v.e.ok && v.n.ok);
   $('rawTextBtn').hidden = !source()?.raw;
   renderFlow();
@@ -167,8 +167,6 @@ export function setBusy(value) {
   $('cancelOcrBtn').hidden = true;
   for (const id of [
     'uploadBtn',
-    'startBtn',
-    'demoBtn',
     'photoInput',
     'pasteBtn',
     'openProjectBtn',

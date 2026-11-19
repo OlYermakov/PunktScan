@@ -1,9 +1,9 @@
 {
   "id": "./",
-  "name": "PunktScan — фото в GSI",
+  "name": "PunktScan — Foto zu GSI",
   "short_name": "PunktScan",
-  "description": "Таблиці координат із фото у Leica GSI-16",
-  "lang": "uk",
+  "description": "Koordinatentabellen aus Fotos in Leica GSI-16",
+  "lang": "de",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

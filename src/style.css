@@ -872,7 +872,7 @@ progress::-webkit-progress-value {
   color: #315c3d;
   font-weight: 600;
 }
-.filter-tabs span {
+.filter-tabs span[id] {
   font-size: 0.7rem;
   margin-left: 3px;
   color: #74826f;
@@ -1059,7 +1059,7 @@ td input.invalid {
   border-color: #284b38;
   color: #fff;
 }
-.export-button span {
+.export-button span:last-child {
   color: #d7f7aa;
   font-size: 1.1rem;
 }
@@ -1643,7 +1643,7 @@ dialog::backdrop {
   .filter-tabs button {
     font-size: 0.75rem;
   }
-  .filter-tabs span {
+  .filter-tabs span[id] {
     font-size: 0.7rem;
   }
   .table-scroll {
@@ -1938,7 +1938,7 @@ td[data-label]::before {
   margin-top: 8px;
 }
 
-/* Step bar: where the project is in Фото → Рамка → Звіряння → Файл. */
+/* Step bar: where the project is in Photo → Frame → Review → File. */
 .flow-steps {
   display: flex;
   gap: 6px;
@@ -2098,5 +2098,95 @@ td[data-label]::before {
   }
   .toast {
     bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Language picker in the top bar: a globe and the language code; the native <select> lies on
+   top, invisible, so it keeps keyboard, screen reader and phone picker support. */
+.lang-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid #ffffff33;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.lang-picker svg {
+  width: 16px;
+  height: 16px;
+}
+.lang-picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+.lang-picker:focus-within {
+  outline: 2px solid #bcf34e;
+  outline-offset: 2px;
+}
+.lang-picker option {
+  color: #233e2e;
+}
+.help-icon {
+  display: none;
+}
+@media (max-width: 420px) {
+  .topbar {
+    padding: 0 10px;
+    gap: 6px;
+  }
+  .brand {
+    font-size: 1.05rem;
+    gap: 7px;
+    min-width: 0;
+  }
+  .brand img {
+    width: 28px;
+    height: 28px;
+  }
+  .brand small {
+    display: none;
+  }
+  .top-actions {
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .top-btn {
+    padding: 7px 8px;
+  }
+  .lang-picker {
+    padding: 0 7px;
+  }
+  .help-icon {
+    display: inline;
+    font-weight: 700;
+  }
+  .help-text {
+    display: none;
+  }
+  #helpBtn {
+    min-width: 34px;
+  }
+}
+@media (max-width: 760px) {
+  /* The bottom next-step button adds the first photo; avoid a second "add photo" button. */
+  body[data-step='photo'] #uploadBtn {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  /* The smallest phones keep the logo mark; its link still has a translated aria-label. */
+  .brand > span {
+    display: none;
   }
 }

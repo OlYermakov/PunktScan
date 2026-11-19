@@ -1,6 +1,14 @@
 import { gsi, csv, safeFilename } from './core.js?v=__BUILD__';
 import { findTable, fullQuad } from './imaging.js?v=__BUILD__';
-import { uid, blank, state, source, ready } from './state.js?v=__BUILD__';
+import { uid, blank, state, source, ready, projectName } from './state.js?v=__BUILD__';
+import {
+  LANGUAGES,
+  lang,
+  loadLanguage,
+  saveLanguage,
+  t,
+  translatePage,
+} from './i18n.js?v=__BUILD__';
 import {
   $,
   toast,
@@ -35,7 +43,21 @@ import {
   toggleSign,
 } from './dialogs.js?v=__BUILD__';
 
-$('uploadBtn').onclick = $('startBtn').onclick = () => $('photoInput').click();
+// The interface language must be loaded before anything renders text.
+await loadLanguage();
+translatePage();
+for (const [code, name] of Object.entries(LANGUAGES))
+  $('langSelect').append(new Option(name, code, code === lang, code === lang));
+// "UK" would read as United Kingdom: show the country code for Ukrainian.
+$('langCode').textContent = lang === 'uk' ? 'UA' : lang.toUpperCase();
+$('langSelect').onchange = async (e) => {
+  saveLanguage(e.target.value);
+  // Reload so every message, including ones already on screen, uses the new language.
+  await flushSave();
+  location.reload();
+};
+
+$('uploadBtn').onclick = () => $('photoInput').click();
 $('photoInput').onchange = (e) => addPhotos([...e.target.files]);
 for (const event of ['dragenter', 'dragover'])
   $('uploadBtn').addEventListener(event, (e) => {
@@ -53,10 +75,7 @@ $('sourceList').addEventListener('click', (e) => {
   const remove = e.target.closest('[data-remove]');
   if (remove) {
     const id = remove.dataset.remove;
-    if (
-      state.project.rows.some((r) => r.sourceId === id) &&
-      !confirm('Видалити фото та всі пов’язані точки?')
-    )
+    if (state.project.rows.some((r) => r.sourceId === id) && !confirm(t('photo.removeConfirm')))
       return;
     snapshot();
     state.project.sources = state.project.sources.filter((s) => s.id !== id);
@@ -153,7 +172,7 @@ $('autoFrameBtn').onclick = async () => {
       state.view = 'frame';
       renderPhoto();
       save();
-    } else toast('Чітку сітку не знайдено. Вистав межі вручну.');
+    } else toast(t('photo.frameNotFound'));
   } finally {
     setBusy(false);
   }
@@ -161,12 +180,7 @@ $('autoFrameBtn').onclick = async () => {
 $('rotateBtn').onclick = async () => {
   const s = source();
   if (!s || state.busy) return;
-  if (
-    state.project.rows.some((r) => r.sourceId === s.id) &&
-    !confirm(
-      'Поворот фото видалить його розпізнані точки. Після повороту розпізнай фото знову. Продовжити?',
-    )
-  )
+  if (state.project.rows.some((r) => r.sourceId === s.id) && !confirm(t('photo.rotateConfirm')))
     return;
   snapshot();
   const im = await imageFrom(s.image),
@@ -204,28 +218,6 @@ $('enhanceInput').onchange = (e) => {
 $('recognizeBtn').onclick = () => recognize();
 $('recognizeAllBtn').onclick = () => recognize(true);
 $('cancelOcrBtn').onclick = cancelOcr;
-$('demoBtn').onclick = async () => {
-  try {
-    $('demoBtn').disabled = true;
-    const files = [];
-    for (const [i, name] of ['Demo_Af201-LS202.jpg', 'Demo_Af205-208.jpg'].entries()) {
-      const r = await fetch('./demo-' + (i + 1) + '.jpg');
-      if (!r.ok) throw new Error('Зразок недоступний.');
-      files.push(new File([await r.blob()], name, { type: 'image/jpeg' }));
-    }
-    await addPhotos(files);
-    state.project.name = 'Навчальний приклад';
-    $('projectName').value = state.project.name;
-    save();
-    notice(
-      'Додано дві навчальні таблиці з вигаданими координатами. Натисни «Розпізнати всі нові фото» — дані будуть прочитані з фото, а не підставлені.',
-    );
-  } catch (e) {
-    notice(e.message);
-  } finally {
-    $('demoBtn').disabled = false;
-  }
-};
 let activeEdit = null;
 $('pointsBody').addEventListener('focusin', () => (activeEdit = null));
 $('pointsBody').addEventListener('input', (e) => {
@@ -285,7 +277,7 @@ $('projectName').oninput = (e) => {
 };
 $('projectName').onchange = (e) => {
   snapshot();
-  state.project.name = e.target.value.trim() || 'Новий об’єкт';
+  state.project.name = projectName(e.target.value);
   e.target.value = state.project.name;
   save();
 };
@@ -297,9 +289,7 @@ $('projectInput').onchange = (e) => openProject(e.target.files[0]);
 $('newProjectBtn').onclick = () => {
   if (
     (state.project.rows.length || state.project.sources.length) &&
-    !confirm(
-      'Почати новий проєкт? Поточна чернетка буде замінена. За потреби спочатку збережи її файлом.',
-    )
+    !confirm(t('project.newConfirm'))
   )
     return;
   snapshot();
@@ -320,9 +310,9 @@ $('rawTextBtn').onclick = () => {
   const s = source();
   if (!s) return;
   showDialog(
-    'Результат розпізнавання',
-    `<p class="small">Порівняй кількість рядків із фото. Крапка з комою відділяє клітинки. Це необроблений текст розпізнавання.</p><pre class="raw-text">${esc(s.raw)}</pre>${s.skipped ? '<h3>Пропущені рядки</h3><pre class="raw-text">' + esc(s.skipped) + '</pre>' : ''}`,
-    `<button class="button subtle" data-close>Закрити</button>`,
+    t('table.raw'),
+    `<p class="small">${t('raw.text')}</p><pre class="raw-text">${esc(s.raw)}</pre>${s.skipped ? `<h3>${t('raw.skipped')}</h3><pre class="raw-text">${esc(s.skipped)}</pre>` : ''}`,
+    `<button class="button subtle" data-close>${t('common.close')}</button>`,
     'raw',
   );
 };
@@ -346,7 +336,7 @@ $('dialog').addEventListener('click', (e) => {
       safeFilename($('exportName').value, format),
     );
     closeDialog();
-    toast('Файл .' + format + ' підготовлено до збереження.');
+    toast(t('export.savedToast', { format }));
   }
 });
 $('dialog').addEventListener('input', (e) => {
@@ -384,8 +374,7 @@ if ('serviceWorker' in navigator) {
     .catch(() => {});
 }
 $('updateBtn').onclick = async () => {
-  if (state.busy && !confirm('Розпізнавання ще триває. Перервати його та оновити застосунок?'))
-    return;
+  if (state.busy && !confirm(t('update.busyConfirm'))) return;
   await flushSave();
   location.reload();
 };

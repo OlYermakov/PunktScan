@@ -45,8 +45,7 @@ self.addEventListener('fetch', (e) => {
   // Never cache authentication endpoints or arbitrary navigation responses.
   const known =
     ASSETS.some((p) => new URL(p, self.registration.scope).pathname === url.pathname) ||
-    url.pathname.includes('/vendor/') ||
-    /\/demo-[12]\.jpg$/.test(url.pathname);
+    url.pathname.includes('/vendor/');
   if (!known) return;
   if (e.request.mode === 'navigate') {
     e.respondWith(
