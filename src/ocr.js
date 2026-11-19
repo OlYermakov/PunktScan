@@ -13,7 +13,29 @@ import { snapshot, render, renderSources, renderPhoto, setBusy } from './render.
 
 let ocrController = null,
   worker = null,
-  cancelled = false;
+  cancelled = false,
+  wakeLock = null,
+  keepAwake = false;
+
+// A phone that locks its screen suspends the page and stops recognition. Hold a screen wake lock
+// while recognizing; the browser drops it whenever the page is hidden, so take it again on return.
+async function requestWakeLock() {
+  if (!keepAwake || wakeLock || !navigator.wakeLock || document.visibilityState !== 'visible')
+    return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => (wakeLock = null));
+    if (!keepAwake) releaseWakeLock();
+  } catch {
+    // Not allowed (battery saver, unsupported): the on-screen hint still asks to keep it awake.
+  }
+}
+function releaseWakeLock() {
+  keepAwake = false;
+  wakeLock?.release().catch(() => {});
+  wakeLock = null;
+}
+document.addEventListener('visibilitychange', requestWakeLock);
 export function progress(text, value) {
   $('progressText').textContent = text;
   $('ocrProgress').value = Math.max(0, Math.min(1, value));
@@ -196,6 +218,13 @@ export async function recognizeOne(s, signal) {
         cellConfidence: conf,
         disputed,
         bbox: { x0: 0, y0: band[0].top, x1: prepared.width, y1: band[0].top + band[0].height },
+        // Cell boxes in the rectified image, in field order name, e, n, h.
+        cells: band.slice(0, 4).map((c) => ({
+          x0: c.left,
+          y0: c.top,
+          x1: c.left + c.width,
+          y1: c.top + c.height,
+        })),
         raw: line,
       });
     }
@@ -208,6 +237,7 @@ export async function recognizeOne(s, signal) {
           row.cellConfidence[1],
         ];
         [row.disputed[1], row.disputed[2]] = [row.disputed[2], row.disputed[1]];
+        if (row.cells.length > 2) [row.cells[1], row.cells[2]] = [row.cells[2], row.cells[1]];
       }
   } else {
     progress('Читання таблиці…', 0.25);
@@ -269,6 +299,9 @@ export async function recognize(all = false) {
     return;
   setBusy(true);
   $('cancelOcrBtn').hidden = false;
+  $('awakeHint').hidden = false;
+  keepAwake = true;
+  requestWakeLock();
   cancelled = false;
   notice();
   const controller = new AbortController();
@@ -290,6 +323,8 @@ export async function recognize(all = false) {
       toast('Розпізнавання зупинено. Завершені фото збережено.');
     else notice('Не вдалося розпізнати фото. ' + e.message);
   } finally {
+    releaseWakeLock();
+    $('awakeHint').hidden = true;
     setBusy(false);
     render();
     save();

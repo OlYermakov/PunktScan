@@ -31,6 +31,7 @@ import {
   prepareOffline,
   cacheOffline,
   stepReview,
+  toggleSign,
 } from './dialogs.js?v=__BUILD__';
 
 $('uploadBtn').onclick = $('startBtn').onclick = () => $('photoInput').click();
@@ -332,6 +333,7 @@ $('dialog').addEventListener('click', (e) => {
   if (e.target.id === 'verifyNextBtn') verifyNext();
   if (e.target.id === 'prevReview' || e.target.id === 'nextReview')
     stepReview(e.target.id === 'nextReview' ? 1 : -1);
+  if (e.target.dataset.sign) toggleSign(e.target.dataset.sign);
   if (e.target.id === 'pasteApply') applyPaste();
   if (e.target.id === 'cacheOfflineBtn') cacheOffline();
   if (e.target.id === 'confirmExport') {

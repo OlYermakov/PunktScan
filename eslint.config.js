@@ -17,6 +17,11 @@ export default [
     languageOptions: { globals: globals.node },
   },
   {
+    // Callbacks passed to page.evaluate() and addInitScript() run in the browser.
+    files: ['tests/e2e/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     rules: {
       'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
       'no-empty': ['error', { allowEmptyCatch: true }],

@@ -199,7 +199,8 @@ export function rectify(pixels, sw, sh, quad = fullQuad(), enhance = true) {
   return { data: out, width, height };
 }
 
-export function originalRegion(quad, bbox, pw, ph, sw, sh) {
+// Maps a rectangle of the rectified (pw×ph) image back to a bounding box in the original photo.
+function mapBack(quad, x0, y0, x1, y1, pw, ph, sw, sh) {
   const m = homography(quad.map((p) => ({ x: p.x * (sw - 1), y: p.y * (sh - 1) })));
   const map = (x, y) => {
     const u = x / pw,
@@ -207,12 +208,7 @@ export function originalRegion(quad, bbox, pw, ph, sw, sh) {
       d = m[6] * u + m[7] * v + 1;
     return { x: (m[0] * u + m[1] * v + m[2]) / d, y: (m[3] * u + m[4] * v + m[5]) / d };
   };
-  const pts = [
-    map(0, bbox.y0 - 12),
-    map(pw, bbox.y0 - 12),
-    map(pw, bbox.y1 + 12),
-    map(0, bbox.y1 + 12),
-  ];
+  const pts = [map(x0, y0), map(x1, y0), map(x1, y1), map(x0, y1)];
   const x = Math.max(0, Math.min(...pts.map((p) => p.x)) - 8),
     y = Math.max(0, Math.min(...pts.map((p) => p.y)) - 8);
   return {
@@ -221,6 +217,16 @@ export function originalRegion(quad, bbox, pw, ph, sw, sh) {
     w: Math.min(sw, Math.max(...pts.map((p) => p.x)) + 8) - x,
     h: Math.min(sh, Math.max(...pts.map((p) => p.y)) + 8) - y,
   };
+}
+
+// The whole table row: full width of the frame, a little taller than the row.
+export function originalRegion(quad, bbox, pw, ph, sw, sh) {
+  return mapBack(quad, 0, bbox.y0 - 12, pw, bbox.y1 + 12, pw, ph, sw, sh);
+}
+
+// A single table cell, so it can be shown right above the field it is compared with.
+export function cellRegion(quad, cell, pw, ph, sw, sh) {
+  return mapBack(quad, cell.x0, cell.y0, cell.x1, cell.y1, pw, ph, sw, sh);
 }
 
 export function removeGrid(p, w, h) {

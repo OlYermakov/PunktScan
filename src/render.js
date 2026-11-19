@@ -90,7 +90,7 @@ export function renderRows(paint = true) {
     $('pointsBody').innerHTML = shown
       .map((v) => {
         const r = v.row;
-        return `<tr data-row="${esc(r.id)}" class="${r.verified ? 'row-reviewed' : ''}"><td><button class="review-btn ${v.issues.length ? 'bad' : r.verified ? 'good' : ''}" data-review="${esc(r.id)}" title="${r.verified ? 'Звірено; відкрити точку' : 'Звірити з оригіналом'}" aria-label="Звірити ${esc(r.name || 'точку')}">${v.issues.length ? '!' : r.verified ? '✓' : '○'}</button></td>${[
+        return `<tr data-row="${esc(r.id)}" class="${r.verified ? 'row-reviewed' : ''}"><td class="cell-status"><button class="review-btn ${v.issues.length ? 'bad' : r.verified ? 'good' : ''}" data-review="${esc(r.id)}" title="${r.verified ? 'Звірено; відкрити точку' : 'Звірити з оригіналом'}" aria-label="Звірити ${esc(r.name || 'точку')}">${v.issues.length ? '!' : r.verified ? '✓' : '○'}</button></td>${[
           'name',
           'e',
           'n',
@@ -98,11 +98,11 @@ export function renderRows(paint = true) {
         ]
           .map((k) => {
             const issue = v.issues.find((x) => x.field === k);
-            return `<td><input data-field="${k}" data-id="${esc(r.id)}" aria-label="${{ name: 'Назва', e: 'Rechtswert', n: 'Hochwert', h: 'Висота' }[k]} ${esc(r.name)}" value="${esc(r[k])}" class="${issue ? 'invalid' : ''}" placeholder="${k === 'h' ? '—' : ''}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${issue ? `<small class="cell-error">${errors[issue.code]}</small>` : ''}</td>`;
+            return `<td class="cell-${k}" data-label="${{ name: '', e: 'E · Rechtswert', n: 'N · Hochwert', h: 'H · Höhe' }[k]}"><input data-field="${k}" data-id="${esc(r.id)}" aria-label="${{ name: 'Назва', e: 'Rechtswert', n: 'Hochwert', h: 'Висота' }[k]} ${esc(r.name)}" value="${esc(r[k])}" class="${issue ? 'invalid' : ''}" placeholder="${k === 'h' ? '—' : ''}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${issue ? `<small class="cell-error">${errors[issue.code]}</small>` : ''}</td>`;
           })
           .join(
             '',
-          )}<td><button class="delete-row" data-delete-row="${esc(r.id)}" aria-label="Видалити ${esc(r.name || 'точку')}">×</button></td></tr>`;
+          )}<td class="cell-delete"><button class="delete-row" data-delete-row="${esc(r.id)}" aria-label="Видалити ${esc(r.name || 'точку')}">×</button></td></tr>`;
       })
       .join('');
   for (const tr of $('pointsBody').querySelectorAll('tr[data-row]')) {

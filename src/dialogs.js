@@ -7,7 +7,7 @@ import {
   safeFilename,
   checkProject,
 } from './core.js?v=__BUILD__';
-import { fullQuad, validQuad, originalRegion } from './imaging.js?v=__BUILD__';
+import { fullQuad, validQuad, originalRegion, cellRegion } from './imaging.js?v=__BUILD__';
 import { uid, state, errors, ready } from './state.js?v=__BUILD__';
 import { $, toast, notice, imageFrom, download, esc } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
@@ -90,7 +90,20 @@ export function showReview(id) {
   }
   const v = validate(state.project.rows).find((v) => v.row.id === id),
     warn = warnings(v);
-  const body = `<span class="eyebrow">${s ? 'ФРАГМЕНТ ОРИГІНАЛЬНОГО ФОТО' : 'РУЧНЕ ВВЕДЕННЯ / ТЕКСТ'}</span>${s ? '<div class="review-crop-scroll"><canvas id="reviewCrop" class="review-image"></canvas></div><p class="crop-hint small">Прокручуй фрагмент фото вбік, щоб прочитати всі колонки.</p>' : '<p class="small">Звір значення зі своїм джерелом. Для цієї точки немає прикріпленого фото.</p>'}<div class="review-fields">${['name', 'e', 'n', 'h'].map((k) => `<label>${{ name: 'Назва точки', e: 'Rechtswert · E', n: 'Hochwert · N', h: 'Höhe · H (необов’язково)' }[k]}<input id="review-${k}" data-review-field="${k}" value="${esc(r[k])}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}></label>`).join('')}</div><div id="reviewErrors"></div>${warn.length ? `<div class="review-message">${warn.map(esc).join('<br>')}</div>` : ''}<p class="small">Порожня висота не експортується. Пробіли в назві прибираються; решта символів не змінюється.</p>${s ? `<details style="margin-top:15px"><summary class="small">Повне оригінальне фото · ${esc(s.name)}</summary><div class="review-original"><img src="${s.image}" alt="Оригінальна таблиця"></div></details>` : ''}`;
+  // Grid recognition stores one box per cell: show each photo cell right above its field.
+  const hasCells = Boolean(s?.resultQuad && r.cells?.length);
+  const labels = {
+    name: 'Назва точки',
+    e: 'Rechtswert · E',
+    n: 'Hochwert · N',
+    h: 'Höhe · H (необов’язково)',
+  };
+  const field = (k, i) =>
+    `<div class="review-field review-field-${k}"><label for="review-${k}">${labels[k]}</label>${hasCells && r.cells[i] ? `<canvas class="cell-crop" data-crop-field="${k}" aria-hidden="true"></canvas>` : ''}<div class="review-input"><input id="review-${k}" data-review-field="${k}" value="${esc(r[k])}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${k !== 'name' ? `<button type="button" class="sign-btn" data-sign="${k}" aria-label="Змінити знак: ${labels[k]}">±</button>` : ''}</div></div>`;
+  const photo = s
+    ? `<div class="row-crop ${hasCells ? 'has-cells' : ''}"><div class="review-crop-scroll"><canvas id="reviewCrop" class="review-image"></canvas></div>${hasCells ? '' : '<p class="crop-hint small">Прокручуй фрагмент фото вбік, щоб прочитати всі колонки.</p>'}</div>`
+    : '<p class="small">Звір значення зі своїм джерелом. Для цієї точки немає прикріпленого фото.</p>';
+  const body = `<span class="eyebrow">${s ? 'ФРАГМЕНТ ОРИГІНАЛЬНОГО ФОТО' : 'РУЧНЕ ВВЕДЕННЯ / ТЕКСТ'}</span>${photo}<div class="review-fields">${['name', 'e', 'n', 'h'].map(field).join('')}</div><div id="reviewErrors"></div>${warn.length ? `<div class="review-message">${warn.map(esc).join('<br>')}</div>` : ''}<p class="small">Порожня висота не експортується. Пробіли в назві прибираються; решта символів не змінюється.</p>${s ? `<details style="margin-top:15px"><summary class="small">Повне оригінальне фото · ${esc(s.name)}</summary><div class="review-original"><img src="${s.image}" alt="Оригінальна таблиця"></div></details>` : ''}`;
   showDialog(
     'Звіряння точки',
     body,
@@ -106,8 +119,14 @@ export async function drawReview(s, r) {
   let region = { x: 0, y: 0, w: s.width, h: s.height };
   if (r.bbox && s.resultQuad)
     region = originalRegion(s.resultQuad, r.bbox, s.pw, s.ph, s.width, s.height);
-  const c = $('reviewCrop');
-  c.width = Math.min(2000, Math.round(region.w));
+  drawRegion($('reviewCrop'), image, region, 2000);
+  for (const c of document.querySelectorAll('[data-crop-field]')) {
+    const cell = r.cells[['name', 'e', 'n', 'h'].indexOf(c.dataset.cropField)];
+    drawRegion(c, image, cellRegion(s.resultQuad, cell, s.pw, s.ph, s.width, s.height), 900);
+  }
+}
+function drawRegion(c, image, region, maxWidth) {
+  c.width = Math.max(1, Math.min(maxWidth, Math.round(region.w)));
   c.height = Math.max(20, Math.round((region.h * c.width) / region.w));
   c.getContext('2d').drawImage(
     image,
@@ -364,4 +383,12 @@ export function stepReview(delta) {
   flushReview();
   const next = state.project.rows[state.project.rows.findIndex((r) => r.id === reviewId) + delta];
   if (next) showReview(next.id);
+}
+// The iPhone decimal keypad has no minus key: the ± button flips the sign instead.
+export function toggleSign(k) {
+  const input = $('review-' + k);
+  if (!input) return;
+  const value = input.value.trim();
+  input.value = /^[-\u2212]/.test(value) ? value.slice(1) : '-' + value;
+  updateReviewErrors();
 }

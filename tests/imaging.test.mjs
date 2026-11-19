@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validQuad, fullQuad, rectify, findTable, originalRegion } from '../src/imaging.js';
+import {
+  validQuad,
+  fullQuad,
+  rectify,
+  findTable,
+  originalRegion,
+  cellRegion,
+} from '../src/imaging.js';
 test('crossed or degenerate crop frames are rejected', () => {
   assert.ok(validQuad(fullQuad()));
   assert.equal(
@@ -46,4 +53,13 @@ test('a slightly skewed convex frame is accepted', () => {
     { x: 0.12, y: 0.88 },
   ];
   assert.ok(validQuad(q));
+});
+test('a cell crop stays inside its row crop and is narrower', () => {
+  const q = fullQuad(),
+    row = originalRegion(q, { y0: 40, y1: 60 }, 200, 100, 400, 200),
+    cell = cellRegion(q, { x0: 50, y0: 40, x1: 100, y1: 60 }, 200, 100, 400, 200);
+  assert.ok(cell.w < row.w / 2);
+  assert.ok(cell.x >= row.x && cell.x + cell.w <= row.x + row.w);
+  assert.ok(cell.y >= row.y && cell.y + cell.h <= row.y + row.h);
+  assert.ok(Math.abs(cell.x - 92) < 2, 'cell maps to x≈100 minus margin, got ' + cell.x);
 });

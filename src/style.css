@@ -1784,3 +1784,156 @@ td input.uncertain:not(.invalid) {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* Phones: each point becomes a card so that E, N and H are visible without sideways scrolling. */
+td[data-label]::before {
+  display: none;
+}
+@media (max-width: 760px) {
+  .table-scroll {
+    max-height: none;
+    overflow: visible;
+  }
+  table {
+    min-width: 0;
+  }
+  table,
+  tbody {
+    display: block;
+  }
+  thead {
+    display: none;
+  }
+  tr[data-row] {
+    display: grid;
+    grid-template-columns: 48px 1fr 1fr 44px;
+    grid-template-areas:
+      'status name name delete'
+      'status e n delete'
+      'status h h delete';
+    column-gap: 6px;
+    padding: 10px 8px 10px 4px;
+    border-bottom: 1px solid #e4eae3;
+  }
+  tr[data-row] td {
+    border: 0;
+    padding: 2px 0;
+    min-width: 0;
+  }
+  td.cell-status {
+    grid-area: status;
+  }
+  td.cell-name {
+    grid-area: name;
+  }
+  td.cell-e {
+    grid-area: e;
+  }
+  td.cell-n {
+    grid-area: n;
+  }
+  td.cell-h {
+    grid-area: h;
+  }
+  td.cell-delete {
+    grid-area: delete;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  td[data-label]:not([data-label=''])::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    color: #6f8169;
+    padding: 0 5px 2px;
+  }
+  td.cell-name input {
+    font-weight: 600;
+  }
+  td input {
+    border-color: #e1e8dd;
+    background: #fbfcf9;
+  }
+  .review-btn {
+    width: 40px;
+    height: 40px;
+    margin: 2px auto;
+    font-size: 1.05rem;
+  }
+  .delete-row {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+}
+
+/* Review dialog: photo cell above each field, ± sign button on touch screens. */
+.review-field label {
+  display: block;
+  font-size: 0.78rem;
+  color: #5a7452;
+}
+.cell-crop {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
+  object-position: left center;
+  margin-top: 6px;
+  background: #f3f6f0;
+  border: 1px solid #d5dfce;
+  border-radius: 6px;
+}
+.review-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.review-fields .review-input input {
+  margin-top: 0;
+  min-width: 0;
+  flex: 1;
+}
+.sign-btn {
+  flex: none;
+  width: 44px;
+  border: 1px solid #c3d3b9;
+  border-radius: 6px;
+  background: #f6f9f2;
+  color: #2f4b36;
+  font-size: 1.15rem;
+}
+@media (pointer: fine) {
+  .sign-btn {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .row-crop.has-cells {
+    display: none;
+  }
+  .review-fields {
+    grid-template-columns: 1.4fr 1fr;
+    grid-template-areas:
+      'name h'
+      'e e'
+      'n n';
+  }
+  .review-field-name {
+    grid-area: name;
+  }
+  .review-field-e {
+    grid-area: e;
+  }
+  .review-field-n {
+    grid-area: n;
+  }
+  .review-field-h {
+    grid-area: h;
+  }
+}
+.awake-hint {
+  margin-top: 8px;
+}
