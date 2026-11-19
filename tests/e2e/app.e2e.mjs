@@ -573,3 +573,56 @@ test(
     await context.close();
   },
 );
+
+// Real photos from the field (tests/fixtures/real): screens photographed at an angle, CAD tables
+// with a box around every value and 4 decimals, and a folded paper sheet outdoors.
+test(
+  'real field photos: no wrong value goes unflagged, and accuracy does not regress',
+  { skip: !process.env.E2E_OCR && 'set E2E_OCR=1 to run', timeout: 600000 },
+  async () => {
+    const dir = 'tests/fixtures/real/';
+    const expected = JSON.parse(await fs.readFile(dir + 'expected.json', 'utf8'));
+    let total = 0,
+      correct = 0;
+    const silent = [],
+      report = [];
+    for (const [file, rows] of Object.entries(expected)) {
+      const { context, page, problems } = await openApp();
+      await page.locator('#photoInput').setInputFiles(dir + file);
+      await page.locator('#sourceCount', { hasText: '1' }).waitFor();
+      await page.locator('#recognizeBtn').click();
+      await page.locator('#progressArea').waitFor({ state: 'hidden', timeout: 280000 });
+      const read = await page.locator('#pointsBody tr[data-row]').evaluateAll((trs) =>
+        trs.map((tr) =>
+          ['name', 'e', 'n'].map((k) => {
+            const input = tr.querySelector(`[data-field="${k}"]`);
+            return {
+              value: input.value.replace(/\s/g, '').replace(',', '.'),
+              flagged: input.matches('.invalid, .uncertain'),
+            };
+          }),
+        ),
+      );
+      let ok = 0;
+      rows.forEach((want, i) => {
+        const got = read.find((r) => r[0].value.toLowerCase() === want[0].toLowerCase()) ?? read[i];
+        want.forEach((value, k) => {
+          total++;
+          if (got?.[k].value === value) ok++;
+          else if (got && !got[k].flagged)
+            silent.push(`${file} ${want[0]}: ${got[k].value} ≠ ${value}`);
+        });
+      });
+      correct += ok;
+      report.push(`${file}: ${read.length}/${rows.length} rows, ${ok}/${rows.length * 3} fields`);
+      assert.equal(read.length, rows.length, `${file}: row count`);
+      assert.deepEqual(problems, [], file);
+      await context.close();
+    }
+    console.log(report.join('\n') + `\nTOTAL ${correct}/${total}`);
+    // The safety property: a value read wrongly is always marked for review.
+    assert.deepEqual(silent, []);
+    // 112/117 when these photos were added; allow small differences between browser builds.
+    assert.ok(correct >= 105, `accuracy regressed: ${correct}/${total}`);
+  },
+);

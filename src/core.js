@@ -8,7 +8,7 @@ export function coordinate(raw, optional = false) {
       ? { ok: true, empty: true, value: '', mm: null }
       : { ok: false, error: 'required' };
   if (/\s/.test(s)) {
-    if (!/^[+-]?\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d{1,3})?$/.test(s))
+    if (!/^[+-]?\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d{1,4})?$/.test(s))
       return { ok: false, error: 'number' };
     s = s.replace(/\s/g, '');
   }
@@ -22,16 +22,29 @@ export function coordinate(raw, optional = false) {
   } else s = s.replace(',', '.');
   if (!/^[+-]?\d+(?:\.\d+)?$/.test(s)) return { ok: false, error: 'number' };
   const [whole, frac = ''] = s.split('.');
-  if (frac.length > 3) return { ok: false, error: 'precision' };
+  // Up to 4 decimals (0.1 mm). Values with 4 decimals are exported in GSI's 0.1 mm unit.
+  if (frac.length > 4) return { ok: false, error: 'precision' };
+  const fine = frac.length === 4;
   const negative = whole.startsWith('-');
-  let mm = BigInt(whole.replace(/^[+-]/, '')) * 1000n + BigInt(frac.padEnd(3, '0'));
-  if (mm > 9999999999999999n) return { ok: false, error: 'range' };
-  if (negative) mm = -mm;
-  const abs = mm < 0n ? -mm : mm;
+  // Exact integers: tenths of a millimetre always, millimetres for values with up to 3 decimals.
+  let tenths = BigInt(whole.replace(/^[+-]/, '')) * 10000n + BigInt(frac.padEnd(4, '0'));
+  // GSI-16 holds 16 digits in the unit the file uses.
+  if ((fine ? tenths : tenths / 10n) > 9999999999999999n) return { ok: false, error: 'range' };
+  if (negative) tenths = -tenths;
+  const abs = tenths < 0n ? -tenths : tenths,
+    places = fine ? 4 : 3;
   return {
     ok: true,
-    mm,
-    value: (mm < 0n ? '-' : '') + abs / 1000n + '.' + String(abs % 1000n).padStart(3, '0'),
+    tenths,
+    mm: fine ? null : tenths / 10n,
+    fine,
+    value:
+      (tenths < 0n ? '-' : '') +
+      abs / 10000n +
+      '.' +
+      String(abs % 10000n)
+        .padStart(4, '0')
+        .slice(0, places),
     short: frac.length < 3,
   };
 }
@@ -69,6 +82,9 @@ export function gsi(rows) {
   const values = validate(rows);
   if (values.some((v) => v.issues.length)) throw new Error('invalid');
   if (rows.some((r) => !r.verified)) throw new Error('unverified');
+  // One unit for the whole file: 0.1 mm (GSI unit code 6) as soon as any value has 4 decimals,
+  // otherwise millimetres (code 0). Nothing is rounded either way.
+  const fine = values.some((v) => [v.e, v.n, v.h].some((c) => c.fine));
   return values
     .map((v, i) => {
       const words = [
@@ -80,8 +96,11 @@ export function gsi(rows) {
         ['83', v.h],
       ])
         if (!c.empty) {
-          const abs = c.mm < 0n ? -c.mm : c.mm;
-          words.push(`${wi}..00${c.mm < 0n ? '-' : '+'}${String(abs).padStart(16, '0')}`);
+          const n = fine ? c.tenths : c.tenths / 10n,
+            abs = n < 0n ? -n : n;
+          words.push(
+            `${wi}..0${fine ? '6' : '0'}${n < 0n ? '-' : '+'}${String(abs).padStart(16, '0')}`,
+          );
         }
       return '*' + words.join(' ') + ' \r\n';
     })

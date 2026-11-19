@@ -100,7 +100,10 @@ function cropRegion(source, rect, stretch = 1, boxed = null) {
   ctx.fillRect(0, 0, out.width, out.height);
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(raw, 0, 0, w, h, 12, 12, out.width - 24, out.height - 24);
-  return { canvas: out, pixels: rc.getImageData(0, 0, w, h) };
+  // Nothing dark left (an empty cell or an expected place with nothing in it): no OCR needed.
+  let ink = 0;
+  for (let i = 0; i < w * h; i++) if (pixels.data[i * 4] < 140) ink++;
+  return { canvas: out, pixels: rc.getImageData(0, 0, w, h), blank: ink < w * h * 0.004 };
 }
 
 async function ocrText(w, image, signal) {
@@ -123,6 +126,7 @@ async function readRegion(w, src, signal, rect, kind, boxed = null) {
     tessedit_char_whitelist: kind === 'number' ? NUMBER_CHARS : NAME_CHARS,
   });
   const first = cropRegion(src.c, rect, 1, boxed);
+  if (first.blank) return { text: '', confidence: 0, disputed: false, candidates: [] };
   let reading = { ...(await ocrText(w, first.canvas, signal)), disputed: false };
   // Test hook: a benchmark page can set globalThis.__ocrDebug = [] to collect what OCR saw.
   globalThis.__ocrDebug?.push({ kind, rect, image: first.canvas.toDataURL(), text: reading.text });

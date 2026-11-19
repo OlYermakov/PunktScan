@@ -43,7 +43,7 @@ test('ambiguous and corrupt coordinates do not get silently repaired', () => {
     '3500O30.210',
     '3e6',
     'Infinity',
-    '12.1234',
+    '12.12345',
     '12,345,678',
     '1 2.000',
     '10000000000000',
@@ -142,10 +142,10 @@ test('multi-pass OCR selects a literal reading and flags disagreement without in
   assert.equal(r.text, '3500028.971');
   assert.equal(r.disputed, true);
   const broken = chooseReading([
-    { text: '5600599.2776', confidence: 56 },
+    { text: '5600599.27761', confidence: 56 },
     { text: '5600599276', confidence: 0 },
   ]);
-  assert.equal(broken.text, '5600599.2776');
+  assert.equal(broken.text, '5600599.27761');
   assert.equal(coordinate(broken.text).ok, false);
 });
 test('all fourteen synthetic reference coordinates survive export and decode', () => {
@@ -220,4 +220,28 @@ test('a table title with a building section number is not a point', () => {
   assert.equal(isTableHeader(['Koordinaten A', '1steckpunkt', '- Bstg. 2']), true);
   assert.equal(isTableHeader(['Koordinaten Dachfundament', 'Type F-4', 'Achse 4']), true);
   assert.equal(isTableHeader(['Koordinate1', '3500030.210', '5600557.311']), false);
+});
+
+test('four decimals are exported exactly in the GSI 0.1 mm unit, three decimals in mm', () => {
+  assert.equal(coordinate('3423197.8558').value, '3423197.8558');
+  assert.equal(coordinate('3423197.8558').tenths, 34231978558n);
+  assert.equal(coordinate('3423296,6150').value, '3423296.6150', 'a trailing zero is kept');
+  assert.equal(coordinate('3 423 197,8558').ok, true);
+  assert.equal(coordinate('1.23456').error, 'precision');
+  // Mixed file: every word switches to 0.1 mm; nothing is rounded.
+  const lines = gsi([
+    row('R-09-01', '3423197.8558', '5538496.9145', '101.25'),
+    row('R-09-02', '3423203.055', '-5538498.482'),
+  ]).split('\r\n');
+  assert.equal(
+    lines[0],
+    '*110001+000000000R-09-01 81..06+0000034231978558 82..06+0000055384969145 83..06+0000000001012500 ',
+  );
+  assert.ok(lines[1].includes('81..06+0000034232030550'));
+  assert.ok(lines[1].includes('82..06-0000055384984820'));
+  // Files with at most 3 decimals keep the millimetre unit and are unchanged.
+  assert.ok(gsi([row()]).includes('81..00+0000003500030210'));
+  assert.ok(
+    csv([row('A', '3423197.8558', '5538496.9145')]).includes('"3423197,8558";"5538496,9145"'),
+  );
 });

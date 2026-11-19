@@ -11,7 +11,7 @@ import { fullQuad, validQuad, originalRegion, cellRegion } from './imaging.js?v=
 import { uid, state, errors, ready, projectName } from './state.js?v=__BUILD__';
 import { $, toast, notice, imageFrom, download, esc } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
-import { t } from './i18n.js?v=__BUILD__';
+import { t, lang } from './i18n.js?v=__BUILD__';
 import { snapshot, render, renderSources, renderPhoto, renderRows } from './render.js?v=__BUILD__';
 
 export function warnings(v) {
@@ -232,10 +232,12 @@ export function exportDialog(format) {
   if (!ready()) return;
   const vals = validate(state.project.rows),
     withH = vals.filter((v) => !v.h.empty).length;
+  // Any value with 4 decimals switches the GSI file to the 0.1 mm unit (see gsi() in core.js).
+  const fine = vals.some((v) => [v.e, v.n, v.h].some((c) => c.fine));
   const text = format === 'GSI' ? gsi(state.project.rows) : csv(state.project.rows);
   showDialog(
     t('export.title', { format }),
-    `<div class="export-summary"><div><strong>${state.project.rows.length}</strong><span>${t('export.verified')}</span></div><div><strong>${withH}</strong><span>${t('export.withH')}</span></div><div><strong>${state.project.rows.length - withH}</strong><span>${t('export.withoutH')}</span></div></div><label class="field-label" for="exportName">${t('export.fileName')}</label><input id="exportName" class="file-name" value="${esc(state.project.name || 'Absteckpunkte')}" maxlength="100"><p class="small">${t(format === 'GSI' ? 'export.gsiInfo' : 'export.csvInfo')}</p><div class="export-preview">${esc(text.split('\r\n').slice(0, 3).join('\n'))}${state.project.rows.length > 3 ? '\n…' : ''}</div><p class="small">${t('export.note')}</p>`,
+    `<div class="export-summary"><div><strong>${state.project.rows.length}</strong><span>${t('export.verified')}</span></div><div><strong>${withH}</strong><span>${t('export.withH')}</span></div><div><strong>${state.project.rows.length - withH}</strong><span>${t('export.withoutH')}</span></div></div><label class="field-label" for="exportName">${t('export.fileName')}</label><input id="exportName" class="file-name" value="${esc(state.project.name || 'Absteckpunkte')}" maxlength="100"><p class="small">${format === 'GSI' ? t('export.gsiInfo', { step: (fine ? 0.0001 : 0.001).toLocaleString(lang, { minimumFractionDigits: fine ? 4 : 3 }) }) + (fine ? ' ' + t('export.unitNote') : '') : t('export.csvInfo')}</p><div class="export-preview">${esc(text.split('\r\n').slice(0, 3).join('\n'))}${state.project.rows.length > 3 ? '\n…' : ''}</div><p class="small">${t('export.note')}</p>`,
     `<button class="button subtle" data-close>${t('common.cancel')}</button><button class="button primary" id="confirmExport" data-format="${format}">${t('export.save', { format })}</button>`,
     'export',
   );
