@@ -12,13 +12,19 @@
     "build": "node scripts/build.mjs",
     "check:build": "node scripts/check-build.mjs",
     "preview": "node scripts/serve.mjs",
-    "test:e2e": "node --test --test-concurrency=1 tests/e2e/*.e2e.mjs"
+    "test:e2e": "node --test --test-concurrency=1 tests/e2e/*.e2e.mjs",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@tesseract.js-data/eng": "1.0.0",
     "tesseract.js": "6.0.1"
   },
   "devDependencies": {
-    "playwright": "1.63.0"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.1.0",
+    "globals": "17.14.0",
+    "playwright": "1.63.0",
+    "prettier": "3.9.10"
   }
 }

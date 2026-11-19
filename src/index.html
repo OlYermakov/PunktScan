@@ -1,66 +1,267 @@
 <!doctype html>
 <html lang="uk">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>PunktScan — фото в GSI</title>
-  <meta name="description" content="Таблиці координат із фотографій у Leica GSI-16. Локальне розпізнавання, звіряння точок і точний експорт без підстановки висот.">
-  <meta name="theme-color" content="#172e30"><meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="./icon-180.png">
-  <link rel="stylesheet" href="./style.css?v=__BUILD__">
-  <script defer src="./vendor/tesseract.min.js"></script><script type="module" src="./app.js?v=__BUILD__"></script>
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="PunktScan, головна"><img src="./icon.svg" alt="" width="38" height="38"><span>Punkt<span class="brand-light">Scan</span><small>ФОТО В КООРДИНАТИ</small></span></a>
-    <div class="top-actions"><span class="private-label"><span class="live-dot"></span>Обробка на пристрої</span><button class="top-btn" id="offlineBtn" title="Підготувати для роботи без інтернету">Офлайн</button><button class="top-btn" id="helpBtn">Інструкція</button></div>
-  </header>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar-heading"><h2>Джерела</h2><span id="sourceCount" class="count">0</span></div>
-      <button class="dropzone" id="uploadBtn"><span class="upload-mark">＋</span><strong>Додати фото</strong><span>або перетягни сюди</span><small>JPG, PNG, WebP · до 20 МБ</small></button>
-      <input hidden id="photoInput" type="file" accept="image/*" multiple>
-      <input hidden id="projectInput" type="file" accept=".json,application/json">
-      <div class="source-list" id="sourceList"></div>
-      <div class="sidebar-tools"><button id="pasteBtn" class="side-btn">Вставити текст</button><button id="openProjectBtn" class="side-btn">Відкрити проєкт</button></div>
-      <div class="local-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 8 3v5c0 5-8 10-8 10S4 16 4 11V6Z"/><path d="m8 12 3 3 5-6"/></svg><div><strong>Твої фото — на твоєму пристрої</strong><p>Без завантаження на сервер. Чернетка зберігається в цьому браузері.</p></div></div>
-      <span class="sidebar-version">PunktScan 1.0 · Leica GSI-16</span>
-    </aside>
-    <main>
-      <section class="project-head">
-        <div><label class="eyebrow" for="projectName">РОБОЧИЙ ПРОЄКТ</label><input id="projectName" class="project-name" value="Новий об’єкт" maxlength="100" aria-label="Назва проєкту"><div class="project-meta"><span id="saveState">Локальна чернетка</span><span class="meta-sep">·</span><span>Метри · 3 десяткові знаки</span></div></div>
-        <div class="project-actions"><button id="undoBtn" class="icon-btn" title="Скасувати останню зміну" aria-label="Скасувати останню зміну" disabled>↶</button><button id="saveProjectBtn" class="button subtle">Зберегти проєкт</button><button id="newProjectBtn" class="button subtle">Новий</button></div>
-      </section>
-      <div id="notice" class="notice" role="status" hidden></div>
-      <section id="emptyState" class="empty-state">
-        <div class="empty-copy"><span class="eyebrow">ВІД ПЛАНУ ДО ПРИЛАДУ</span><h1>Координати з фото.<br><em>Без ручного переписування.</em></h1><p>Додай знімок таблиці, звір розпізнані точки та збережи файл для CAPLAN або Leica.</p><div class="empty-actions"><button class="button primary" id="startBtn">Додати перше фото</button><button class="button subtle" id="demoBtn">Спробувати на прикладі</button></div></div>
-        <div class="preview-illustration" aria-hidden="true"><div class="crosshair c1"></div><div class="crosshair c2"></div><div class="paper"><div class="paper-title">ABSTECKPUNKTE <span>GSI-16</span></div><div class="paper-grid"><span>Punkt</span><span>Rechtswert</span><span>Hochwert</span><b>Af201</b><code>3500030.210</code><code>5600557.311</code><b>Af202</b><code>3500029.444</code><code>5600557.784</code><b>Af203</b><code>3500029.736</code><code>5600556.545</code></div><div class="scan-line"></div><div class="paper-footer"><span>КОЖНА ЦИФРА ПІД КОНТРОЛЕМ</span><span>＋</span></div></div><div class="file-tag"><span>✓</span> Точний формат GSI</div></div>
-        <div class="workflow"><div><span class="step-icon">▧</span><strong>Фото таблиці</strong><p>Кілька знімків в одному проєкті.</p></div><div><span class="step-icon">◎</span><strong>Звіряння з оригіналом</strong><p>Фрагмент фото для кожної точки.</p></div><div><span class="step-icon">↓</span><strong>Готовий файл</strong><p>GSI для приладу. CSV для Excel.</p></div></div>
-      </section>
-      <section id="imageWorkspace" class="image-workspace" hidden>
-        <div class="photo-panel panel">
-          <div class="panel-toolbar"><div class="segmented" id="viewTabs"><button class="active" data-view="original">Оригінал</button><button data-view="frame">Межі</button><button data-view="processed">Вирівняне</button></div><div class="photo-tools"><button class="icon-btn" id="rotateBtn" aria-label="Повернути фото на 90 градусів" title="Повернути на 90°">↻</button><button class="icon-btn" id="zoomOutBtn" aria-label="Зменшити фото">−</button><button class="icon-btn" id="zoomInBtn" aria-label="Збільшити фото">＋</button></div></div>
-          <div class="photo-viewport" id="photoViewport"><div class="photo-wrap" id="photoWrap"><img id="previewImg" alt="Фото таблиці координат" draggable="false"><svg id="frameOverlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-label="Межі таблиці"></svg></div></div>
-          <div class="photo-caption"><span id="photoCaption"></span><button id="resetFrameBtn" class="text-btn">Усе фото</button></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>PunktScan — фото в GSI</title>
+    <meta
+      name="description"
+      content="Таблиці координат із фотографій у Leica GSI-16. Локальне розпізнавання, звіряння точок і точний експорт без підстановки висот."
+    />
+    <meta name="theme-color" content="#172e30" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-180.png" />
+    <link rel="stylesheet" href="./style.css?v=__BUILD__" />
+    <script defer src="./vendor/tesseract.min.js"></script>
+    <script type="module" src="./app.js?v=__BUILD__"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="PunktScan, головна"
+        ><img src="./icon.svg" alt="" width="38" height="38" /><span
+          >Punkt<span class="brand-light">Scan</span><small>ФОТО В КООРДИНАТИ</small></span
+        ></a
+      >
+      <div class="top-actions">
+        <span class="private-label"><span class="live-dot"></span>Обробка на пристрої</span
+        ><button class="top-btn" id="offlineBtn" title="Підготувати для роботи без інтернету">
+          Офлайн</button
+        ><button class="top-btn" id="helpBtn">Інструкція</button>
+      </div>
+    </header>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-heading">
+          <h2>Джерела</h2>
+          <span id="sourceCount" class="count">0</span>
         </div>
-        <aside class="recognition-panel panel"><span class="eyebrow">РОЗПІЗНАВАННЯ</span><h2>Підготуй таблицю</h2><p class="small">Перевір, що всі рядки всередині рамки. На вкладці «Межі» перетягни її кути.</p><button id="autoFrameBtn" class="button subtle full">Знайти межі автоматично</button>
-          <label class="field-label" for="columnOrder">Порядок координат на фото</label><select id="columnOrder"><option value="auto">За заголовками · типово E, N</option><option value="en">Rechtswert (E), Hochwert (N)</option><option value="ne">Hochwert (N), Rechtswert (E)</option></select>
-          <label class="checkbox-label"><input id="enhanceInput" type="checkbox" checked><span>Очищення муару та сітки<small>Для фото екрана й паперових таблиць</small></span></label>
-          <button id="recognizeBtn" class="button primary full">Розпізнати фото</button><button id="recognizeAllBtn" class="text-btn full">Розпізнати всі нові фото</button>
-          <div id="progressArea" hidden><div class="progress-label"><span id="progressText">Підготовка…</span><button id="cancelOcrBtn" class="text-btn">Зупинити</button></div><progress id="ocrProgress" max="1" value="0"></progress></div>
-          <p class="engine-note" id="engineNote">Перше розпізнавання завантажує локальний модуль. Фото не надсилаються.</p>
-        </aside>
-      </section>
-      <section id="pointsSection" class="points-section panel">
-        <div class="points-heading"><div><h2>Точки <span id="pointCount" class="light-count">0</span></h2><p id="pointSummary">Тут з’являться розпізнані координати.</p></div><button id="addPointBtn" class="button subtle">＋ Точка</button></div>
-        <div class="table-tools"><div class="filter-tabs" id="filters"><button data-filter="all" class="active">Усі</button><button data-filter="review">До звірки <span id="reviewCount">0</span></button><button data-filter="errors">Помилки <span id="errorCount">0</span></button></div><input type="search" id="searchInput" placeholder="Знайти точку…" aria-label="Пошук точок"></div>
-        <div class="table-scroll"><table><thead><tr><th class="status-col">Звірка</th><th>Точка</th><th>Rechtswert <small>E · м</small></th><th>Hochwert <small>N · м</small></th><th>Höhe <small>H · м</small></th><th class="delete-col"></th></tr></thead><tbody id="pointsBody"></tbody></table><div id="tableEmpty" class="table-empty">Додай фото або встав готову таблицю текстом.</div></div>
-        <div class="table-bottom"><span>Висота порожня — у GSI її не буде.</span><button id="mapBtn" class="text-btn" disabled>Схема точок</button><button id="rawTextBtn" class="text-btn" hidden>Результат розпізнавання</button></div>
-      </section>
-      <section class="export-bar"><div><strong id="exportStatus">Файл ще не готовий</strong><p id="exportHint">Звір кожну точку з оригіналом перед експортом.</p></div><div><button id="csvBtn" class="button subtle" disabled>CSV</button><button id="exportBtn" class="button export-button" disabled>Завантажити GSI <span>↓</span></button></div></section>
-      <footer class="main-footer">Координати зберігаються у вихідній системі. Перетворення систем координат не виконується.</footer>
-    </main>
-  </div>
-  <dialog id="dialog"><div id="dialogContent"></div></dialog>
-  <div id="toast" class="toast" role="status" hidden></div>
-  <noscript>Для розпізнавання й експорту потрібно дозволити JavaScript у браузері.</noscript>
-</body></html>
+        <button class="dropzone" id="uploadBtn">
+          <span class="upload-mark">＋</span><strong>Додати фото</strong
+          ><span>або перетягни сюди</span><small>JPG, PNG, WebP · до 20 МБ</small>
+        </button>
+        <input hidden id="photoInput" type="file" accept="image/*" multiple />
+        <input hidden id="projectInput" type="file" accept=".json,application/json" />
+        <div class="source-list" id="sourceList"></div>
+        <div class="sidebar-tools">
+          <button id="pasteBtn" class="side-btn">Вставити текст</button
+          ><button id="openProjectBtn" class="side-btn">Відкрити проєкт</button>
+        </div>
+        <div class="local-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="m12 3 8 3v5c0 5-8 10-8 10S4 16 4 11V6Z" />
+            <path d="m8 12 3 3 5-6" />
+          </svg>
+          <div>
+            <strong>Твої фото — на твоєму пристрої</strong>
+            <p>Без завантаження на сервер. Чернетка зберігається в цьому браузері.</p>
+          </div>
+        </div>
+        <span class="sidebar-version">PunktScan 1.0 · Leica GSI-16</span>
+      </aside>
+      <main>
+        <section class="project-head">
+          <div>
+            <label class="eyebrow" for="projectName">РОБОЧИЙ ПРОЄКТ</label
+            ><input
+              id="projectName"
+              class="project-name"
+              value="Новий об’єкт"
+              maxlength="100"
+              aria-label="Назва проєкту"
+            />
+            <div class="project-meta">
+              <span id="saveState">Локальна чернетка</span><span class="meta-sep">·</span
+              ><span>Метри · 3 десяткові знаки</span>
+            </div>
+          </div>
+          <div class="project-actions">
+            <button
+              id="undoBtn"
+              class="icon-btn"
+              title="Скасувати останню зміну"
+              aria-label="Скасувати останню зміну"
+              disabled
+            >
+              ↶</button
+            ><button id="saveProjectBtn" class="button subtle">Зберегти проєкт</button
+            ><button id="newProjectBtn" class="button subtle">Новий</button>
+          </div>
+        </section>
+        <div id="notice" class="notice" role="status" hidden></div>
+        <section id="emptyState" class="empty-state">
+          <div class="empty-copy">
+            <span class="eyebrow">ВІД ПЛАНУ ДО ПРИЛАДУ</span>
+            <h1>Координати з фото.<br /><em>Без ручного переписування.</em></h1>
+            <p>Додай знімок таблиці, звір розпізнані точки та збережи файл для CAPLAN або Leica.</p>
+            <div class="empty-actions">
+              <button class="button primary" id="startBtn">Додати перше фото</button
+              ><button class="button subtle" id="demoBtn">Спробувати на прикладі</button>
+            </div>
+          </div>
+          <div class="preview-illustration" aria-hidden="true">
+            <div class="crosshair c1"></div>
+            <div class="crosshair c2"></div>
+            <div class="paper">
+              <div class="paper-title">ABSTECKPUNKTE <span>GSI-16</span></div>
+              <div class="paper-grid">
+                <span>Punkt</span><span>Rechtswert</span><span>Hochwert</span><b>Af201</b
+                ><code>3500030.210</code><code>5600557.311</code><b>Af202</b><code>3500029.444</code
+                ><code>5600557.784</code><b>Af203</b><code>3500029.736</code
+                ><code>5600556.545</code>
+              </div>
+              <div class="scan-line"></div>
+              <div class="paper-footer"><span>КОЖНА ЦИФРА ПІД КОНТРОЛЕМ</span><span>＋</span></div>
+            </div>
+            <div class="file-tag"><span>✓</span> Точний формат GSI</div>
+          </div>
+          <div class="workflow">
+            <div>
+              <span class="step-icon">▧</span><strong>Фото таблиці</strong>
+              <p>Кілька знімків в одному проєкті.</p>
+            </div>
+            <div>
+              <span class="step-icon">◎</span><strong>Звіряння з оригіналом</strong>
+              <p>Фрагмент фото для кожної точки.</p>
+            </div>
+            <div>
+              <span class="step-icon">↓</span><strong>Готовий файл</strong>
+              <p>GSI для приладу. CSV для Excel.</p>
+            </div>
+          </div>
+        </section>
+        <section id="imageWorkspace" class="image-workspace" hidden>
+          <div class="photo-panel panel">
+            <div class="panel-toolbar">
+              <div class="segmented" id="viewTabs">
+                <button class="active" data-view="original">Оригінал</button
+                ><button data-view="frame">Межі</button
+                ><button data-view="processed">Вирівняне</button>
+              </div>
+              <div class="photo-tools">
+                <button
+                  class="icon-btn"
+                  id="rotateBtn"
+                  aria-label="Повернути фото на 90 градусів"
+                  title="Повернути на 90°"
+                >
+                  ↻</button
+                ><button class="icon-btn" id="zoomOutBtn" aria-label="Зменшити фото">−</button
+                ><button class="icon-btn" id="zoomInBtn" aria-label="Збільшити фото">＋</button>
+              </div>
+            </div>
+            <div class="photo-viewport" id="photoViewport">
+              <div class="photo-wrap" id="photoWrap">
+                <img id="previewImg" alt="Фото таблиці координат" draggable="false" /><svg
+                  id="frameOverlay"
+                  viewBox="0 0 1000 1000"
+                  preserveAspectRatio="none"
+                  aria-label="Межі таблиці"
+                ></svg>
+              </div>
+            </div>
+            <div class="photo-caption">
+              <span id="photoCaption"></span
+              ><button id="resetFrameBtn" class="text-btn">Усе фото</button>
+            </div>
+          </div>
+          <aside class="recognition-panel panel">
+            <span class="eyebrow">РОЗПІЗНАВАННЯ</span>
+            <h2>Підготуй таблицю</h2>
+            <p class="small">
+              Перевір, що всі рядки всередині рамки. На вкладці «Межі» перетягни її кути.
+            </p>
+            <button id="autoFrameBtn" class="button subtle full">Знайти межі автоматично</button>
+            <label class="field-label" for="columnOrder">Порядок координат на фото</label
+            ><select id="columnOrder">
+              <option value="auto">За заголовками · типово E, N</option>
+              <option value="en">Rechtswert (E), Hochwert (N)</option>
+              <option value="ne">Hochwert (N), Rechtswert (E)</option>
+            </select>
+            <label class="checkbox-label"
+              ><input id="enhanceInput" type="checkbox" checked /><span
+                >Очищення муару та сітки<small>Для фото екрана й паперових таблиць</small></span
+              ></label
+            >
+            <button id="recognizeBtn" class="button primary full">Розпізнати фото</button
+            ><button id="recognizeAllBtn" class="text-btn full">Розпізнати всі нові фото</button>
+            <div id="progressArea" hidden>
+              <div class="progress-label">
+                <span id="progressText">Підготовка…</span
+                ><button id="cancelOcrBtn" class="text-btn">Зупинити</button>
+              </div>
+              <progress id="ocrProgress" max="1" value="0"></progress>
+            </div>
+            <p class="engine-note" id="engineNote">
+              Перше розпізнавання завантажує локальний модуль. Фото не надсилаються.
+            </p>
+          </aside>
+        </section>
+        <section id="pointsSection" class="points-section panel">
+          <div class="points-heading">
+            <div>
+              <h2>Точки <span id="pointCount" class="light-count">0</span></h2>
+              <p id="pointSummary">Тут з’являться розпізнані координати.</p>
+            </div>
+            <button id="addPointBtn" class="button subtle">＋ Точка</button>
+          </div>
+          <div class="table-tools">
+            <div class="filter-tabs" id="filters">
+              <button data-filter="all" class="active">Усі</button
+              ><button data-filter="review">До звірки <span id="reviewCount">0</span></button
+              ><button data-filter="errors">Помилки <span id="errorCount">0</span></button>
+            </div>
+            <input
+              type="search"
+              id="searchInput"
+              placeholder="Знайти точку…"
+              aria-label="Пошук точок"
+            />
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="status-col">Звірка</th>
+                  <th>Точка</th>
+                  <th>Rechtswert <small>E · м</small></th>
+                  <th>Hochwert <small>N · м</small></th>
+                  <th>Höhe <small>H · м</small></th>
+                  <th class="delete-col"></th>
+                </tr>
+              </thead>
+              <tbody id="pointsBody"></tbody>
+            </table>
+            <div id="tableEmpty" class="table-empty">
+              Додай фото або встав готову таблицю текстом.
+            </div>
+          </div>
+          <div class="table-bottom">
+            <span>Висота порожня — у GSI її не буде.</span
+            ><button id="mapBtn" class="text-btn" disabled>Схема точок</button
+            ><button id="rawTextBtn" class="text-btn" hidden>Результат розпізнавання</button>
+          </div>
+        </section>
+        <section class="export-bar">
+          <div>
+            <strong id="exportStatus">Файл ще не готовий</strong>
+            <p id="exportHint">Звір кожну точку з оригіналом перед експортом.</p>
+          </div>
+          <div>
+            <button id="csvBtn" class="button subtle" disabled>CSV</button
+            ><button id="exportBtn" class="button export-button" disabled>
+              Завантажити GSI <span>↓</span>
+            </button>
+          </div>
+        </section>
+        <footer class="main-footer">
+          Координати зберігаються у вихідній системі. Перетворення систем координат не виконується.
+        </footer>
+      </main>
+    </div>
+    <dialog id="dialog"><div id="dialogContent"></div></dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <noscript>Для розпізнавання й експорту потрібно дозволити JavaScript у браузері.</noscript>
+  </body>
+</html>
