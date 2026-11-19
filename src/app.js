@@ -116,6 +116,7 @@ $('frameOverlay').addEventListener('keydown', (e) => {
     return;
   e.preventDefault();
   snapshot();
+  source().frameEdited = true;
   const p = source().quad[Number(c.dataset.corner)],
     step = e.shiftKey ? 0.02 : 0.002;
   if (e.key === 'ArrowLeft') p.x -= step;
@@ -132,6 +133,7 @@ $('frameOverlay').addEventListener('keydown', (e) => {
 $('resetFrameBtn').onclick = () => {
   snapshot();
   source().quad = fullQuad();
+  source().frameEdited = true;
   renderPhoto();
   save();
 };
@@ -145,6 +147,7 @@ $('autoFrameBtn').onclick = async () => {
     if (q) {
       snapshot();
       s.quad = q;
+      s.frameEdited = false;
       state.view = 'frame';
       renderPhoto();
       save();

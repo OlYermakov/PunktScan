@@ -11,6 +11,7 @@ import {
   checkProject,
   safeFilename,
   chooseReading,
+  orderFromValues,
   PROJECT_VERSION,
   MAX_SOURCES,
 } from '../src/core.js';
@@ -244,4 +245,60 @@ test('four decimals are exported exactly in the GSI 0.1 mm unit, three decimals 
   assert.ok(
     csv([row('A', '3423197.8558', '5538496.9145')]).includes('"3423197,8558";"5538496,9145"'),
   );
+});
+
+test('the E/N order is recognised from Gauss–Krüger and UTM numbers', () => {
+  const rows = (pairs) => pairs.map(([e, n]) => ({ e, n }));
+  // Headings said "Hoch, Rechts" but the first column holds Rechtswerte (zone 3).
+  assert.equal(
+    orderFromValues(
+      rows([
+        ['3445936.4909', '5545947.9795'],
+        ['3445921.4632', '5545956.0815'],
+      ]),
+    ),
+    'en',
+  );
+  assert.equal(
+    orderFromValues(
+      rows([
+        ['5545947.979', '3445936.490'],
+        ['5545956.081', '3445921.463'],
+      ]),
+    ),
+    'ne',
+  );
+  assert.equal(
+    orderFromValues(
+      rows([
+        ['32456789.12', '5545947.979'],
+        ['32456790.10', '5545956.081'],
+      ]),
+    ),
+    'en',
+  );
+  assert.equal(
+    orderFromValues(
+      rows([
+        ['456789.120', '5545947.979'],
+        ['456790.100', '5545956.081'],
+      ]),
+    ),
+    'en',
+  );
+  // Local or unclear numbers: no decision.
+  assert.equal(
+    orderFromValues(
+      rows([
+        ['1000.000', '2000.000'],
+        ['1010.000', '2010.000'],
+      ]),
+    ),
+    null,
+  );
+  assert.equal(orderFromValues(rows([['3445936.490', '5545947.979']])), null);
+});
+test('a height written with a separated sign is read', () => {
+  assert.equal(coordinate('+ 100.772').value, '100.772');
+  assert.equal(coordinate('- 99.994').value, '-99.994');
 });

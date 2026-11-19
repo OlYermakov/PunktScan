@@ -183,6 +183,7 @@ export function tableFromWords(words, width) {
       );
     return {
       name: words.map((w) => w.text).join(' '),
+      nameConfidence: words.length ? Math.min(...words.map((w) => w.confidence ?? 0)) : 0,
       nameBox: words.length
         ? union(words.map((w) => w.box))
         : at(Math.max(0, firstLeft - height * 6), firstLeft - height * 0.4),
@@ -238,4 +239,30 @@ export function harmonize(cells) {
     }
   }
   return cells;
+}
+
+// When one reading of a table lost a decimal point ("5544860327") and another reading of the same
+// photo has exactly the same digits with the point ("5544860.327"), the point is taken from the
+// other reading. Digits are never changed. Returns how many values were completed; those rows get
+// their field marked disputed so they are still reviewed.
+// rows: [{ e, n, h, disputed: [name, e, n, h] }], others: rows of the other reading.
+export function borrowSeparators(rows, others) {
+  const digitsOf = (v) => String(v ?? '').replace(/\D/g, '');
+  const withPoint = new Map();
+  for (const o of others)
+    for (const v of [o.e, o.n, o.h])
+      if (/^[+-]?\d+[.,]\d{1,4}$/.test(String(v ?? '').trim()))
+        withPoint.set(digitsOf(v), String(v).trim());
+  let changed = 0;
+  for (const r of rows)
+    ['e', 'n', 'h'].forEach((k, i) => {
+      const v = String(r[k] ?? '').trim();
+      if (!/^[+-]?\d{6,}$/.test(v)) return;
+      const found = withPoint.get(digitsOf(v));
+      if (!found) return;
+      r[k] = found;
+      if (r.disputed) r.disputed[i + 1] = true;
+      changed++;
+    });
+  return changed;
 }

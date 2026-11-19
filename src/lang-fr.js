@@ -135,7 +135,13 @@ export default {
     'Reconnu : {points}. Vérifiez-les sur la photo, y compris les noms et les séparateurs décimaux.',
   'ocr.none':
     'Aucun point trouvé. Corrigez le cadre, désactivez le nettoyage ou collez le tableau sous forme de texte.',
+  'ocr.oneColumn':
+    'Une seule colonne de nombres a été trouvée. Un point a besoin d’un nom, du Rechtswert et du Hochwert : photographiez tout le tableau (les grands tableaux en plusieurs parties, chacune avec toutes les colonnes).',
   'ocr.defaultOrder': ' L’ordre E, N a été utilisé par défaut : vérifiez les en-têtes.',
+  'ocr.orderByValues':
+    ' L’ordre E, N a été déduit des valeurs (Rechtswert avec chiffre de zone, Hochwert à partir de 5 000 000).',
+  'ocr.orderConflict':
+    ' Attention : les en-têtes ne correspondent pas aux valeurs. L’ordre E, N a été choisi d’après les valeurs (Rechtswert avec chiffre de zone) — vérifiez-le.',
   'ocr.skipped': ' Des lignes ont été ignorées — ouvrez « Résultat de la reconnaissance ».',
   'ocr.replaceConfirm':
     'Une nouvelle reconnaissance remplace les points de cette photo, y compris les corrections manuelles. Continuer ?',

@@ -2,7 +2,9 @@
 export function coordinate(raw, optional = false) {
   let s = String(raw ?? '')
     .trim()
-    .replace(/\u2212/g, '-');
+    .replace(/\u2212/g, '-')
+    // "+ 100.772": a sign set apart from the number.
+    .replace(/^([+-])\s+(?=\d)/, '$1');
   if (!s)
     return optional
       ? { ok: true, empty: true, value: '', mm: null }
@@ -323,4 +325,33 @@ export function checkProject(input) {
     name: String(p.name || 'PunktScan').slice(0, 100),
     rows: p.rows.map((r) => ({ ...r, verified: false })),
   };
+}
+
+// E/N order from the numbers themselves, for German Gauss–Krüger and UTM coordinates: a Rechtswert
+// (Easting) starts with its zone (2–4 in GK; 32/33 in UTM with zone) or has 6 digits (UTM), a
+// Hochwert (Northing) has 7 digits starting with 5 or 6. `rows` hold the photo's first coordinate
+// column in `e` and the second in `n`. Returns 'en', 'ne' or null when the numbers do not tell.
+export function orderFromValues(rows) {
+  const kind = (v) => {
+    const whole = String(v ?? '')
+      .replace(/[^\d.,]/g, '')
+      .split(/[.,]/)[0];
+    if (/^[56]\d{6}$/.test(whole)) return 'N';
+    if (/^[234]\d{6}$/.test(whole) || /^3[23]\d{6}$/.test(whole) || /^\d{6}$/.test(whole))
+      return 'E';
+    return null;
+  };
+  let en = 0,
+    ne = 0;
+  for (const r of rows) {
+    const a = kind(r.e),
+      b = kind(r.n);
+    if (a === 'E' && b === 'N') en++;
+    if (a === 'N' && b === 'E') ne++;
+  }
+  const decided = en + ne;
+  if (decided < 2 || decided < rows.length * 0.5) return null;
+  if (en >= decided * 0.8) return 'en';
+  if (ne >= decided * 0.8) return 'ne';
+  return null;
 }

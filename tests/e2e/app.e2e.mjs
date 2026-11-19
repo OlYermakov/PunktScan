@@ -585,7 +585,8 @@ test(
     let total = 0,
       correct = 0;
     const silent = [],
-      report = [];
+      report = [],
+      notices = {};
     for (const [file, rows] of Object.entries(expected)) {
       const { context, page, problems } = await openApp();
       await page.locator('#photoInput').setInputFiles(dir + file);
@@ -594,10 +595,10 @@ test(
       await page.locator('#progressArea').waitFor({ state: 'hidden', timeout: 280000 });
       const read = await page.locator('#pointsBody tr[data-row]').evaluateAll((trs) =>
         trs.map((tr) =>
-          ['name', 'e', 'n'].map((k) => {
+          ['name', 'e', 'n', 'h'].map((k) => {
             const input = tr.querySelector(`[data-field="${k}"]`);
             return {
-              value: input.value.replace(/\s/g, '').replace(',', '.'),
+              value: input.value.replace(/\s/g, '').replace(/^\+/, '').replace(',', '.'),
               flagged: input.matches('.invalid, .uncertain'),
             };
           }),
@@ -614,7 +615,10 @@ test(
         });
       });
       correct += ok;
-      report.push(`${file}: ${read.length}/${rows.length} rows, ${ok}/${rows.length * 3} fields`);
+      notices[file] = (await page.locator('#notice').textContent()) ?? '';
+      report.push(
+        `${file}: ${read.length}/${rows.length} rows, ${ok}/${rows.flat().length} fields`,
+      );
       assert.equal(read.length, rows.length, `${file}: row count`);
       assert.deepEqual(problems, [], file);
       await context.close();
@@ -622,7 +626,23 @@ test(
     console.log(report.join('\n') + `\nTOTAL ${correct}/${total}`);
     // The safety property: a value read wrongly is always marked for review.
     assert.deepEqual(silent, []);
-    // 112/117 when these photos were added; allow small differences between browser builds.
-    assert.ok(correct >= 105, `accuracy regressed: ${correct}/${total}`);
+    // 250/283 when the last photos were added; allow small differences between browser builds.
+    assert.ok(correct >= 240, `accuracy regressed: ${correct}/${total}`);
+    // Headings "Hoch | Rechts" over Rechtswert | Hochwert values: order taken from the values,
+    // and the user is told (the values themselves are checked above).
+    assert.match(
+      notices['digital-swapped-headings.jpg'],
+      /Überschriften passen nicht zu den Werten/,
+    );
+
+    // A close-up of one number column: no invented points, a clear explanation instead.
+    const { context, page } = await openApp();
+    await page.locator('#photoInput').setInputFiles(dir + 'closeup-one-column.jpg');
+    await page.locator('#sourceCount', { hasText: '1' }).waitFor();
+    await page.locator('#recognizeBtn').click();
+    await page.locator('#progressArea').waitFor({ state: 'hidden', timeout: 280000 });
+    assert.equal(await page.locator('#pointsBody tr[data-row]').count(), 0);
+    assert.match(await page.locator('#notice').textContent(), /Nur eine Zahlenspalte/);
+    await context.close();
   },
 );

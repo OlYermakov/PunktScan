@@ -127,7 +127,13 @@ export default {
   'ocr.found':
     'Recognized: {points}. Check them against the photo, including names and decimal points.',
   'ocr.none': 'No points found. Fix the frame, turn off cleaning or paste the table as text.',
+  'ocr.oneColumn':
+    'Only one column of numbers was found. Points need a name, Easting and Northing: photograph the whole table (large tables in several parts, each with all columns).',
   'ocr.defaultOrder': ' The order E, N was used by default: check the headings.',
+  'ocr.orderByValues':
+    ' The E, N order was recognised from the values (Easting with zone digit, Northing from 5,000,000).',
+  'ocr.orderConflict':
+    ' Note: the headings do not match the values. The E, N order was chosen from the values (Easting with zone digit) — please check it.',
   'ocr.skipped': ' Some rows were skipped — open “Recognition result”.',
   'ocr.replaceConfirm':
     'Recognizing again replaces the points of this photo, including manual corrections. Continue?',

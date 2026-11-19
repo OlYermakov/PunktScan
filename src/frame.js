@@ -115,6 +115,8 @@ export function initFrameDrag() {
     const s = source();
     if (!drag || e.pointerId !== drag.pointer || !s) return;
     const b = overlay.getBoundingClientRect();
+    // The user's own frame is respected by recognition (no whole-photo second guess).
+    s.frameEdited = true;
     s.quad[drag.corner] = {
       x: Math.max(0, Math.min(1, drag.from.x + (e.clientX - drag.startX) / b.width)),
       y: Math.max(0, Math.min(1, drag.from.y + (e.clientY - drag.startY) / b.height)),

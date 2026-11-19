@@ -4,6 +4,7 @@ import {
   detectOrder,
   isTableHeader,
   chooseReading,
+  orderFromValues,
 } from './core.js?v=__BUILD__';
 import {
   validQuad,
@@ -16,7 +17,7 @@ import {
   otsu,
   hasBox,
 } from './imaging.js?v=__BUILD__';
-import { tableFromWords, harmonize } from './layout.js?v=__BUILD__';
+import { tableFromWords, harmonize, borrowSeparators } from './layout.js?v=__BUILD__';
 import { uid, state, source } from './state.js?v=__BUILD__';
 import { $, toast, notice, canvas, pixelsFor, canvasFrom } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
@@ -119,7 +120,16 @@ const wholeCrop = (image) =>
 // are read again with thresholds and stretching; disagreeing passes are flagged, never guessed.
 // `boxed`: { margin } when the value sits inside its own drawn box (word reader): the box sides,
 // found only in the margin around the text, are cleared.
-async function readRegion(w, src, signal, rect, kind, boxed = null) {
+// `hint`: what the whole-page pass already read in this cell — a real reading of the same cell,
+// added to the candidates (it often keeps a decimal point that a close-up pass drops).
+const sameText = (a, b) =>
+  String(a ?? '')
+    .replace(/\s/g, '')
+    .replace(',', '.') ===
+  String(b ?? '')
+    .replace(/\s/g, '')
+    .replace(',', '.');
+async function readRegion(w, src, signal, rect, kind, boxed = null, hint = null) {
   await w.setParameters({
     tessedit_pageseg_mode: '7',
     preserve_interword_spaces: '1',
@@ -131,10 +141,17 @@ async function readRegion(w, src, signal, rect, kind, boxed = null) {
   // Test hook: a benchmark page can set globalThis.__ocrDebug = [] to collect what OCR saw.
   globalThis.__ocrDebug?.push({ kind, rect, image: first.canvas.toDataURL(), text: reading.text });
   const unsure = (r) => r.confidence < 80 || !numeric(r.text) || coordinate(r.text).short;
+  const hints = hint?.text && !sameText(hint.text, reading.text) ? [hint] : [];
   if (kind !== 'number')
-    return src.enhance ? readName(w, src, signal, rect, reading, boxed) : reading;
-  if (!src.enhance || !unsure(reading)) return reading;
-  const candidates = [reading];
+    return src.enhance ? readName(w, src, signal, rect, reading, boxed, hints) : reading;
+  if (!src.enhance) return reading;
+  if (!unsure(reading)) {
+    if (!hints.length) return reading;
+    // A confident close-up and a different whole-page reading: keep both, flag the cell.
+    const candidates = [reading, ...hints];
+    return { ...chooseReading(candidates), disputed: true, candidates };
+  }
+  const candidates = [reading, ...hints];
   const plain = cropRegion(src.plain, rect, 1, boxed);
   candidates.push(
     await ocrText(
@@ -156,11 +173,12 @@ async function readRegion(w, src, signal, rect, kind, boxed = null) {
 
 // Point names read uncertainly get a second and third pass; the most confident reading wins and
 // disagreement between passes is flagged for review.
-async function readName(w, src, signal, rect, first, boxed) {
-  if (first.confidence >= 85 && first.text) return first;
+async function readName(w, src, signal, rect, first, boxed, hints = []) {
+  if (first.confidence >= 85 && first.text && !hints.length) return first;
   const plain = cropRegion(src.plain, rect, 1, boxed).pixels;
   const candidates = [
     first,
+    ...hints,
     await ocrText(w, wholeCrop(canvasFrom(otsu(plain.data, plain.width, plain.height))), signal),
     await ocrText(w, cropRegion(src.c, rect, 1.3, boxed).canvas, signal),
   ].filter((c) => c.text);
@@ -243,12 +261,15 @@ async function readGrid(w, grid, src, signal, width) {
 
 // Tables without usable lines: read all words once, rebuild rows and columns from their
 // positions, then read every name and value again on its own.
-async function readByWords(w, src, signal, width) {
+// The cheap first half of the word reader: one OCR pass over the page and the table layout.
+async function pageTable(w, src, signal, width) {
   progress(t('ocr.reading'), 0.68);
   await w.setParameters({
     tessedit_pageseg_mode: '11',
     // A fixed resolution avoids Tesseract's "Estimating resolution" console warnings.
     user_defined_dpi: '300',
+    // Tesseract's diagnostic messages ("Detected N diacritics") would end up in the console.
+    debug_file: '/dev/null',
     preserve_interword_spaces: '1',
     tessedit_char_whitelist: '',
   });
@@ -265,7 +286,20 @@ async function readByWords(w, src, signal, width) {
     .map((x) => ({ text: x.text, confidence: x.confidence, box: x.bbox }));
   globalThis.__ocrDebug?.push({ kind: 'words', words, image: src.bare.toDataURL() });
   const table = tableFromWords(words, width);
-  if (!table?.rows.length) return null;
+  globalThis.__ocrDebug?.push({
+    kind: 'page',
+    width,
+    rows: table?.rows.map((r) => [r.name, ...r.values]),
+  });
+  return table?.rows.length ? { table, text: data.text } : null;
+}
+
+async function readByWords(w, src, signal, width, page) {
+  page ??= await pageTable(w, src, signal, width);
+  if (!page) return null;
+  const { table } = page;
+  // One column of numbers (a close-up of a single column) cannot make points.
+  if (table.columns < 2) return { rows: [], raw: [], skipped: [], oneColumn: true };
   // Boxed values (CAD exports): most numbers have a drawn box of their own around them.
   const numbers = table.rows.flatMap((r) => r.boxes.filter(Boolean));
   const p = src.plainPixels,
@@ -291,7 +325,18 @@ async function readByWords(w, src, signal, width) {
         readings.push({ text: k ? '' : r.name, confidence: 0, disputed: false });
         continue;
       }
-      const reading = await readRegion(w, src, signal, asRect(box), k ? 'number' : 'name', boxed);
+      const hint = k
+        ? { text: r.values[k - 1], confidence: r.confidence[k - 1] }
+        : { text: r.name, confidence: r.nameConfidence };
+      const reading = await readRegion(
+        w,
+        src,
+        signal,
+        asRect(box),
+        k ? 'number' : 'name',
+        boxed,
+        hint,
+      );
       // Keep the first full-page reading when the focused one comes back empty.
       if (!reading.text) reading.text = k ? r.values[k - 1] : r.name;
       readings.push(reading);
@@ -323,7 +368,7 @@ async function readByWords(w, src, signal, width) {
     rows,
     raw: rows.map((r) => r.raw),
     skipped: [],
-    autoOrder: table.order ?? detectOrder(data.text),
+    autoOrder: table.order ?? detectOrder(page.text),
     columns: true,
   };
 }
@@ -334,6 +379,8 @@ async function readLines(w, src, chosenOrder) {
   await w.setParameters({
     tessedit_pageseg_mode: '6',
     user_defined_dpi: '300',
+    // Tesseract's diagnostic messages ("Detected N diacritics") would end up in the console.
+    debug_file: '/dev/null',
     preserve_interword_spaces: '1',
     tessedit_char_whitelist: '',
   });
@@ -383,31 +430,66 @@ export async function recognizeOne(s, signal) {
   // Two readers: cell by cell along the grid lines, and from word positions for tables whose
   // lines cannot be found (no outer borders, boxed values, a tilted or cut-off page). The word
   // reader also tries the whole photo when the frame may have cut part of the table off.
-  // Result quality: complete rows count most, then names and number-like values.
+  // Result quality. A missing point is worse than a flagged one (it can go unnoticed), so every
+  // row with numbers in both coordinate columns counts most; complete rows and names come next.
   const digits = (v) => (String(v ?? '').match(/\d/g) || []).length;
   const complete = (r) =>
     r.rows.reduce(
       (sum, row) =>
         sum +
-        (goodRow(row) ? 10 : 0) +
-        (row.name ? 1 : 0) +
-        (digits(row.e) >= 6) +
-        (digits(row.n) >= 6),
+        (digits(row.e) >= 6 && digits(row.n) >= 6
+          ? 10
+          : (digits(row.e) >= 6) + (digits(row.n) >= 6)) +
+        (goodRow(row) ? 3 : 0) +
+        (row.name ? 1 : 0),
       0,
     );
   let result = main.grid ? await readGrid(w, main.grid, main, signal, main.width) : null;
   if (result) result.view = main;
-  if (!result || result.rows.filter(goodRow).length < result.rows.length * 0.8)
-    for (const v of whole ? [main, view(fullQuad())] : [main]) {
-      const fromWords = await readByWords(w, v, signal, v.width);
-      if (fromWords && (!result || complete(fromWords) > complete(result)))
-        result = { ...fromWords, view: v };
+  const incomplete = !result || result.rows.filter(goodRow).length < result.rows.length * 0.8;
+  if (incomplete) {
+    const fromWords = await readByWords(w, main, signal, main.width);
+    if (fromWords && (!result || complete(fromWords) > complete(result)))
+      result = { ...fromWords, view: main };
+  }
+  // An automatic frame can cut rows off a table that runs past it (a big sheet, a tilted
+  // photo). A quick look at the whole photo decides; a frame the user set is always respected.
+  if (whole && !s.frameEdited) {
+    const full = view(fullQuad()),
+      page = await pageTable(w, full, signal, full.width);
+    if (
+      page &&
+      page.table.columns >= 2 &&
+      (incomplete || page.table.rows.length > (result?.rows.length ?? 0))
+    ) {
+      const fromWords = await readByWords(w, full, signal, full.width, page);
+      if (fromWords && (!result || complete(fromWords) > complete(result))) {
+        // The frame's reading often kept decimal points that the whole-photo reading lost.
+        if (result) borrowSeparators(fromWords.rows, result.rows);
+        result = { ...fromWords, view: full };
+      } else if (fromWords && result) borrowSeparators(result.rows, fromWords.rows);
     }
+  }
   const src = result?.view ?? main;
-  if (!result) result = await readLines(w, src, s.order);
+  const oneColumn = Boolean(result?.oneColumn);
+  if (!result || oneColumn) result = await readLines(w, src, s.order);
+  // A photo of a single number column gives no usable points: say so instead of guessing.
+  if (oneColumn && !result.rows.some(goodRow)) result = { ...result, rows: [] };
   const { rows, raw, skipped } = result;
-  let autoOrder = result.autoOrder ?? null;
-  let order = s.order === 'auto' ? autoOrder || 'en' : s.order;
+  // E/N order: an explicit choice wins; otherwise the numbers themselves (zone digit of the
+  // Rechtswert), then the headings, then E, N. A conflict with the headings is reported.
+  const headingOrder = result.autoOrder ?? null,
+    valueOrder = result.columns ? orderFromValues(rows) : null,
+    autoOrder = valueOrder ?? headingOrder;
+  let order = s.order,
+    orderNote = '';
+  if (s.order === 'auto') {
+    order = autoOrder ?? 'en';
+    if (valueOrder && headingOrder && valueOrder !== headingOrder)
+      orderNote = t('ocr.orderConflict');
+    else if (valueOrder && !headingOrder) orderNote = t('ocr.orderByValues');
+    else if (!autoOrder) orderNote = t('ocr.defaultOrder');
+  }
   if (order === 'ne' && result.columns)
     for (const row of rows) {
       [row.e, row.n] = [row.n, row.e];
@@ -436,12 +518,10 @@ export async function recognizeOne(s, signal) {
   state.zoom = 1;
   const message = rows.length
     ? t('ocr.found', { points: tp('n.points', rows.length) })
-    : t('ocr.none');
-  notice(
-    message +
-      (!autoOrder && s.order === 'auto' ? t('ocr.defaultOrder') : '') +
-      (skipped.length ? t('ocr.skipped') : ''),
-  );
+    : oneColumn
+      ? t('ocr.oneColumn')
+      : t('ocr.none');
+  notice(message + orderNote + (skipped.length ? t('ocr.skipped') : ''));
   render();
   save();
 }

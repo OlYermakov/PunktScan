@@ -132,7 +132,13 @@ export default {
     'Riconosciuti: {points}. Confrontali con la foto, compresi nomi e separatori decimali.',
   'ocr.none':
     'Nessun punto trovato. Correggi la cornice, disattiva la pulizia o incolla la tabella come testo.',
+  'ocr.oneColumn':
+    'È stata trovata una sola colonna di numeri. Per i punti servono nome, Rechtswert e Hochwert: fotografa l’intera tabella (le tabelle grandi in più parti, ognuna con tutte le colonne).',
   'ocr.defaultOrder': ' È stato usato l’ordine predefinito E, N: controlla le intestazioni.',
+  'ocr.orderByValues':
+    ' L’ordine E, N è stato ricavato dai valori (Rechtswert con cifra di zona, Hochwert da 5 000 000).',
+  'ocr.orderConflict':
+    ' Attenzione: le intestazioni non corrispondono ai valori. L’ordine E, N è stato scelto in base ai valori (Rechtswert con cifra di zona): controllalo.',
   'ocr.skipped': ' Alcune righe sono state saltate — apri «Risultato del riconoscimento».',
   'ocr.replaceConfirm':
     'Un nuovo riconoscimento sostituisce i punti di questa foto, comprese le correzioni manuali. Continuare?',

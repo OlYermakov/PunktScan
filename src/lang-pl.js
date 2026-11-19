@@ -130,7 +130,13 @@ export default {
     'Rozpoznano: {points}. Porównaj je ze zdjęciem, łącznie z nazwami i separatorami dziesiętnymi.',
   'ocr.none':
     'Nie znaleziono punktów. Popraw ramkę, wyłącz oczyszczanie lub wklej tabelę jako tekst.',
+  'ocr.oneColumn':
+    'Znaleziono tylko jedną kolumnę liczb. Punkt wymaga nazwy, Rechtswert i Hochwert: sfotografuj całą tabelę (duże tabele w kilku częściach, każda ze wszystkimi kolumnami).',
   'ocr.defaultOrder': ' Domyślnie użyto kolejności E, N: sprawdź nagłówki.',
+  'ocr.orderByValues':
+    ' Kolejność E, N rozpoznano na podstawie wartości (Rechtswert z cyfrą strefy, Hochwert od 5 000 000).',
+  'ocr.orderConflict':
+    ' Uwaga: nagłówki nie pasują do wartości. Kolejność E, N wybrano na podstawie wartości (Rechtswert z cyfrą strefy) — sprawdź ją.',
   'ocr.skipped': ' Niektóre wiersze pominięto — otwórz „Wynik rozpoznawania”.',
   'ocr.replaceConfirm':
     'Ponowne rozpoznanie zastąpi punkty tego zdjęcia, łącznie z ręcznymi poprawkami. Kontynuować?',

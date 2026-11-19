@@ -132,8 +132,14 @@ export default {
     'Erkannt: {points}. Prüfe sie mit dem Foto, einschließlich Namen und Dezimalpunkten.',
   'ocr.none':
     'Keine Punkte gefunden. Korrigiere den Rahmen, schalte die Bereinigung aus oder füge die Tabelle als Text ein.',
+  'ocr.oneColumn':
+    'Nur eine Zahlenspalte gefunden. Für Punkte braucht es Name, Rechtswert und Hochwert: fotografiere die ganze Tabelle (bei großen Tabellen in mehreren Teilen mit allen Spalten).',
   'ocr.defaultOrder':
     ' Die Reihenfolge E, N wurde standardmäßig verwendet: prüfe die Überschriften.',
+  'ocr.orderByValues':
+    ' Die Reihenfolge E, N wurde aus den Werten erkannt (Rechtswert mit Zonenziffer, Hochwert ab 5 000 000).',
+  'ocr.orderConflict':
+    ' Achtung: Die Überschriften passen nicht zu den Werten. Die Reihenfolge E, N wurde nach den Werten gewählt (Rechtswert mit Zonenziffer) — prüfe sie.',
   'ocr.skipped': ' Es gibt übersprungene Zeilen — öffne „Erkennungsergebnis“.',
   'ocr.replaceConfirm':
     'Die erneute Erkennung ersetzt die Punkte dieses Fotos, einschließlich manueller Korrekturen. Fortfahren?',

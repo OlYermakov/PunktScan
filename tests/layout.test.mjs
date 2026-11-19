@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { coordinateToken, tableFromWords, harmonize, shape } from '../src/layout.js';
+import {
+  coordinateToken,
+  tableFromWords,
+  harmonize,
+  shape,
+  borrowSeparators,
+} from '../src/layout.js';
 
 const word = (text, x, y, w = 120, h = 30, confidence = 90) => ({
   text,
@@ -134,4 +140,22 @@ test('a number split at its decimal point by OCR is joined back', () => {
     ],
   );
   assert.deepEqual(t.rows[0].boxes[0], { x0: 300, y0: 60, x1: 455, y1: 90 });
+});
+
+test('a lost decimal point is taken from another reading with exactly the same digits', () => {
+  const rows = [
+    { e: '3439845.992', n: '5544860327', h: '', disputed: [false, false, false, false] },
+    { e: '3439843032', n: '5544854.552', h: '', disputed: [false, false, false, false] },
+    { e: '3439841898', n: '5544852.324', h: '', disputed: [false, false, false, false] },
+  ];
+  const others = [
+    { e: '3439845.992', n: '5544860.327' },
+    { e: '3439843.032', n: '5544854.552' },
+    { e: '3439841.988', n: '5544852.324' }, // different digits: not used
+  ];
+  assert.equal(borrowSeparators(rows, others), 2);
+  assert.equal(rows[0].n, '5544860.327');
+  assert.equal(rows[0].disputed[2], true);
+  assert.equal(rows[1].e, '3439843.032');
+  assert.equal(rows[2].e, '3439841898', 'never changes digits');
 });
