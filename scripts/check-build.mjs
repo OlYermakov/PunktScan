@@ -35,5 +35,9 @@ for(const base of bases){
 const cores=await fs.readdir(path.join(root,'vendor/core'));
 assert.ok(cores.some(f=>f.endsWith('.wasm.js')),'OCR WebAssembly runtime missing');
 await fs.access(path.join(root,'.nojekyll'));
+for(const file of ['index.html','app.js','sw.js'])assert.ok(!(await fs.readFile(path.join(root,file),'utf8')).includes('__BUILD__'),'Unreplaced build version in '+file);
+const version=vm.runInContext('SHELL',context).replace('punktscan-shell-','');
+assert.match(version,/^[0-9a-f]{10}$/,'Invalid build version');
+for(const asset of [...shell,...htmlAssets,...moduleAssets].filter(a=>a.includes('?v=')))assert.equal(asset.split('?v=')[1],version,'Stale asset version: '+asset);
 assert.equal(new Set(offline).size,offline.length,'Duplicate offline entries');
 console.log('Verified '+assets.size+' asset URLs at / and /PunktScan/, including PWA scope and OCR files.');

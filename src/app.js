@@ -1,5 +1,5 @@
-import {coordinate,pointName,validate,gsi,csv,parseText,parseOCR,detectOrder,isTableHeader,safeFilename,checkProject,chooseReading} from './core.js?v=7';
-import {findTable,fullQuad,validQuad,rectify,gridCells,originalRegion,thresholdCell} from './imaging.js?v=7';
+import {coordinate,pointName,validate,gsi,csv,parseText,parseOCR,detectOrder,isTableHeader,safeFilename,checkProject,chooseReading} from './core.js?v=__BUILD__';
+import {findTable,fullQuad,validQuad,rectify,gridCells,originalRegion,thresholdCell} from './imaging.js?v=__BUILD__';
 
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>crypto.randomUUID?.()||'p'+Date.now().toString(36)+Math.random().toString(36).slice(2);

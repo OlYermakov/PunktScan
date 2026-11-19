@@ -59,3 +59,22 @@ test('all fourteen synthetic reference coordinates survive export and decode',()
   const [id,e,n]=line.slice(1).trim().split(' ');assert.equal(id.slice(7).replace(/^0+/,''),input[i][0]);assert.equal(BigInt(e.slice(6)),coordinate(input[i][1]).mm);assert.equal(BigInt(n.slice(6)),coordinate(input[i][2]).mm);
  }
 });
+test('OCR letter/digit confusions are kept literally and blocked by validation',()=>{
+ const r=parseText('Af201 35OOO30.210 56005S7.3l1').rows[0];
+ assert.equal(r.name,'Af201');assert.equal(r.e,'35OOO30.210');assert.equal(r.n,'56005S7.3l1');
+ assert.equal(coordinate(r.e).ok,false);assert.equal(coordinate(r.n).ok,false);
+ assert.throws(()=>gsi([{...row(),e:r.e}]),/invalid/);
+});
+test('GSI edge cases: 16-character names, negative height, block number wrap',()=>{
+ const name='A'.repeat(16),line=gsi([row(name,'1','2','-3.5')]);
+ assert.ok(line.startsWith('*110001+'+name+' '));assert.ok(line.includes('83..00-0000000000003500 '));
+ assert.equal(pointName('A'.repeat(17)).ok,false);
+ const many=Array.from({length:10001},(_,i)=>row('P'+i,'1','2'));
+ const lines=gsi(many).trimEnd().split('\r\n');
+ assert.equal(lines.length,10001);assert.ok(lines[9998].startsWith('*119999+'));assert.ok(lines[9999].startsWith('*110000+'));assert.ok(lines[10000].startsWith('*110001+'));
+});
+test('integer and short-precision coordinates are padded exactly, never rounded',()=>{
+ assert.equal(coordinate('3500030').value,'3500030.000');assert.equal(coordinate('3500030').short,true);
+ assert.equal(coordinate('3500030,2').mm,3500030200n);assert.equal(coordinate('3500030.210').short,false);
+ assert.equal(coordinate('−5.5').mm,-5500n);
+});
