@@ -34,7 +34,10 @@ test.before(async () => {
     server.on('exit', (c) => reject(new Error('Server exited: ' + c)));
   });
   base = `http://localhost:${port}/PunktScan/`;
-  browser = await chromium.launch();
+  // PW_CHROMIUM points to a preinstalled browser when it differs from the pinned Playwright build.
+  browser = await chromium.launch(
+    process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {},
+  );
 });
 test.after(async () => {
   await browser?.close();

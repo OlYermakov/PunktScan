@@ -25,6 +25,9 @@ const version = hash.digest('hex').slice(0, 10);
 await fs.rm('dist', { recursive: true, force: true });
 await fs.mkdir('dist', { recursive: true });
 await fs.cp('src', 'dist', { recursive: true });
+const tesseractVersion = JSON.parse(
+  await fs.readFile('node_modules/tesseract.js/package.json', 'utf8'),
+).version;
 const modules = (await fs.readdir('src')).filter((f) => f.endsWith('.js') && f !== 'sw.js').sort();
 for (const file of (await fs.readdir('dist')).filter((f) => /\.(js|html)$/.test(f))) {
   const f = 'dist/' + file;
@@ -32,15 +35,18 @@ for (const file of (await fs.readdir('dist')).filter((f) => /\.(js|html)$/.test(
     f,
     (await fs.readFile(f, 'utf8'))
       .replace(/\/\* __MODULES__ \*\/ \[[^\]]*\]/, JSON.stringify(modules))
-      .replaceAll('__BUILD__', version),
+      .replaceAll('__BUILD__', version)
+      .replaceAll('__TESSERACT_VERSION__', tesseractVersion),
   );
 }
 await fs.mkdir('dist/vendor/core', { recursive: true });
 await fs.mkdir('dist/vendor/lang', { recursive: true });
 for (const file of ['tesseract.min.js', 'worker.min.js'])
   await fs.copyFile('node_modules/tesseract.js/dist/' + file, 'dist/vendor/' + file);
+// ocr.js creates the worker with OEM 1 (LSTM only), so Tesseract only ever loads the *-lstm
+// cores (plain, SIMD or relaxed SIMD, depending on the browser). The legacy cores are skipped.
 for (const file of await fs.readdir('node_modules/tesseract.js-core'))
-  if (file.endsWith('.wasm.js'))
+  if (file.endsWith('-lstm.wasm.js'))
     await fs.copyFile('node_modules/tesseract.js-core/' + file, 'dist/vendor/core/' + file);
 await fs.copyFile(
   'node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz',
@@ -75,4 +81,13 @@ const files = (await list('dist')).filter(
 );
 for (const f of [...modules, 'style.css']) files.push('./' + f + '?v=' + version);
 await fs.writeFile('dist/offline-assets.json', JSON.stringify(files));
-console.log('Built PunktScan ' + version + ': ' + files.length + ' offline assets.');
+let offlineBytes = 0;
+for (const f of files) offlineBytes += (await fs.stat(path.join('dist', f.split('?')[0]))).size;
+const offlineMB = String(Math.ceil(offlineBytes / 1e6));
+for (const file of modules) {
+  const f = 'dist/' + file;
+  await fs.writeFile(f, (await fs.readFile(f, 'utf8')).replaceAll('__OFFLINE_MB__', offlineMB));
+}
+console.log(
+  `Built PunktScan ${version}: ${files.length} offline assets, ${offlineMB} MB, Tesseract.js ${tesseractVersion}.`,
+);

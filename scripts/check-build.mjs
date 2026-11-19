@@ -53,6 +53,12 @@ assert.ok(
 );
 await fs.access(path.join(root, '.nojekyll'));
 for (const file of ['index.html', 'sw.js', ...modules])
+  for (const token of ['__TESSERACT_VERSION__', '__OFFLINE_MB__'])
+    assert.ok(
+      !(await fs.readFile(path.join(root, file), 'utf8')).includes(token),
+      'Unreplaced ' + token + ' in ' + file,
+    );
+for (const file of ['index.html', 'sw.js', ...modules])
   assert.ok(
     !(await fs.readFile(path.join(root, file), 'utf8')).includes('__BUILD__'),
     'Unreplaced build version in ' + file,
@@ -73,3 +79,11 @@ for (const file of modules)
   assert.ok(shell.includes('./' + file + '?v=' + version), 'Module missing from SW shell: ' + file);
 for (const asset of moduleAssets)
   assert.match(asset, new RegExp('\\?v=' + version + '$'), 'Unversioned module import: ' + asset);
+// Only the LSTM cores are bundled, so the worker must stay on OEM 1 (LSTM only).
+assert.match(
+  await fs.readFile(path.join(root, 'ocr.js'), 'utf8'),
+  /createWorker\('eng', 1,/,
+  'ocr.js must use OEM 1: only *-lstm Tesseract cores are bundled',
+);
+for (const variant of ['', '-simd', '-relaxedsimd'])
+  assert.ok(cores.includes(`tesseract-core${variant}-lstm.wasm.js`), 'Missing core' + variant);
