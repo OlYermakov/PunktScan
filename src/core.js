@@ -238,15 +238,29 @@ export function chooseReading(candidates) {
   };
 }
 
-export function checkProject(p) {
+// Project file limits, shared by the UI and the importer.
+export const PROJECT_VERSION = 1;
+export const MAX_SOURCES = 20;
+export const MAX_ROWS = 10000;
+export const MAX_IMAGE_SIDE = 2400;
+// A 2400×2400 PNG is at most ~23 MB raw; base64 adds a third.
+const MAX_IMAGE_CHARS = 32 * 1024 * 1024;
+const MAX_FIELD_CHARS = 200;
+
+// Upgrades older project files step by step: migrations[n] turns version n into n + 1.
+const migrations = {};
+
+export function checkProject(input) {
+  let p = input;
+  while (p && p.format === 'PunktScan' && migrations[p.version]) p = migrations[p.version](p);
   if (
     !p ||
     p.format !== 'PunktScan' ||
-    p.version !== 1 ||
+    p.version !== PROJECT_VERSION ||
     !Array.isArray(p.rows) ||
     !Array.isArray(p.sources) ||
-    p.rows.length > 10000 ||
-    p.sources.length > 30
+    p.rows.length > MAX_ROWS ||
+    p.sources.length > MAX_SOURCES
   )
     throw new Error('project');
   const sourceIds = new Set(p.sources.map((s) => s.id));
@@ -257,13 +271,17 @@ export function checkProject(p) {
         typeof s.id !== 'string' ||
         typeof s.name !== 'string' ||
         typeof s.image !== 'string' ||
+        s.image.length > MAX_IMAGE_CHARS ||
+        s.name.length > 500 ||
         !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s.image) ||
         !Number.isInteger(s.width) ||
         !Number.isInteger(s.height) ||
         s.width < 1 ||
         s.height < 1 ||
-        s.width > 2400 ||
-        s.height > 2400,
+        s.width > MAX_IMAGE_SIDE ||
+        s.height > MAX_IMAGE_SIDE ||
+        (s.processed != null &&
+          (typeof s.processed !== 'string' || s.processed.length > MAX_IMAGE_CHARS)),
     )
   )
     throw new Error('project');
@@ -271,7 +289,9 @@ export function checkProject(p) {
     p.rows.some(
       (r) =>
         !r ||
-        !['name', 'e', 'n', 'h'].every((k) => typeof r[k] === 'string') ||
+        !['name', 'e', 'n', 'h'].every(
+          (k) => typeof r[k] === 'string' && r[k].length <= MAX_FIELD_CHARS,
+        ) ||
         (r.sourceId && !sourceIds.has(r.sourceId)),
     )
   )

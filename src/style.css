@@ -222,6 +222,23 @@ h2 {
   background: #36504c;
   border-color: #597b68;
 }
+.source-select {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.source-select:focus-visible {
+  outline: 2px solid #bcf34e;
+  outline-offset: 3px;
+}
+.source-info small {
+  display: block;
+}
 .source-card img {
   width: 38px;
   height: 46px;
@@ -1759,4 +1776,11 @@ td input.uncertain:not(.invalid) {
     display: block;
     margin-top: -10px;
   }
+}
+.update-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }

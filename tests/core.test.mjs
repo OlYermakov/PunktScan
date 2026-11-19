@@ -11,6 +11,8 @@ import {
   checkProject,
   safeFilename,
   chooseReading,
+  PROJECT_VERSION,
+  MAX_SOURCES,
 } from '../src/core.js';
 const row = (name = 'Af201', e = '3500030.210', n = '5600557.311', h = '') => ({
   id: name,
@@ -202,4 +204,15 @@ test('integer and short-precision coordinates are padded exactly, never rounded'
   assert.equal(coordinate('3500030,2').mm, 3500030200n);
   assert.equal(coordinate('3500030.210').short, false);
   assert.equal(coordinate('−5.5').mm, -5500n);
+});
+test('project import enforces the same limits as the app', () => {
+  const image = 'data:image/png;base64,AAAA';
+  const src = (id) => ({ id, name: id, image, width: 10, height: 10 });
+  const p = { format: 'PunktScan', version: PROJECT_VERSION, rows: [], sources: [] };
+  const many = Array.from({ length: MAX_SOURCES }, (_, i) => src('s' + i));
+  assert.equal(checkProject({ ...p, sources: many }).sources.length, MAX_SOURCES);
+  assert.throws(() => checkProject({ ...p, sources: [...many, src('extra')] }));
+  assert.throws(() => checkProject({ ...p, rows: [{ ...row(), e: '1'.repeat(201) }] }));
+  assert.throws(() => checkProject({ ...p, sources: [{ ...src('a'), processed: 42 }] }));
+  assert.throws(() => checkProject({ ...p, sources: [{ ...src('a'), width: 2401 }] }));
 });

@@ -1,0 +1,306 @@
+import {
+  coordinate,
+  parseOCR,
+  detectOrder,
+  isTableHeader,
+  chooseReading,
+} from './core.js?v=__BUILD__';
+import { validQuad, rectify, gridCells, thresholdCell } from './imaging.js?v=__BUILD__';
+import { uid, state, source } from './state.js?v=__BUILD__';
+import { $, toast, notice, canvas, pixelsFor, canvasFrom } from './dom.js?v=__BUILD__';
+import { save } from './storage.js?v=__BUILD__';
+import { snapshot, render, renderSources, renderPhoto, setBusy } from './render.js?v=__BUILD__';
+
+let ocrController = null,
+  worker = null,
+  cancelled = false;
+export function progress(text, value) {
+  $('progressText').textContent = text;
+  $('ocrProgress').value = Math.max(0, Math.min(1, value));
+}
+export async function getWorker(signal) {
+  if (worker) return worker;
+  if (!window.Tesseract)
+    throw new Error('Модуль розпізнавання не завантажився. Онови сторінку з інтернетом.');
+  progress('Завантаження модуля…', 0.02);
+  const w = await Tesseract.createWorker('eng', 1, {
+    workerPath: new URL('./vendor/worker.min.js', location.href).href,
+    corePath: new URL('./vendor/core/', location.href).href,
+    langPath: new URL('./vendor/lang', location.href).href,
+    cacheMethod: 'none',
+    logger: (m) => {
+      if (!signal.aborted && /loading|initializing/.test(m.status))
+        progress('Підготовка локального модуля…', 0.02 + 0.08 * (m.progress || 0));
+    },
+  });
+  if (signal.aborted) {
+    await w.terminate();
+    throw new Error('cancel');
+  }
+  worker = w;
+  return w;
+}
+export async function recognizeOne(s, signal) {
+  if (signal.aborted) throw new Error('cancel');
+  if (!validQuad(s.quad)) throw new Error('Кути рамки перетинаються. Виправ межі таблиці.');
+  const w = await getWorker(signal);
+  progress('Вирівнювання таблиці…', 0.1);
+  await new Promise((r) => setTimeout(r, 10));
+  const input = await pixelsFor(s),
+    plain = rectify(input.data, s.width, s.height, s.quad, false),
+    grid = gridCells(plain.data, plain.width, plain.height);
+  const prepared = s.enhance ? rectify(input.data, s.width, s.height, s.quad, true) : plain;
+  const c = canvasFrom(prepared),
+    plainCanvas = canvasFrom(plain);
+  const rows = [],
+    raw = [],
+    skipped = [];
+  let order = s.order === 'ne' ? 'ne' : 'en',
+    autoOrder = null;
+  if (grid) {
+    await w.setParameters({ tessedit_pageseg_mode: '7', preserve_interword_spaces: '1' });
+    for (let i = 0; i < grid.rows.length; i++) {
+      const band = grid.rows[i],
+        texts = [],
+        conf = [],
+        disputed = [];
+      for (let j = 0; j < band.length; j++) {
+        if (signal.aborted) throw new Error('cancel');
+        progress(
+          `Клітинка ${i * band.length + j + 1} / ${grid.rows.length * band.length}`,
+          0.15 + 0.8 * ((i * band.length + j) / (grid.rows.length * band.length)),
+        );
+        // Header cells are read with letters; data cells are read with a restricted numeric alphabet.
+        const header = j > 0 && isTableHeader([texts[0]]);
+        await w.setParameters({
+          tessedit_char_whitelist:
+            j && !header
+              ? '0123456789.,-+'
+              : 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-. ',
+        });
+        const rect = band[j],
+          cell = canvas(rect.width + 24, rect.height + 24),
+          ctx = cell.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, cell.width, cell.height);
+        ctx.drawImage(
+          c,
+          rect.left,
+          rect.top,
+          rect.width,
+          rect.height,
+          12,
+          12,
+          rect.width,
+          rect.height,
+        );
+        const { data } = await w.recognize(cell.toDataURL('image/png'), {}, { text: true });
+        let reading = {
+          text: data.text.trim().replace(/\s+/g, ' '),
+          confidence: data.confidence,
+          disputed: false,
+        };
+        if (
+          j &&
+          !header &&
+          s.enhance &&
+          texts[0] &&
+          !/koordinat/i.test(texts[0]) &&
+          (reading.confidence < 80 ||
+            !coordinate(reading.text).ok ||
+            coordinate(reading.text).short)
+        ) {
+          const candidates = [reading],
+            rawCell = canvas(rect.width, rect.height),
+            rc = rawCell.getContext('2d', { willReadFrequently: true });
+          rc.drawImage(
+            plainCanvas,
+            rect.left,
+            rect.top,
+            rect.width,
+            rect.height,
+            0,
+            0,
+            rect.width,
+            rect.height,
+          );
+          const pixels = rc.getImageData(0, 0, rect.width, rect.height);
+          for (const threshold of [140, 160]) {
+            if (signal.aborted) throw new Error('cancel');
+            const cleaned = canvasFrom(
+                thresholdCell(pixels.data, rect.width, rect.height, threshold),
+              ),
+              padded = canvas(cleaned.width + 24, cleaned.height + 24),
+              ctx = padded.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, padded.width, padded.height);
+            ctx.drawImage(cleaned, 12, 12);
+            const { data: alt } = await w.recognize(
+              padded.toDataURL('image/png'),
+              {},
+              { text: true },
+            );
+            candidates.push({ text: alt.text, confidence: alt.confidence });
+          }
+          if (
+            !candidates.some(
+              (v) => v.confidence >= 80 && coordinate(v.text).ok && !coordinate(v.text).short,
+            )
+          ) {
+            const wide = canvas(Math.round(rect.width * 1.5) + 24, rect.height + 24),
+              ctx = wide.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, wide.width, wide.height);
+            ctx.drawImage(
+              c,
+              rect.left,
+              rect.top,
+              rect.width,
+              rect.height,
+              12,
+              12,
+              wide.width - 24,
+              rect.height,
+            );
+            if (signal.aborted) throw new Error('cancel');
+            const { data: alt } = await w.recognize(
+              wide.toDataURL('image/png'),
+              {},
+              { text: true },
+            );
+            candidates.push({ text: alt.text, confidence: alt.confidence });
+          }
+          reading = chooseReading(candidates);
+        }
+        texts.push(reading.text);
+        conf.push(reading.confidence);
+        disputed.push(reading.disputed);
+      }
+      const line = texts.join(' ; ');
+      raw.push(line);
+      if (isTableHeader(texts)) {
+        autoOrder = detectOrder(texts.join(' ')) || autoOrder;
+        continue;
+      }
+      if (!texts.some(Boolean)) {
+        skipped.push(line);
+        continue;
+      }
+      // Never drop a partially recognized data row: missing cells are shown as errors.
+      rows.push({
+        name: texts[0].replace(/\s/g, ''),
+        e: texts[1] || '',
+        n: texts[2] || '',
+        h: texts[3] || '',
+        confidence: Math.min(...conf),
+        cellConfidence: conf,
+        disputed,
+        bbox: { x0: 0, y0: band[0].top, x1: prepared.width, y1: band[0].top + band[0].height },
+        raw: line,
+      });
+    }
+    if (s.order === 'auto' && autoOrder) order = autoOrder;
+    if (order === 'ne')
+      for (const row of rows) {
+        [row.e, row.n] = [row.n, row.e];
+        [row.cellConfidence[1], row.cellConfidence[2]] = [
+          row.cellConfidence[2],
+          row.cellConfidence[1],
+        ];
+        [row.disputed[1], row.disputed[2]] = [row.disputed[2], row.disputed[1]];
+      }
+  } else {
+    progress('Читання таблиці…', 0.25);
+    await w.setParameters({
+      tessedit_pageseg_mode: '6',
+      preserve_interword_spaces: '1',
+      tessedit_char_whitelist: '',
+    });
+    const { data } = await w.recognize(c.toDataURL('image/png'), {}, { text: true, blocks: true });
+    if (s.order === 'auto') autoOrder = detectOrder(data.text);
+    order = s.order === 'auto' ? autoOrder || 'en' : s.order;
+    const parsed = parseOCR(data, order);
+    rows.push(...parsed.rows);
+    raw.push(data.text);
+    skipped.push(...parsed.skipped.map((s) => s.text));
+  }
+  if (signal.aborted) throw new Error('cancel');
+  // Commit a source atomically only when recognition finished, so cancellation never erases previous points.
+  snapshot();
+  state.project.rows = state.project.rows.filter((r) => r.sourceId !== s.id);
+  for (const row of rows)
+    state.project.rows.push({ ...row, id: uid(), sourceId: s.id, verified: false });
+  Object.assign(s, {
+    recognized: true,
+    processed: c.toDataURL('image/png'),
+    pw: prepared.width,
+    ph: prepared.height,
+    resultQuad: s.quad.map((p) => ({ ...p })),
+    raw: raw.join('\n'),
+    skipped: skipped.join('\n'),
+    usedOrder: order,
+    autoOrder,
+  });
+  state.selected = s.id;
+  state.view = 'processed';
+  state.zoom = 1;
+  const message = rows.length
+    ? `Розпізнано ${rows.length} точок. Звір їх із фото, включно з назвами та десятковими крапками.`
+    : 'Точки не знайдено. Виправ рамку, вимкни очищення або встав таблицю текстом.';
+  notice(
+    message +
+      (!autoOrder && s.order === 'auto'
+        ? ' Порядок E, N використано за замовчуванням: перевір заголовки.'
+        : '') +
+      (skipped.length ? ' Є пропущені рядки — відкрий «Результат розпізнавання».' : ''),
+  );
+  render();
+  save();
+}
+export async function recognize(all = false) {
+  if (state.busy || !source()) return;
+  const list = all ? state.project.sources.filter((s) => !s.recognized) : [source()];
+  if (
+    list.some((s) => state.project.rows.some((r) => r.sourceId === s.id)) &&
+    !confirm(
+      'Повторне розпізнавання замінить точки з цього фото, включно з ручними виправленнями. Продовжити?',
+    )
+  )
+    return;
+  setBusy(true);
+  $('cancelOcrBtn').hidden = false;
+  cancelled = false;
+  notice();
+  const controller = new AbortController();
+  ocrController = controller;
+  const interrupted = new Promise((_, reject) =>
+    controller.signal.addEventListener('abort', () => reject(new Error('cancel')), { once: true }),
+  );
+  try {
+    for (const s of list) {
+      if (controller.signal.aborted) break;
+      state.selected = s.id;
+      renderSources();
+      renderPhoto();
+      await Promise.race([recognizeOne(s, controller.signal), interrupted]);
+    }
+    if (!controller.signal.aborted) progress('Готово', 1);
+  } catch (e) {
+    if (cancelled || e.message === 'cancel')
+      toast('Розпізнавання зупинено. Завершені фото збережено.');
+    else notice('Не вдалося розпізнати фото. ' + e.message);
+  } finally {
+    setBusy(false);
+    render();
+    save();
+  }
+}
+export async function cancelOcr() {
+  cancelled = true;
+  ocrController?.abort();
+  if (worker) {
+    const w = worker;
+    worker = null;
+    await w.terminate();
+  }
+}

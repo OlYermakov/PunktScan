@@ -127,3 +127,68 @@ test(
     await context.close();
   },
 );
+
+test('photo cards are keyboard buttons and the remove button is separate', async () => {
+  const { context, page, problems } = await openApp();
+  await page.locator('#demoBtn').click();
+  await page.locator('#sourceCount', { hasText: '2' }).waitFor();
+  const cards = page.locator('button.source-select');
+  assert.equal(await cards.count(), 2);
+  assert.equal(await page.locator('[role="button"][data-source]').count(), 0);
+  await cards.first().focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await cards.first().getAttribute('aria-current'), 'true');
+  assert.equal(await cards.nth(1).getAttribute('aria-current'), 'false');
+  await page.locator('.source-remove').first().click();
+  await page.locator('#sourceCount', { hasText: '1' }).waitFor();
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('draft survives a reload; an opened project file must be reviewed again', async () => {
+  const { context, page, problems } = await openApp();
+  await page.locator('#pasteBtn').click();
+  await page.locator('#pasteText').fill('P1;10.000;20.000;\nP2;11.000;21.000;5.5');
+  await page.locator('#pasteApply').click();
+  await verifyAll(page, 2);
+  await page.locator('#saveState', { hasText: 'Чернетку збережено' }).waitFor();
+  await page.reload();
+  await page.locator('#pointCount', { hasText: '2' }).waitFor();
+  assert.equal(await page.locator('#exportBtn').isDisabled(), false, 'review state restored');
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#saveProjectBtn').click(),
+  ]);
+  page.once('dialog', (d) => d.accept());
+  await page.locator('#projectInput').setInputFiles(await download.path());
+  await page.locator('#notice', { hasText: 'Проєкт відкрито' }).waitFor();
+  assert.equal(await page.locator('#pointCount').textContent(), '2');
+  assert.equal(await page.locator('#exportBtn').isDisabled(), true, 'imported points need review');
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('a new deployment shows the update banner instead of switching silently', async () => {
+  const { context, page, problems } = await openApp();
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller)
+      await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r));
+  });
+  // The first install claims the page: that must not count as an update.
+  await page.reload();
+  assert.equal(await page.locator('#updateBar').isHidden(), true);
+  const sw = await fs.readFile('dist/sw.js', 'utf8');
+  try {
+    await fs.writeFile('dist/sw.js', sw.replace(/punktscan-shell-\w+/, 'punktscan-shell-next'));
+    await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+    await page.locator('#updateBar').waitFor();
+    await Promise.all([page.waitForEvent('load'), page.locator('#updateBtn').click()]);
+    assert.equal(await page.locator('#updateBar').isHidden(), true);
+  } finally {
+    await fs.writeFile('dist/sw.js', sw);
+  }
+  assert.deepEqual(problems, []);
+  await context.close();
+});

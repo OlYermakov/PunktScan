@@ -1,11 +1,11 @@
 const SHELL = 'punktscan-shell-__BUILD__';
+// The build replaces this list with every JavaScript module in the app.
+const MODULES = /* __MODULES__ */ ['app.js'];
 const ASSETS = [
   './',
   './index.html',
   './style.css?v=__BUILD__',
-  './app.js?v=__BUILD__',
-  './core.js?v=__BUILD__',
-  './imaging.js?v=__BUILD__',
+  ...MODULES.map((m) => './' + m + '?v=__BUILD__'),
   './manifest.webmanifest',
   './icon.svg',
   './icon-180.png',

@@ -25,9 +25,15 @@ const version = hash.digest('hex').slice(0, 10);
 await fs.rm('dist', { recursive: true, force: true });
 await fs.mkdir('dist', { recursive: true });
 await fs.cp('src', 'dist', { recursive: true });
-for (const file of ['index.html', 'app.js', 'sw.js']) {
+const modules = (await fs.readdir('src')).filter((f) => f.endsWith('.js') && f !== 'sw.js').sort();
+for (const file of (await fs.readdir('dist')).filter((f) => /\.(js|html)$/.test(f))) {
   const f = 'dist/' + file;
-  await fs.writeFile(f, (await fs.readFile(f, 'utf8')).replaceAll('__BUILD__', version));
+  await fs.writeFile(
+    f,
+    (await fs.readFile(f, 'utf8'))
+      .replace(/\/\* __MODULES__ \*\/ \[[^\]]*\]/, JSON.stringify(modules))
+      .replaceAll('__BUILD__', version),
+  );
 }
 await fs.mkdir('dist/vendor/core', { recursive: true });
 await fs.mkdir('dist/vendor/lang', { recursive: true });
@@ -67,7 +73,6 @@ async function list(dir) {
 const files = (await list('dist')).filter(
   (p) => !p.endsWith('sw.js') && !p.endsWith('offline-assets.json') && !p.endsWith('.nojekyll'),
 );
-for (const f of ['app.js', 'core.js', 'imaging.js', 'style.css'])
-  files.push('./' + f + '?v=' + version);
+for (const f of [...modules, 'style.css']) files.push('./' + f + '?v=' + version);
 await fs.writeFile('dist/offline-assets.json', JSON.stringify(files));
 console.log('Built PunktScan ' + version + ': ' + files.length + ' offline assets.');

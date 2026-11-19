@@ -14,7 +14,8 @@ vm.runInContext(sw, context);
 const shell = vm.runInContext('ASSETS', context);
 const htmlAssets = Array.from(index.matchAll(/(?:src|href)="(\.\/[^"#]+)"/g), (m) => m[1]);
 const moduleAssets = [];
-for (const file of ['app.js', 'core.js', 'imaging.js']) {
+const modules = (await fs.readdir(root)).filter((f) => f.endsWith('.js') && f !== 'sw.js');
+for (const file of modules) {
   const text = await fs.readFile(path.join(root, file), 'utf8');
   moduleAssets.push(...Array.from(text.matchAll(/from\s+['"](\.\/[^'"]+)['"]/g), (m) => m[1]));
 }
@@ -51,7 +52,7 @@ assert.ok(
   'OCR WebAssembly runtime missing',
 );
 await fs.access(path.join(root, '.nojekyll'));
-for (const file of ['index.html', 'app.js', 'sw.js'])
+for (const file of ['index.html', 'sw.js', ...modules])
   assert.ok(
     !(await fs.readFile(path.join(root, file), 'utf8')).includes('__BUILD__'),
     'Unreplaced build version in ' + file,
@@ -66,3 +67,9 @@ console.log(
     assets.size +
     ' asset URLs at / and /PunktScan/, including PWA scope and OCR files.',
 );
+// Every module must be in the offline shell, and all imports must use the same versioned URL;
+// otherwise the browser would load a module twice and the copies would not share state.
+for (const file of modules)
+  assert.ok(shell.includes('./' + file + '?v=' + version), 'Module missing from SW shell: ' + file);
+for (const asset of moduleAssets)
+  assert.match(asset, new RegExp('\\?v=' + version + '$'), 'Unversioned module import: ' + asset);
