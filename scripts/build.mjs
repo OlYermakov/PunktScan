@@ -17,7 +17,7 @@ await fs.mkdir('dist/vendor/core',{recursive:true});await fs.mkdir('dist/vendor/
 for(const file of ['tesseract.min.js','worker.min.js'])await fs.copyFile('node_modules/tesseract.js/dist/'+file,'dist/vendor/'+file);
 for(const file of await fs.readdir('node_modules/tesseract.js-core'))if(file.endsWith('.wasm.js'))await fs.copyFile('node_modules/tesseract.js-core/'+file,'dist/vendor/core/'+file);
 await fs.copyFile('node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz','dist/vendor/lang/eng.traineddata.gz');
-const notices=[];
+const notices=['PunktScan\n'+await fs.readFile('LICENSE','utf8')];
 for(const pkg of ['tesseract.js','tesseract.js-core','@tesseract.js-data/eng']){
  const root='node_modules/'+pkg,files=await fs.readdir(root);const license=files.find(f=>/^LICENSE/i.test(f));
  notices.push(pkg+'\n'+(license?await fs.readFile(root+'/'+license,'utf8'):'English trained data for Tesseract. Apache License 2.0. https://github.com/naptha/tessdata'));
