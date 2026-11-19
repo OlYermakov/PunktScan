@@ -2,6 +2,8 @@ name: Publish GitHub Pages
 
 # Enable Settings > Pages > Source: GitHub Actions before running this workflow.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +15,9 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      pages: read
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
