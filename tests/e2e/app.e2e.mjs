@@ -460,3 +460,56 @@ test('on a phone paste and open project are offered once, in the ⋯ menu', asyn
   assert.equal(await desktop.page.locator('#openProjectBtn').isVisible(), true);
   await desktop.context.close();
 });
+
+test('a finger near a frame corner drags it by its movement and shows a magnifier', async () => {
+  const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+  await addTestPhotos(page);
+  await page.locator('#frameOverlay ellipse[data-corner="0"]').waitFor();
+  const corner = () =>
+    page
+      .locator('#frameOverlay ellipse[data-corner="0"]')
+      .evaluate((el) => [Number(el.getAttribute('cx')), Number(el.getAttribute('cy'))]);
+  const touch = (type, x, y) =>
+    page.locator('#frameOverlay').evaluate(
+      (el, [type, x, y]) =>
+        el.dispatchEvent(
+          new PointerEvent(type, {
+            clientX: x,
+            clientY: y,
+            pointerId: 7,
+            pointerType: 'touch',
+            isPrimary: true,
+            bubbles: true,
+            cancelable: true,
+          }),
+        ),
+      [type, x, y],
+    );
+  const box = await page.locator('#frameOverlay').boundingBox();
+  const [cx, cy] = await corner();
+  const x = box.x + (cx / 1000) * box.width,
+    y = box.y + (cy / 1000) * box.height;
+  // The handle is drawn at a finger-friendly size.
+  const handle = await page.locator('#frameOverlay ellipse[data-corner="0"]').boundingBox();
+  assert.ok(handle.width >= 20, `handle is ${handle.width}px`);
+
+  // Start 25 px away from the corner: still grabs it, and it does not jump under the finger.
+  await touch('pointerdown', x + 18, y + 18);
+  assert.deepEqual(await corner(), [cx, cy]);
+  assert.equal(await page.locator('#loupe').isVisible(), true, 'magnifier shown');
+  await touch('pointermove', x + 18 + 30, y + 18 + 20);
+  const [mx, my] = await corner();
+  assert.ok(Math.abs(mx - cx - (30 / box.width) * 1000) < 1, `moved x to ${mx}`);
+  assert.ok(Math.abs(my - cy - (20 / box.height) * 1000) < 1, `moved y to ${my}`);
+  await touch('pointerup', x + 48, y + 38);
+  assert.equal(await page.locator('#loupe').isVisible(), false, 'magnifier hidden');
+
+  // A touch in the middle of the photo, far from every corner, changes nothing.
+  await touch('pointerdown', box.x + box.width / 2, box.y + box.height / 2);
+  await touch('pointermove', box.x + box.width / 2 + 40, box.y + box.height / 2 + 40);
+  await touch('pointerup', box.x + box.width / 2 + 40, box.y + box.height / 2 + 40);
+  assert.deepEqual(await corner(), [mx, my]);
+  assert.equal(await page.locator('#loupe').isVisible(), false);
+  assert.deepEqual(problems, []);
+  await context.close();
+});

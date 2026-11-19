@@ -2209,3 +2209,20 @@ td[data-label]::before {
     display: none;
   }
 }
+
+/* Frame corners: a larger active handle and a magnifier above the finger while dragging. */
+.frame-handle.active {
+  fill: #fff;
+  stroke: #7fbf1f;
+  stroke-width: 3;
+}
+.loupe {
+  position: fixed;
+  z-index: 60;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 22px #13291a55;
+  pointer-events: none;
+}

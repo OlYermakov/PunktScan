@@ -4,6 +4,7 @@ import { state, errors, source } from './state.js?v=__BUILD__';
 import { $, esc, toast } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
 import { renderFlow } from './flow.js?v=__BUILD__';
+import { activeCorner } from './frame.js?v=__BUILD__';
 import { t, tp } from './i18n.js?v=__BUILD__';
 
 export function snapshot() {
@@ -51,8 +52,15 @@ export function renderPhoto() {
   $('frameOverlay').hidden = state.view !== 'frame';
   if (state.view === 'frame') {
     const q = s.quad || fullQuad();
+    // Handles keep a finger-friendly size on screen whatever the photo's aspect ratio or zoom.
+    const box = $('frameOverlay').getBoundingClientRect(),
+      radius = matchMedia('(pointer: coarse)').matches ? 12 : 8,
+      handle = {
+        rx: (radius * 1000) / (box.width || 300),
+        ry: (radius * 1000) / (box.height || 300),
+      };
     $('frameOverlay').innerHTML =
-      `<polygon points="${q.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')}" fill="#c8ef6915" stroke="#bcf34e" stroke-width="3" vector-effect="non-scaling-stroke"/>${q.map((p, i) => `<ellipse class="frame-handle" data-corner="${i}" cx="${p.x * 1000}" cy="${p.y * 1000}" rx="14" ry="${14 * (s.width / s.height)}" role="slider" tabindex="0" aria-label="${t('photo.corner', { n: i + 1 })}"/>`).join('')}`;
+      `<polygon points="${q.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')}" fill="#c8ef6915" stroke="#bcf34e" stroke-width="3" vector-effect="non-scaling-stroke"/>${q.map((p, i) => `<ellipse data-corner="${i}" cx="${p.x * 1000}" cy="${p.y * 1000}" class="frame-handle${i === activeCorner() ? ' active' : ''}" rx="${handle.rx}" ry="${handle.ry}" role="slider" tabindex="0" aria-label="${t('photo.corner', { n: i + 1 })}"/>`).join('')}`;
   }
   for (const b of $('viewTabs').children) {
     b.classList.toggle('active', b.dataset.view === state.view);

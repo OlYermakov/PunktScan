@@ -23,6 +23,7 @@ import { save, restore, flushSave } from './storage.js?v=__BUILD__';
 import { snapshot, undo, render, renderPhoto, renderRows, setBusy } from './render.js?v=__BUILD__';
 import { addPhotos } from './photos.js?v=__BUILD__';
 import { nextReviewRow } from './flow.js?v=__BUILD__';
+import { initFrameDrag } from './frame.js?v=__BUILD__';
 import { recognize, cancelOcr } from './ocr.js?v=__BUILD__';
 import {
   showDialog,
@@ -108,32 +109,7 @@ $('zoomOutBtn').onclick = () => {
   state.zoom = Math.max(0.5, state.zoom - 0.5);
   renderPhoto();
 };
-let dragCorner = null;
-$('frameOverlay').addEventListener('pointerdown', (e) => {
-  if (state.busy) return;
-  const c = e.target.closest('[data-corner]');
-  if (!c) return;
-  snapshot();
-  dragCorner = Number(c.dataset.corner);
-  $('frameOverlay').setPointerCapture(e.pointerId);
-  e.preventDefault();
-});
-$('frameOverlay').addEventListener('pointermove', (e) => {
-  if (dragCorner === null || !source()) return;
-  const b = $('frameOverlay').getBoundingClientRect();
-  source().quad[dragCorner] = {
-    x: Math.max(0, Math.min(1, (e.clientX - b.left) / b.width)),
-    y: Math.max(0, Math.min(1, (e.clientY - b.top) / b.height)),
-  };
-  renderPhoto();
-});
-for (const ev of ['pointerup', 'pointercancel'])
-  $('frameOverlay').addEventListener(ev, () => {
-    if (dragCorner !== null) {
-      dragCorner = null;
-      save();
-    }
-  });
+initFrameDrag();
 $('frameOverlay').addEventListener('keydown', (e) => {
   const c = e.target.closest('[data-corner]');
   if (!c || state.busy || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key))
