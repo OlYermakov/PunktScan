@@ -7,6 +7,9 @@ import {
   findTable,
   originalRegion,
   cellRegion,
+  clearBorders,
+  removeLines,
+  hasBox,
 } from '../src/imaging.js';
 test('crossed or degenerate crop frames are rejected', () => {
   assert.ok(validQuad(fullQuad()));
@@ -62,4 +65,45 @@ test('a cell crop stays inside its row crop and is narrower', () => {
   assert.ok(cell.x >= row.x && cell.x + cell.w <= row.x + row.w);
   assert.ok(cell.y >= row.y && cell.y + cell.h <= row.y + row.h);
   assert.ok(Math.abs(cell.x - 92) < 2, 'cell maps to x≈100 minus margin, got ' + cell.x);
+});
+test('box lines around a value are cleared, the digits inside are kept', () => {
+  const w = 60,
+    h = 20,
+    p = new Uint8ClampedArray(w * h * 4).fill(255);
+  const ink = (x, y) => p.fill(0, (y * w + x) * 4, (y * w + x) * 4 + 3);
+  for (let x = 0; x < w; x++) (ink(x, 1), ink(x, h - 2)); // box top and bottom
+  for (let y = 0; y < h; y++) (ink(2, y), ink(w - 3, y)); // box left and right
+  for (let y = 6; y < 14; y++) ink(30, y); // a digit stroke in the middle
+  clearBorders(p, w, h, { boxed: { margin: 10 } });
+  const at = (x, y) => p[(y * w + x) * 4];
+  assert.equal(at(10, 1), 255);
+  assert.equal(at(2, 10), 255);
+  assert.equal(at(w - 3, 10), 255);
+  assert.equal(at(30, 10), 0, 'digit kept');
+});
+test('lines and value boxes are erased for the word pass, glyphs stay', () => {
+  const w = 200,
+    h = 100,
+    p = new Uint8ClampedArray(w * h * 4).fill(255);
+  const ink = (x, y) => p.fill(0, (y * w + x) * 4, (y * w + x) * 4 + 3);
+  for (let x = 0; x < w; x++) ink(x, 50); // table line
+  for (let x = 20; x < 120; x++) (ink(x, 10), ink(x, 40)); // a value box
+  for (let y = 10; y <= 40; y++) (ink(20, y), ink(119, y));
+  for (let y = 20; y < 30; y++) ink(60, y); // a digit inside the box
+  removeLines(p, w, h);
+  const at = (x, y) => p[(y * w + x) * 4];
+  assert.equal(at(100, 50), 255, 'table line erased');
+  assert.equal(at(20, 25), 255, 'box erased');
+  assert.equal(at(60, 25), 0, 'digit kept');
+});
+test('values drawn inside their own box are told apart from plain values', () => {
+  const w = 300,
+    h = 80,
+    p = new Uint8ClampedArray(w * h * 4).fill(255);
+  const ink = (x, y) => p.fill(0, (y * w + x) * 4, (y * w + x) * 4 + 3);
+  for (let y = 20; y < 60; y++) for (let x = 60; x < 140; x += 8) ink(x, y); // "digits"
+  const word = { x0: 58, y0: 25, x1: 142, y1: 55 };
+  assert.equal(hasBox(p, w, h, word, 12), false);
+  for (let y = 15; y < 65; y++) (ink(50, y), ink(150, y));
+  assert.equal(hasBox(p, w, h, word, 12), true);
 });

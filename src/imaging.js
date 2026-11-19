@@ -230,31 +230,79 @@ export function cellRegion(quad, cell, pw, ph, sw, sh) {
 }
 
 export function removeGrid(p, w, h) {
+  const dark = (x, y) => p[(y * w + x) * 4] < 100;
+  const paint = (x, y) => {
+    const i = (y * w + x) * 4;
+    p[i] = p[i + 1] = p[i + 2] = 255;
+  };
   const rows = [],
     cols = [];
   for (let y = 0; y < h; y++) {
     let n = 0;
-    for (let x = 0; x < w; x++) if (p[(y * w + x) * 4] < 100) n++;
+    for (let x = 0; x < w; x++) if (dark(x, y)) n++;
     if (n > w * 0.55) rows.push(y);
   }
   for (let x = 0; x < w; x++) {
     let n = 0;
-    for (let y = 0; y < h; y++) if (p[(y * w + x) * 4] < 100) n++;
+    for (let y = 0; y < h; y++) if (dark(x, y)) n++;
     if (n > h * 0.55) cols.push(x);
   }
+  // Only the long dark runs along a line are erased: digits crossing it are kept (a slightly
+  // tilted line is not a whole row or column of the image).
   const radius = 3;
-  for (const row of rows)
-    for (let y = Math.max(0, row - radius); y <= Math.min(h - 1, row + radius); y++)
-      for (let x = 0; x < w; x++) {
-        const i = (y * w + x) * 4;
-        p[i] = p[i + 1] = p[i + 2] = 255;
-      }
-  for (const col of cols)
-    for (let x = Math.max(0, col - radius); x <= Math.min(w - 1, col + radius); x++)
-      for (let y = 0; y < h; y++) {
-        const i = (y * w + x) * 4;
-        p[i] = p[i + 1] = p[i + 2] = 255;
-      }
+  const near = (list, size) => {
+    const set = new Set();
+    for (const v of list)
+      for (let d = -radius; d <= radius; d++) if (v + d >= 0 && v + d < size) set.add(v + d);
+    return set;
+  };
+  for (const y of near(rows, h))
+    for (let x = 0; x < w;) {
+      let end = x;
+      while (end < w && dark(end, y)) end++;
+      if (end - x >= w * 0.1) for (let k = x; k < end; k++) paint(k, y);
+      x = end + 1;
+    }
+  for (const x of near(cols, w))
+    for (let y = 0; y < h;) {
+      let end = y;
+      while (end < h && dark(x, end)) end++;
+      if (end - y >= h * 0.1) for (let k = y; k < end; k++) paint(x, k);
+      y = end + 1;
+    }
+}
+
+// Black-and-white version of a crop with Otsu's threshold: dim decimal points on grey paper become
+// as black as the digits (RGBA in, RGBA out).
+export function otsu(p, w, h) {
+  const hist = new Array(256).fill(0);
+  for (let i = 0; i < w * h; i++) hist[p[i * 4]]++;
+  const total = w * h;
+  let sum = 0;
+  for (let v = 0; v < 256; v++) sum += v * hist[v];
+  let back = 0,
+    backSum = 0,
+    best = 0,
+    threshold = 128;
+  for (let v = 0; v < 256; v++) {
+    back += hist[v];
+    if (!back || back === total) continue;
+    backSum += v * hist[v];
+    const mb = backSum / back,
+      mf = (sum - backSum) / (total - back),
+      between = back * (total - back) * (mb - mf) ** 2;
+    if (between > best) {
+      best = between;
+      threshold = v;
+    }
+  }
+  const out = new Uint8ClampedArray(p.length);
+  for (let i = 0; i < w * h; i++) {
+    const v = p[i * 4] > threshold ? 255 : 0;
+    out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = v;
+    out[i * 4 + 3] = 255;
+  }
+  return { data: out, width: w, height: h };
 }
 
 export function gridCells(p, w, h) {
@@ -318,4 +366,144 @@ export function thresholdCell(p, w, h, threshold = 140) {
       out[i + 3] = 255;
     }
   return { data: out, width: w, height: h };
+}
+
+// Clears box and grid lines along the edges of a cell crop (RGBA, in place): a row or column in
+// the outer quarter that is dark across most of the crop is a line, not part of a digit.
+// `boxed`: { margin } — the crop has `margin` px around the text; box sides lie only there.
+export function clearBorders(p, w, h, { boxed = null, limit = 0.25, coverage = 0.6 } = {}) {
+  // Thin anti-aliased lines are light grey, and photographed paper is grey too: "dark" means
+  // clearly darker than this crop's own background (its 90th-percentile brightness).
+  const levels = new Uint32Array(256);
+  for (let i = 0; i < w * h; i++) levels[p[i * 4]]++;
+  let background = 255;
+  for (let v = 255, seen = 0; v >= 0; v--) {
+    seen += levels[v];
+    if (seen >= w * h * 0.1) {
+      background = v;
+      break;
+    }
+  }
+  // Grid cells keep the strict fixed level that suits them; boxed values use the relative one.
+  const limitValue = boxed ? background * 0.85 : 128;
+  const dark = (x, y) => p[(y * w + x) * 4] < limitValue;
+  const paint = (x, y) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const i = (y * w + x) * 4;
+    p[i] = p[i + 1] = p[i + 2] = 255;
+  };
+  const lineRows = [],
+    lineCols = [];
+  const rowBand = boxed ? Math.min(h / 2, boxed.margin) : h * limit,
+    colBand = boxed ? Math.min(w / 2, boxed.margin) : w * limit;
+  for (const y of new Set([...Array(Math.ceil(rowBand)).keys()].flatMap((k) => [k, h - 1 - k]))) {
+    let n = 0;
+    for (let x = 0; x < w; x++) if (dark(x, y)) n++;
+    if (n > w * coverage) lineRows.push(y);
+  }
+  for (const x of new Set([...Array(Math.ceil(colBand)).keys()].flatMap((k) => [k, w - 1 - k]))) {
+    let n = 0;
+    for (let y = 0; y < h; y++) if (dark(x, y)) n++;
+    // Box sides span most of the crop height; a digit's stem ("1") spans clearly less.
+    if (n > h * (boxed ? Math.max(coverage, 0.75) : coverage)) lineCols.push(x);
+  }
+  // Clear each line together with its soft edge.
+  const halo = boxed ? 2 : 0;
+  for (const y of lineRows)
+    for (let d = -halo; d <= halo; d++) for (let x = 0; x < w; x++) paint(x, y + d);
+  for (const x of lineCols)
+    for (let d = -halo; d <= halo; d++) for (let y = 0; y < h; y++) paint(x + d, y);
+}
+
+// Erases table lines and value boxes for the whole-page word pass (RGBA, in place): any connected
+// dark shape wider than 6 % or taller than 12 % of the image is a line or an outline, not a glyph.
+export function removeLines(p, w, h) {
+  const n = w * h,
+    label = new Int32Array(n).fill(-1),
+    stack = new Int32Array(n);
+  // Ink is judged against the local background (shadows, folds, uneven light), not a fixed level.
+  const sum = new Float64Array((w + 1) * (h + 1));
+  for (let y = 0; y < h; y++)
+    for (let x = 0, row = 0; x < w; x++) {
+      row += p[(y * w + x) * 4];
+      sum[(y + 1) * (w + 1) + x + 1] = sum[y * (w + 1) + x + 1] + row;
+    }
+  const r = Math.max(8, Math.round(Math.min(w, h) / 40));
+  const ink = new Uint8Array(n);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const xa = Math.max(0, x - r),
+        xb = Math.min(w, x + r + 1),
+        ya = Math.max(0, y - r),
+        yb = Math.min(h, y + r + 1);
+      const mean =
+        (sum[yb * (w + 1) + xb] -
+          sum[ya * (w + 1) + xb] -
+          sum[yb * (w + 1) + xa] +
+          sum[ya * (w + 1) + xa]) /
+        ((xb - xa) * (yb - ya));
+      ink[y * w + x] = p[(y * w + x) * 4] < mean * 0.8 ? 1 : 0;
+    }
+  const isDark = (i) => ink[i] === 1;
+  const maxW = w * 0.06,
+    maxH = h * 0.12;
+  for (let start = 0; start < n; start++) {
+    if (label[start] !== -1 || !isDark(start)) continue;
+    let top = 0,
+      x0 = w,
+      x1 = 0,
+      y0 = h,
+      y1 = 0;
+    const members = [];
+    stack[top++] = start;
+    label[start] = start;
+    while (top) {
+      const i = stack[--top],
+        x = i % w,
+        y = (i - x) / w;
+      members.push(i);
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+      for (const j of [
+        x > 0 ? i - 1 : -1,
+        x < w - 1 ? i + 1 : -1,
+        y > 0 ? i - w : -1,
+        y < h - 1 ? i + w : -1,
+      ])
+        if (j >= 0 && label[j] === -1 && isDark(j)) {
+          label[j] = start;
+          stack[top++] = j;
+        }
+    }
+    if (x1 - x0 > maxW || y1 - y0 > maxH)
+      for (const i of members) p[i * 4] = p[i * 4 + 1] = p[i * 4 + 2] = 255;
+  }
+}
+
+// Is this value drawn inside its own box? Looks for a vertical line just left and just right of
+// the word's box (RGBA image, word box in pixels, `pad` = search distance).
+export function hasBox(p, w, h, box, pad) {
+  const y0 = Math.max(0, Math.round(box.y0 - pad * 0.3)),
+    y1 = Math.min(h - 1, Math.round(box.y1 + pad * 0.3)),
+    span = y1 - y0 + 1;
+  if (span < 4) return false;
+  let sum = 0,
+    count = 0;
+  for (let y = y0; y <= y1; y += 2)
+    for (let x = Math.max(0, Math.round(box.x0)); x < Math.min(w, box.x1); x += 2) {
+      sum += p[(y * w + x) * 4];
+      count++;
+    }
+  const ink = (count ? sum / count : 255) * 0.75;
+  const line = (from, to) => {
+    for (let x = Math.max(0, Math.round(from)); x <= Math.min(w - 1, Math.round(to)); x++) {
+      let n = 0;
+      for (let y = y0; y <= y1; y++) if (p[(y * w + x) * 4] < ink) n++;
+      if (n > span * 0.8) return true;
+    }
+    return false;
+  };
+  return line(box.x0 - pad, box.x0 - 1) && line(box.x1 + 1, box.x1 + pad);
 }

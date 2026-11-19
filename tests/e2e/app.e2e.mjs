@@ -513,3 +513,63 @@ test('a finger near a frame corner drags it by its movement and shows a magnifie
   assert.deepEqual(problems, []);
   await context.close();
 });
+
+test(
+  'a table without outer borders and with a box around every value is read',
+  { skip: !process.env.E2E_OCR && 'set E2E_OCR=1 to run', timeout: 300000 },
+  async () => {
+    const { context, page, problems } = await openApp();
+    const rows = [
+      ['R-09-01', '3423197.856', '5538496.915'],
+      ['R-09-02', '3423203.055', '5538498.482'],
+      ['R-09-03', '3423198.026', '5538496.339'],
+      ['R-09-04', '3423198.600', '5538496.512'],
+      ['R-09-05', '3423203.231', '5538497.909'],
+      ['R-09-06', '3423201.292', '5538494.817'],
+    ];
+    // Draw a CAD-style table: only inner column lines and row lines, every value boxed.
+    const png = await page.evaluate((rows) => {
+      const c = document.createElement('canvas');
+      c.width = 1200;
+      c.height = 80 * rows.length + 20;
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff';
+      g.fillRect(0, 0, c.width, c.height);
+      g.strokeStyle = '#000';
+      g.fillStyle = '#000';
+      g.font = '34px "DejaVu Sans Mono", monospace';
+      g.lineWidth = 2;
+      for (const x of [360, 800]) g.strokeRect(x, 0, 0, c.height);
+      rows.forEach((row, i) => {
+        const y = 10 + i * 80;
+        g.strokeRect(0, y + 78, c.width, 0);
+        row.forEach((text, k) => {
+          const width = g.measureText(text).width,
+            x = [180, 580, 1000][k] - width / 2;
+          g.fillText(text, x, y + 52);
+          g.strokeRect(x - 6, y + 16, width + 12, 46);
+        });
+      });
+      return c.toDataURL('image/png').split(',')[1];
+    }, rows);
+    await page.locator('#photoInput').setInputFiles({
+      name: 'boxed.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(png, 'base64'),
+    });
+    await page.locator('#sourceCount', { hasText: '1' }).waitFor();
+    await page.locator('#recognizeBtn').click();
+    await page.locator('#progressArea').waitFor({ state: 'hidden', timeout: 280000 });
+    const read = await page
+      .locator('#pointsBody tr[data-row]')
+      .evaluateAll((trs) =>
+        trs.map((tr) =>
+          ['name', 'e', 'n'].map((k) => tr.querySelector(`[data-field="${k}"]`).value),
+        ),
+      );
+    const exact = rows.filter((row) => read.some((r) => r.join() === row.join())).length;
+    assert.ok(exact >= 5, `only ${exact}/6 rows read exactly: ${JSON.stringify(read)}`);
+    assert.deepEqual(problems, []);
+    await context.close();
+  },
+);

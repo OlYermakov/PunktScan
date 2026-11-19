@@ -216,3 +216,8 @@ test('project import enforces the same limits as the app', () => {
   assert.throws(() => checkProject({ ...p, sources: [{ ...src('a'), processed: 42 }] }));
   assert.throws(() => checkProject({ ...p, sources: [{ ...src('a'), width: 2401 }] }));
 });
+test('a table title with a building section number is not a point', () => {
+  assert.equal(isTableHeader(['Koordinaten A', '1steckpunkt', '- Bstg. 2']), true);
+  assert.equal(isTableHeader(['Koordinaten Dachfundament', 'Type F-4', 'Achse 4']), true);
+  assert.equal(isTableHeader(['Koordinate1', '3500030.210', '5600557.311']), false);
+});

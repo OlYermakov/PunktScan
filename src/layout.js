@@ -1,0 +1,241 @@
+// Table layout from OCR words, for tables whose grid lines cannot be found: no outer borders,
+// a box around every value, a slightly tilted or cut-off page. Pure functions, no DOM.
+//
+// Input: words [{ text, box: { x0, y0, x1, y1 }, confidence }].
+// Output: rows with a name and coordinate cells (each with its box), the coordinate columns
+// and the E/N order if the headings were read.
+
+const DIGITS = /\d/g;
+
+// "3423197.8558", "3423197.8558]", "|5538496.9145", "34231978558" → the numeric core, or null.
+export function coordinateToken(text) {
+  const core = String(text)
+    .trim()
+    .replace(/^[^\d+-]+/, '')
+    .replace(/[^\d]+$/, '');
+  if (!/^[+-]?[\d.,' ]+$/.test(core)) return null;
+  const digits = (core.match(DIGITS) || []).length;
+  const separators = (core.match(/[.,]/g) || []).length;
+  // Coordinates have at least 5 digits; names like "205", "F-4.1" or "R-09-01" do not qualify.
+  if (digits < 5 || separators > 1) return null;
+  if (!separators && digits < 6) return null;
+  return core.replace(/\s/g, '');
+}
+
+const center = (b) => ({ x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2 });
+const median = (list) => {
+  if (!list.length) return 0;
+  const s = [...list].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+};
+const union = (boxes) => ({
+  x0: Math.min(...boxes.map((b) => b.x0)),
+  y0: Math.min(...boxes.map((b) => b.y0)),
+  x1: Math.max(...boxes.map((b) => b.x1)),
+  y1: Math.max(...boxes.map((b) => b.y1)),
+});
+
+// Groups x positions into columns: a new column starts after a gap wider than `gap`.
+function clusterColumns(tokens, gap) {
+  const sorted = [...tokens].sort((a, b) => a.cx - b.cx);
+  const columns = [];
+  for (const t of sorted) {
+    const last = columns.at(-1);
+    if (last && t.box.x0 - last.x1 < gap && t.cx - last.cx() < gap * 3) {
+      last.tokens.push(t);
+      last.x1 = Math.max(last.x1, t.box.x1);
+    } else
+      columns.push({
+        tokens: [t],
+        x1: t.box.x1,
+        cx() {
+          return median(this.tokens.map((k) => k.cx));
+        },
+      });
+  }
+  return columns;
+}
+
+// OCR sometimes splits one number at its separator ("3423197" + ".856"): glue numeric pieces
+// that sit next to each other on the same line back together.
+export function mergeNumberParts(words) {
+  const numericPart = (t) => /^[\d.,]+$/.test(String(t).replace(/^[^\d.,]+|[^\d.,]+$/g, ''));
+  const sorted = [...words].sort((a, b) => a.box.y0 - b.box.y0 || a.box.x0 - b.box.x0);
+  const used = new Set(),
+    out = [];
+  for (const w of sorted) {
+    if (used.has(w)) continue;
+    let cur = { ...w, box: { ...w.box } };
+    for (;;) {
+      const h = cur.box.y1 - cur.box.y0;
+      // Next numeric piece on the same line, closer than about two characters. The joined box is
+      // read again as a whole later, so a separator between the pieces is read, not assumed.
+      const next = sorted.find(
+        (o) =>
+          !used.has(o) &&
+          o !== w &&
+          numericPart(cur.text) &&
+          numericPart(o.text) &&
+          o.box.x0 >= cur.box.x1 - h * 0.2 &&
+          o.box.x0 - cur.box.x1 < h * 1.6 &&
+          Math.abs((o.box.y0 + o.box.y1) / 2 - (cur.box.y0 + cur.box.y1) / 2) < h * 0.5,
+      );
+      if (!next) break;
+      used.add(next);
+      cur = {
+        text: cur.text.trim() + next.text.trim(),
+        confidence: Math.min(cur.confidence ?? 0, next.confidence ?? 0),
+        box: {
+          x0: cur.box.x0,
+          y0: Math.min(cur.box.y0, next.box.y0),
+          x1: next.box.x1,
+          y1: Math.max(cur.box.y1, next.box.y1),
+        },
+      };
+    }
+    out.push(cur);
+  }
+  return out;
+}
+
+export function tableFromWords(words, width) {
+  const tokens = mergeNumberParts(words.filter((w) => w.text && w.box)).map((w) => ({
+    ...w,
+    ...center(w.box),
+    cx: center(w.box).x,
+    value: coordinateToken(w.text),
+  }));
+  const numbers = tokens.filter((t) => t.value);
+  if (numbers.length < 2) return null;
+  const height = median(numbers.map((t) => t.box.y1 - t.box.y0)) || 20;
+
+  // Coordinate columns: clusters of numbers; small clusters are stray numbers (titles, notes).
+  let columns = clusterColumns(numbers, Math.max(width * 0.04, height * 1.5));
+  const biggest = Math.max(...columns.map((c) => c.tokens.length));
+  columns = columns
+    .filter((c) => c.tokens.length >= Math.max(2, biggest * 0.4))
+    .sort((a, b) => a.cx() - b.cx())
+    .slice(0, 3);
+  if (!columns.length) return null;
+
+  // Page tilt: try slopes up to ±8° and keep the one that lines up the most numbers of
+  // neighbouring columns on common rows; among equals, the one that lines them up most exactly.
+  let slope = 0,
+    bestScore = -Infinity;
+  for (let step = -70; step <= 70; step++) {
+    const s = step * 0.002;
+    let matched = 0,
+      residual = 0;
+    for (let c = 1; c < columns.length; c++)
+      for (const t of columns[c].tokens) {
+        const off = Math.min(
+          ...columns[c - 1].tokens.map((k) => Math.abs(t.y - k.y - s * (t.cx - k.cx))),
+        );
+        if (off < height * 0.35) {
+          matched++;
+          residual += off;
+        }
+      }
+    const score = matched - residual / (height * (matched + 1));
+    if (
+      score > bestScore + 1e-9 ||
+      (Math.abs(score - bestScore) <= 1e-9 && Math.abs(s) < Math.abs(slope))
+    ) {
+      bestScore = score;
+      slope = s;
+    }
+  }
+  const level = (t) => t.y - slope * t.cx;
+
+  // Rows: numbers at the same (tilt-corrected) height, one per column at most.
+  const anchors = columns.flatMap((c, ci) => c.tokens.map((t) => ({ t, ci, y: level(t) })));
+  anchors.sort((a, b) => a.y - b.y);
+  const bands = [];
+  for (const a of anchors) {
+    const band = bands.at(-1);
+    if (band && a.y - band.y < height * 0.75 && !band.cells[a.ci]) {
+      band.cells[a.ci] = a.t;
+      band.y = (band.y * band.n + a.y) / (band.n + 1);
+      band.n++;
+    } else bands.push({ y: a.y, n: 1, cells: { [a.ci]: a.t } });
+  }
+
+  // Names: other words left of the first coordinate column on the row's line.
+  const firstLeft = Math.min(...columns[0].tokens.map((t) => t.box.x0));
+  const others = tokens.filter((t) => !t.value || t.box.x1 < firstLeft - height * 0.3);
+  const rows = bands.map((band) => {
+    const words = others
+      .filter(
+        (t) => t.box.x1 < firstLeft - height * 0.3 && Math.abs(level(t) - band.y) < height * 0.8,
+      )
+      .sort((a, b) => a.cx - b.cx);
+    const cells = columns.map((_, ci) => band.cells[ci] ?? null);
+    // Where a value or name was not found on the first pass, point at where it should be (the
+    // column's usual extent on this row's line) so it can be read on its own.
+    const at = (x0, x1) => {
+      const y = band.y + slope * ((x0 + x1) / 2);
+      return { x0, y0: y - height * 0.6, x1, y1: y + height * 0.6 };
+    };
+    const expected = (ci) =>
+      at(
+        median(columns[ci].tokens.map((t) => t.box.x0)),
+        median(columns[ci].tokens.map((t) => t.box.x1)),
+      );
+    return {
+      name: words.map((w) => w.text).join(' '),
+      nameBox: words.length
+        ? union(words.map((w) => w.box))
+        : at(Math.max(0, firstLeft - height * 6), firstLeft - height * 0.4),
+      values: cells.map((t) => t?.value ?? ''),
+      boxes: cells.map((t, ci) => t?.box ?? expected(ci)),
+      confidence: cells.map((t) => t?.confidence ?? 0),
+    };
+  });
+
+  // E/N order from the headings, when they were read above the columns.
+  let order = null;
+  const heading = (re) => tokens.find((t) => re.test(t.text));
+  const east = heading(/rechts|easting|^ost|^east/i),
+    north = heading(/hoch|northing|^nord|^north/i);
+  if (east && north && Math.abs(east.cx - north.cx) > height)
+    order = east.cx < north.cx ? 'en' : 'ne';
+
+  return { rows, columns: columns.length, slope, order, height };
+}
+
+// "R-09-06" → "A-99-99", "3437145.574" → "9999999.999": the form of a value, without its content.
+export const shape = (text) =>
+  String(text ?? '')
+    .replace(/\s/g, '')
+    .replace(/[A-Za-z]/g, 'A')
+    .replace(/\d/g, '9')
+    .replace(/,/g, '.');
+
+// Values in one table column share a form. When a cell's chosen reading has a different form than
+// most of its column, and another of its own OCR passes has the usual form, that pass is used
+// instead. Only readings actually produced from the photo are considered, nothing is invented,
+// and the cell stays flagged (disputed) for review.
+// cells[row][col] = { text, confidence, disputed, candidates: [{ text, confidence }] }
+export function harmonize(cells) {
+  const columns = Math.max(0, ...cells.map((r) => r.length));
+  for (let c = 0; c < columns; c++) {
+    const counts = new Map();
+    for (const row of cells) {
+      const k = shape(row[c]?.text);
+      if (k) counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const [usual, n] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? [];
+    // A clear majority only: at least three cells and more than half of the column.
+    if (!usual || n < 3 || n <= cells.length / 2) continue;
+    for (const row of cells) {
+      const cell = row[c];
+      if (!cell || shape(cell.text) === usual) continue;
+      const fit = (cell.candidates ?? [])
+        .filter((x) => shape(x.text) === usual)
+        .sort((a, b) => b.confidence - a.confidence)[0];
+      if (fit)
+        Object.assign(cell, { text: fit.text.trim(), confidence: fit.confidence, disputed: true });
+    }
+  }
+  return cells;
+}
