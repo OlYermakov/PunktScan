@@ -320,14 +320,25 @@ test('on a phone the bottom button walks through every step to the GSI file', as
   assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Geprüft');
   await page.locator('#verifyNextBtn').click();
   await page.locator('#dialog').waitFor({ state: 'hidden' });
-  assert.equal(await caption.textContent(), 'Schritt 4 von 4 · Datei');
+  assert.equal(await caption.textContent(), 'Schritt 4 von 4 · Bereit für den Export: 2 Punkte');
   assert.equal(
     await page.locator('#flowSteps .done').count(),
     3,
     'earlier steps are marked as done',
   );
+  // Exactly one GSI download button on the phone, with CSV next to it.
+  assert.equal(await page.locator('#exportBar').isVisible(), false);
+  assert.equal(
+    await page
+      .locator('#exportBtn, #nextStepBtn')
+      .evaluateAll((list) => list.filter((el) => el.checkVisibility()).length),
+    1,
+  );
+  await page.locator('#nextCsvBtn').click();
+  assert.equal(await page.locator('#confirmExport').getAttribute('data-format'), 'CSV');
+  await page.locator('#dialog [data-close]').first().click();
   await next.click();
-  await page.locator('#confirmExport').waitFor();
+  assert.equal(await page.locator('#confirmExport').getAttribute('data-format'), 'GSI');
   assert.deepEqual(problems, []);
   await context.close();
 });
@@ -412,4 +423,17 @@ test('every language fits a 320 px phone without sideways scrolling', async () =
     assert.deepEqual(problems, [], code);
     await context.close();
   }
+});
+
+test('the CSV button in the bottom bar appears only on the file step', async () => {
+  const { context, page } = await openApp({ context: devices['iPhone 13'] });
+  assert.equal(await page.locator('#nextCsvBtn').isVisible(), false);
+  await page.locator('#moreBtn').click();
+  await page.locator('#moreMenu [data-proxy="pasteBtn"]').click();
+  await page.locator('#pasteText').fill('P1;10.000;20.000');
+  await page.locator('#pasteApply').click();
+  assert.equal(await page.locator('#nextCsvBtn').isVisible(), false, 'not before review');
+  await verifyAll(page, 1);
+  assert.equal(await page.locator('#nextCsvBtn').isVisible(), true);
+  await context.close();
 });

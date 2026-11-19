@@ -2088,10 +2088,22 @@ td[data-label]::before {
     color: #6f8169;
     text-align: center;
   }
+  .next-step-actions {
+    display: flex;
+    gap: 8px;
+  }
   .next-step-bar .button {
-    width: 100%;
+    flex: 1;
     min-height: 48px;
     font-size: 1rem;
+  }
+  .next-step-bar #nextCsvBtn {
+    flex: 0 0 auto;
+    padding: 0 18px;
+  }
+  /* The bottom bar already offers GSI and CSV: no second export block on phones. */
+  #exportBar {
+    display: none;
   }
   body {
     padding-bottom: calc(96px + env(safe-area-inset-bottom));

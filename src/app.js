@@ -392,9 +392,11 @@ $('nextStepBtn').onclick = (e) => {
     if (row) showReview(row.id);
   }
 };
+$('nextCsvBtn').onclick = () => exportDialog('CSV');
 $('flowSteps').onclick = (e) => {
   const target = $(e.target.closest('[data-step-target]')?.dataset.stepTarget);
-  if (target && !target.hidden) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // The export bar is hidden on phones; its actions are in the bottom bar there.
+  if (target?.checkVisibility()) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 function toggleMoreMenu(open = $('moreMenu').hidden) {
   $('moreMenu').hidden = !open;

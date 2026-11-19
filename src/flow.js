@@ -2,7 +2,7 @@
 import { validate } from './core.js?v=__BUILD__';
 import { state, source, ready } from './state.js?v=__BUILD__';
 import { $ } from './dom.js?v=__BUILD__';
-import { t } from './i18n.js?v=__BUILD__';
+import { t, tp } from './i18n.js?v=__BUILD__';
 
 // Recognition is a single tap on a checked frame, so it belongs to the frame step.
 export const STEPS = ['photo', 'frame', 'review', 'file'];
@@ -68,9 +68,16 @@ export function renderFlow() {
   $('nextStepCaption').textContent = t('flow.caption', {
     n: current + 1,
     total: STEPS.length,
-    label: t('step.' + next.step),
+    // On the last step the caption also says how many points go into the file.
+    label:
+      next.step === 'file'
+        ? t('export.ready', { points: tp('n.points', state.project.rows.length) })
+        : t('step.' + next.step),
   });
   $('nextStepBtn').textContent = next.label;
   $('nextStepBtn').dataset.action = next.action ?? '';
   $('nextStepBtn').disabled = !next.action || state.busy;
+  // On phones the export bar is hidden, so CSV sits next to GSI on the last step.
+  $('nextCsvBtn').hidden = next.step !== 'file';
+  $('nextCsvBtn').disabled = state.busy;
 }
