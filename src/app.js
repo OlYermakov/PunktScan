@@ -14,6 +14,7 @@ import {
 import { save, restore, flushSave } from './storage.js?v=__BUILD__';
 import { snapshot, undo, render, renderPhoto, renderRows, setBusy } from './render.js?v=__BUILD__';
 import { addPhotos } from './photos.js?v=__BUILD__';
+import { nextReviewRow } from './flow.js?v=__BUILD__';
 import { recognize, cancelOcr } from './ocr.js?v=__BUILD__';
 import {
   showDialog,
@@ -389,3 +390,41 @@ $('updateBtn').onclick = async () => {
   location.reload();
 };
 restore().then(render);
+
+// Guided flow: the phone's bottom button runs the next step; the step bar scrolls to its section.
+$('nextStepBtn').onclick = (e) => {
+  const action = e.currentTarget.dataset.action;
+  if (action === 'photo') $('photoInput').click();
+  if (action === 'recognize') recognize();
+  if (action === 'recognizeAll') recognize(true);
+  if (action === 'export') exportDialog('GSI');
+  if (action === 'review') {
+    const row = nextReviewRow();
+    if (row) showReview(row.id);
+  }
+};
+$('flowSteps').onclick = (e) => {
+  const target = $(e.target.closest('[data-step-target]')?.dataset.stepTarget);
+  if (target && !target.hidden) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+function toggleMoreMenu(open = $('moreMenu').hidden) {
+  $('moreMenu').hidden = !open;
+  $('moreBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('moreMenu').querySelector('button').focus();
+}
+$('moreBtn').onclick = () => toggleMoreMenu();
+$('moreMenu').onclick = (e) => {
+  const proxy = e.target.closest('[data-proxy]');
+  if (!proxy) return;
+  toggleMoreMenu(false);
+  $(proxy.dataset.proxy).click();
+};
+document.addEventListener('click', (e) => {
+  if (!$('moreMenu').hidden && !e.target.closest('#moreMenu, #moreBtn')) toggleMoreMenu(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('moreMenu').hidden) {
+    toggleMoreMenu(false);
+    $('moreBtn').focus();
+  }
+});

@@ -144,6 +144,8 @@ test(
     await page.locator('#sourceCount', { hasText: '2' }).waitFor();
     await page.locator('#recognizeAllBtn').click();
     await page.locator('#awakeHint').waitFor();
+    assert.match(await page.locator('#nextStepBtn').textContent(), /^Розпізнавання… \d+%$/);
+    assert.equal(await page.locator('#nextStepBtn').isDisabled(), true);
     await page.locator('#progressArea').waitFor({ state: 'hidden', timeout: 280000 });
     assert.equal(await page.locator('#pointsBody tr[data-row]').count(), 14);
     // The screen was kept awake during recognition and released afterwards.
@@ -281,5 +283,55 @@ test('the ± button is hidden with a mouse, where the keyboard has a minus key',
   await page.locator('#pasteApply').click();
   await page.locator('[data-review]').first().click();
   assert.equal(await page.locator('.sign-btn[data-sign="e"]').isHidden(), true);
+  await context.close();
+});
+
+test('on a phone the bottom button walks through every step to the GSI file', async () => {
+  const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+  const caption = page.locator('#nextStepCaption'),
+    next = page.locator('#nextStepBtn');
+  assert.equal(await page.locator('#nextStepBar').isVisible(), true);
+  assert.equal(await caption.textContent(), 'Крок 1 з 4 · Фото');
+  assert.equal(await next.textContent(), 'Додати фото');
+  // Rarely used actions live in the ⋯ menu on phones.
+  assert.equal(await page.locator('#saveProjectBtn').isVisible(), false);
+  await page.locator('#moreBtn').click();
+  await page.locator('#moreMenu [data-proxy="pasteBtn"]').click();
+  assert.equal(await page.locator('#moreMenu').isHidden(), true);
+  await page.locator('#pasteText').fill('A;1.000;2.000\nB;x;2.000');
+  await page.locator('#pasteApply').click();
+  assert.equal(await caption.textContent(), 'Крок 3 з 4 · Звіряння');
+  assert.equal(await next.textContent(), 'Звірити точки · залишилось 2');
+  // Rows with errors come first.
+  await next.click();
+  assert.equal(await page.locator('#review-name').inputValue(), 'B');
+  await page.locator('#review-e').fill('3.000');
+  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Звірено · наступна');
+  await page.locator('#verifyNextBtn').click();
+  // The dialog moves on to the point that still needs checking, then closes after the last one.
+  assert.equal(await page.locator('#review-name').inputValue(), 'A');
+  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Звірено');
+  await page.locator('#verifyNextBtn').click();
+  await page.locator('#dialog').waitFor({ state: 'hidden' });
+  assert.equal(await caption.textContent(), 'Крок 4 з 4 · Файл');
+  assert.equal(
+    await page.locator('#flowSteps .done').count(),
+    3,
+    'earlier steps are marked as done',
+  );
+  await next.click();
+  await page.locator('#confirmExport').waitFor();
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('on a desktop the step bar is shown without the phone-only bottom bar and menu', async () => {
+  const { context, page, problems } = await openApp();
+  assert.equal(await page.locator('#flowSteps').isVisible(), true);
+  assert.equal(await page.locator('#nextStepBar').isVisible(), false);
+  assert.equal(await page.locator('#moreBtn').isVisible(), false);
+  assert.equal(await page.locator('#saveProjectBtn').isVisible(), true);
+  assert.equal(await page.locator('#flowSteps [aria-current="step"]').textContent(), '1Фото');
+  assert.deepEqual(problems, []);
   await context.close();
 });

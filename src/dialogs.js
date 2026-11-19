@@ -88,8 +88,10 @@ export function showReview(id) {
     renderSources();
     renderPhoto();
   }
-  const v = validate(state.project.rows).find((v) => v.row.id === id),
-    warn = warnings(v);
+  const values = validate(state.project.rows),
+    v = values.find((v) => v.row.id === id),
+    warn = warnings(v),
+    morePending = values.some((x) => x.row.id !== id && (!x.row.verified || x.issues.length));
   // Grid recognition stores one box per cell: show each photo cell right above its field.
   const hasCells = Boolean(s?.resultQuad && r.cells?.length);
   const labels = {
@@ -107,7 +109,7 @@ export function showReview(id) {
   showDialog(
     'Звіряння точки',
     body,
-    `<div class="review-navigation"><button class="icon-btn" id="prevReview" aria-label="Попередня точка" ${index === 0 ? 'disabled' : ''}>‹</button><span>${index + 1} / ${state.project.rows.length}</span><button class="icon-btn" id="nextReview" aria-label="Наступна точка" ${index === state.project.rows.length - 1 ? 'disabled' : ''}>›</button></div><button class="button subtle" data-close>Закрити</button><button class="button primary" id="verifyNextBtn">Звірено${index < state.project.rows.length - 1 ? ' · наступна' : ''}</button>`,
+    `<div class="review-navigation"><button class="icon-btn" id="prevReview" aria-label="Попередня точка" ${index === 0 ? 'disabled' : ''}>‹</button><span>${index + 1} / ${state.project.rows.length}</span><button class="icon-btn" id="nextReview" aria-label="Наступна точка" ${index === state.project.rows.length - 1 ? 'disabled' : ''}>›</button></div><button class="button subtle" data-close>Закрити</button><button class="button primary" id="verifyNextBtn">Звірено${morePending ? ' · наступна' : ''}</button>`,
     'review',
   );
   if (s) drawReview(s, r);
@@ -187,8 +189,17 @@ export function verifyNext() {
   snapshot();
   Object.assign(r, { name: v.name.name, e: v.e.value, n: v.n.value, h: v.h.value, verified: true });
   save();
-  if (i < state.project.rows.length - 1) {
-    showReview(state.project.rows[i + 1].id);
+  // Continue with the next point that still needs checking, wrapping around to earlier ones.
+  const rows = state.project.rows,
+    issues = new Set(
+      validate(rows)
+        .filter((x) => x.issues.length)
+        .map((x) => x.row.id),
+    ),
+    pending = (x) => !x.verified || issues.has(x.id),
+    next = rows.slice(i + 1).find(pending) ?? rows.slice(0, i).find(pending);
+  if (next) {
+    showReview(next.id);
   } else {
     closingReview = true;
     closeDialog();

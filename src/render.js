@@ -3,6 +3,7 @@ import { fullQuad } from './imaging.js?v=__BUILD__';
 import { state, errors, source } from './state.js?v=__BUILD__';
 import { $, esc, toast } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
+import { renderFlow } from './flow.js?v=__BUILD__';
 
 export function snapshot() {
   state.history.push({
@@ -159,6 +160,7 @@ export function renderRows(paint = true) {
       : 'Натисни кружечок біля точки, щоб відкрити звіряння.';
   $('mapBtn').disabled = !values.some((v) => v.e.ok && v.n.ok);
   $('rawTextBtn').hidden = !source()?.raw;
+  renderFlow();
 }
 export function setBusy(value) {
   state.busy = value;

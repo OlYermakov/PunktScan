@@ -86,9 +86,41 @@
             >
               ↶</button
             ><button id="saveProjectBtn" class="button subtle">Зберегти проєкт</button
-            ><button id="newProjectBtn" class="button subtle">Новий</button>
+            ><button id="newProjectBtn" class="button subtle">Новий</button
+            ><button
+              id="moreBtn"
+              class="icon-btn more-btn"
+              aria-label="Інші дії з проєктом"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="moreMenu"
+            >
+              ⋯
+            </button>
+            <div id="moreMenu" class="more-menu" hidden>
+              <button data-proxy="saveProjectBtn">Зберегти проєкт у файл</button
+              ><button data-proxy="openProjectBtn">Відкрити проєкт</button
+              ><button data-proxy="pasteBtn">Вставити текст</button
+              ><button data-proxy="newProjectBtn">Новий проєкт</button>
+            </div>
           </div>
         </section>
+        <nav aria-label="Кроки роботи">
+          <ol id="flowSteps" class="flow-steps">
+            <li>
+              <button data-step-target="uploadBtn"><b>1</b>Фото</button>
+            </li>
+            <li>
+              <button data-step-target="imageWorkspace"><b>2</b>Рамка</button>
+            </li>
+            <li>
+              <button data-step-target="pointsSection"><b>3</b>Звіряння</button>
+            </li>
+            <li>
+              <button data-step-target="exportBar"><b>4</b>Файл</button>
+            </li>
+          </ol>
+        </nav>
         <div id="notice" class="notice" role="status" hidden></div>
         <div id="updateBar" class="notice update-bar" role="status" hidden>
           <span>Доступна нова версія PunktScan. Чернетку буде збережено.</span
@@ -250,7 +282,7 @@
             ><button id="rawTextBtn" class="text-btn" hidden>Результат розпізнавання</button>
           </div>
         </section>
-        <section class="export-bar">
+        <section id="exportBar" class="export-bar">
           <div>
             <strong id="exportStatus">Файл ще не готовий</strong>
             <p id="exportHint">Звір кожну точку з оригіналом перед експортом.</p>
@@ -262,6 +294,10 @@
             </button>
           </div>
         </section>
+        <div id="nextStepBar" class="next-step-bar">
+          <span id="nextStepCaption"></span>
+          <button id="nextStepBtn" class="button primary"></button>
+        </div>
         <footer class="main-footer">
           Координати зберігаються у вихідній системі. Перетворення систем координат не виконується.
         </footer>

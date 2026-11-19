@@ -1937,3 +1937,166 @@ td[data-label]::before {
 .awake-hint {
   margin-top: 8px;
 }
+
+/* Step bar: where the project is in Фото → Рамка → Звіряння → Файл. */
+.flow-steps {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: -8px 0 20px;
+  padding: 0;
+}
+.flow-steps li {
+  flex: 1;
+  min-width: 0;
+}
+.flow-steps button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid #dce5da;
+  border-radius: 7px;
+  background: #fff;
+  color: #6f8169;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flow-steps b {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #eef2e9;
+  font-size: 0.7rem;
+}
+.flow-steps .done button {
+  color: #426f30;
+  border-color: #c8dbb8;
+  background: #f6faf1;
+}
+.flow-steps .done b {
+  background: #cfe3bd;
+  font-size: 0;
+}
+.flow-steps .done b::after {
+  content: '✓';
+  font-size: 0.7rem;
+}
+.flow-steps .current button {
+  color: #fff;
+  background: #2d4f3c;
+  border-color: #2d4f3c;
+  font-weight: 600;
+}
+.flow-steps .current b {
+  background: #bcf34e;
+  color: #1d3326;
+}
+.flow-steps button:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* Overflow menu for rarely used project actions (phones only). */
+.project-actions {
+  position: relative;
+}
+.more-btn {
+  display: none;
+  font-size: 1.3rem;
+}
+.more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 50;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #d5dfce;
+  border-radius: 9px;
+  box-shadow: 0 8px 28px #13291a2e;
+}
+.more-menu button {
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 12px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #233e2e;
+}
+.more-menu button:hover,
+.more-menu button:focus-visible {
+  background: #f0f6e8;
+}
+
+/* Next-step button pinned to the bottom of the screen (phones only). */
+.next-step-bar {
+  display: none;
+}
+@media (max-width: 760px) {
+  .flow-steps {
+    margin: -10px 0 16px;
+    gap: 4px;
+  }
+  .flow-steps button {
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 2px;
+    font-size: 0.7rem;
+  }
+  #saveProjectBtn,
+  #newProjectBtn {
+    display: none;
+  }
+  .project-actions .more-btn {
+    margin-right: 0;
+  }
+  .more-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+  }
+  .next-step-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: #ffffffee;
+    backdrop-filter: blur(8px);
+    border-top: 1px solid #dce5da;
+    box-shadow: 0 -4px 18px #13291a14;
+  }
+  .next-step-bar span {
+    font-size: 0.72rem;
+    color: #6f8169;
+    text-align: center;
+  }
+  .next-step-bar .button {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  body {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .toast {
+    bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+}

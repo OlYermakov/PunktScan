@@ -18,6 +18,7 @@ export const state = {
   zoom: 1,
   filter: 'all',
   busy: false,
+  recognizing: false,
   history: [],
 };
 export const errors = {

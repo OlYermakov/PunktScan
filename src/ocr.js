@@ -9,6 +9,7 @@ import { validQuad, rectify, gridCells, thresholdCell } from './imaging.js?v=__B
 import { uid, state, source } from './state.js?v=__BUILD__';
 import { $, toast, notice, canvas, pixelsFor, canvasFrom } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
+import { renderFlow } from './flow.js?v=__BUILD__';
 import { snapshot, render, renderSources, renderPhoto, setBusy } from './render.js?v=__BUILD__';
 
 let ocrController = null,
@@ -39,6 +40,7 @@ document.addEventListener('visibilitychange', requestWakeLock);
 export function progress(text, value) {
   $('progressText').textContent = text;
   $('ocrProgress').value = Math.max(0, Math.min(1, value));
+  renderFlow();
 }
 export async function getWorker(signal) {
   if (worker) return worker;
@@ -302,6 +304,7 @@ export async function recognize(all = false) {
   $('awakeHint').hidden = false;
   keepAwake = true;
   requestWakeLock();
+  state.recognizing = true;
   cancelled = false;
   notice();
   const controller = new AbortController();
@@ -323,6 +326,7 @@ export async function recognize(all = false) {
       toast('Розпізнавання зупинено. Завершені фото збережено.');
     else notice('Не вдалося розпізнати фото. ' + e.message);
   } finally {
+    state.recognizing = false;
     releaseWakeLock();
     $('awakeHint').hidden = true;
     setBusy(false);
