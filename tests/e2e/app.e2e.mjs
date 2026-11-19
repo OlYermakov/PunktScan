@@ -79,6 +79,15 @@ async function openApp(options = {}) {
   return { context, page, problems };
 }
 
+// Opens "Paste text": in the sidebar on desktops, in the ⋯ menu on phones.
+async function openPaste(page) {
+  if (await page.locator('#pasteBtn').isVisible()) await page.locator('#pasteBtn').click();
+  else {
+    await page.locator('#moreBtn').click();
+    await page.locator('#moreMenu [data-proxy="pasteBtn"]').click();
+  }
+}
+
 // Adds the two test tables (tests/fixtures) through the regular file input.
 async function addTestPhotos(page) {
   await page
@@ -124,7 +133,7 @@ test('pasted reference table → review every point → GSI matches the referenc
   const table = (await fs.readFile('examples/test-points.csv', 'utf8')).replace(/^\ufeff/, '');
   const count = reference.trimEnd().split('\r\n').length;
 
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page.locator('#pasteText').fill(table);
   await page.locator('#pasteApply').click();
   await assert.doesNotReject(page.locator('#pointCount', { hasText: String(count) }).waitFor());
@@ -195,7 +204,7 @@ test('photo cards are keyboard buttons and the remove button is separate', async
 
 test('draft survives a reload; an opened project file must be reviewed again', async () => {
   const { context, page, problems } = await openApp();
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page.locator('#pasteText').fill('P1;10.000;20.000;\nP2;11.000;21.000;5.5');
   await page.locator('#pasteApply').click();
   await verifyAll(page, 2);
@@ -243,7 +252,7 @@ test('a new deployment shows the update banner instead of switching silently', a
 
 test('on a phone every point is a card with E, N and H visible without sideways scrolling', async () => {
   const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page.locator('#pasteText').fill('Af201;3500030.210;5600557.311;101.25');
   await page.locator('#pasteApply').click();
   const scroll = await page
@@ -265,7 +274,7 @@ test('on a phone every point is a card with E, N and H visible without sideways 
 
 test('the ± button flips the sign on touch screens, where the keypad has no minus', async () => {
   const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page.locator('#pasteText').fill('P1;10.000;20.000;5.000');
   await page.locator('#pasteApply').click();
   await page.locator('[data-review]').first().click();
@@ -285,7 +294,7 @@ test('the ± button flips the sign on touch screens, where the keypad has no min
 
 test('the ± button is hidden with a mouse, where the keyboard has a minus key', async () => {
   const { context, page } = await openApp();
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page.locator('#pasteText').fill('P1;10.000;20.000');
   await page.locator('#pasteApply').click();
   await page.locator('[data-review]').first().click();
@@ -363,7 +372,7 @@ test('German by default; switching the language translates the app and is rememb
   assert.equal(await page.locator('#helpBtn .help-text').textContent(), 'Anleitung');
   assert.equal(await page.locator('#langSelect option').count(), 7);
   // Unfinished work survives the reload that applies the language.
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page.locator('#pasteText').fill('P1;10.000;20.000');
   await page.locator('#pasteApply').click();
   for (const [code, help, html] of [
@@ -380,7 +389,7 @@ test('German by default; switching the language translates the app and is rememb
   assert.equal(await page.locator('#langSelect').inputValue(), 'uk', 'choice remembered');
   assert.equal(await page.locator('#exportStatus').textContent(), 'Залишилося звірити: 1');
   // Plural forms follow the language (Ukrainian: 1 точка, 2 точки, 5 точок).
-  await page.locator('#pasteBtn').click();
+  await openPaste(page);
   await page
     .locator('#pasteText')
     .fill('P2;11.000;21.000\nP3;12.000;22.000\nP4;13.000;23.000\nP5;14.000;24.000');
@@ -436,4 +445,18 @@ test('the CSV button in the bottom bar appears only on the file step', async () 
   await verifyAll(page, 1);
   assert.equal(await page.locator('#nextCsvBtn').isVisible(), true);
   await context.close();
+});
+
+test('on a phone paste and open project are offered once, in the ⋯ menu', async () => {
+  const { context, page } = await openApp({ context: devices['iPhone 13'] });
+  assert.equal(await page.locator('#pasteBtn').isVisible(), false);
+  assert.equal(await page.locator('#openProjectBtn').isVisible(), false);
+  await page.locator('#moreBtn').click();
+  for (const proxy of ['pasteBtn', 'openProjectBtn', 'saveProjectBtn', 'newProjectBtn'])
+    assert.equal(await page.locator(`#moreMenu [data-proxy="${proxy}"]`).isVisible(), true);
+  await context.close();
+  const desktop = await openApp();
+  assert.equal(await desktop.page.locator('#pasteBtn').isVisible(), true);
+  assert.equal(await desktop.page.locator('#openProjectBtn').isVisible(), true);
+  await desktop.context.close();
 });

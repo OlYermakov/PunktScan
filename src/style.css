@@ -2192,13 +2192,20 @@ td[data-label]::before {
 }
 @media (max-width: 760px) {
   /* The bottom next-step button adds the first photo; avoid a second "add photo" button. */
-  body[data-step='photo'] #uploadBtn {
+  /* With no photo yet the sources panel would be empty: hide it until there is something to show. */
+  body[data-step='photo'] .sidebar {
     display: none;
   }
 }
 @media (max-width: 360px) {
   /* The smallest phones keep the logo mark; its link still has a translated aria-label. */
   .brand > span {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  /* "Paste text" and "Open project" are in the ⋯ menu on phones: no second copy in the sidebar. */
+  .sidebar-tools {
     display: none;
   }
 }
