@@ -108,6 +108,8 @@ export default {
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Remove moiré and grid',
   'recog.enhanceHint': 'For photos of screens and paper tables',
+  'recog.second': 'Second recognition (PaddleOCR)',
+  'recog.secondHint': 'Reads every value a second time; agreement saves review work',
   'recog.run': 'Recognize photo',
   'recog.rerun': 'Recognize again',
   'recog.runAll': 'Recognize all new photos',
@@ -133,6 +135,9 @@ export default {
     ' The E, N order was recognised from the values (Easting with zone digit, Northing from 5,000,000).',
   'ocr.orderConflict':
     ' Note: the headings do not match the values. The E, N order was chosen from the values (Easting with zone digit) — please check it.',
+  'ocr.second': 'Second recognition (PaddleOCR) …',
+  'ocr.secondResult':
+    ' Second recognition: {agreed} of {compared} values read the same, {replaced} taken over.',
   'ocr.skipped': ' Some rows were skipped — open “Recognition result”.',
   'ocr.replaceConfirm':
     'Recognizing again replaces the points of this photo, including manual corrections. Continue?',

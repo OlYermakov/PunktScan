@@ -310,6 +310,91 @@ export function pointFromColumn(rows) {
   return changed;
 }
 
+// Combines the second recogniser's readings (PaddleOCR) with Tesseract's, field by field.
+// second[j][i] is the second reading of row j, field i (name, e, n, h), or null when that cell was
+// not read. Rules, chosen on the test photos and degraded copies of them:
+// - Both readings the same, of a valid form, of the shape of their column, and Tesseract at least
+//   moderately sure: the value counts as confirmed and loses its doubt marks. Without the column
+//   shape and the confidence, two readers agree on the wrong cell when a column was lost.
+// - Different readings: the one of a valid form wins, the second reader first (it is the more
+//   accurate one). The value stays marked, with the characters where the two differ.
+// Returns counts for the notice.
+export function combineReadings(rows, second, { minConfidence = 50 } = {}) {
+  const fields = ['name', 'e', 'n', 'h'];
+  const clean = (k, v) => {
+    const s = String(v ?? '')
+      .normalize('NFKC')
+      .replace(/\s/g, '');
+    return k === 'name' ? s.replace(/^[-.]+|[-.]+$/g, '') : s.replace(/^\+/, '').replace(',', '.');
+  };
+  const stored = (k, v) =>
+    k === 'name'
+      ? String(v ?? '').replace(/\s/g, '')
+      : String(v ?? '')
+          .replace(/\s/g, '')
+          .replace(/^\+/, '')
+          .replace(',', '.');
+  const valid = (k, v) =>
+    k === 'name' ? /^[A-Za-z0-9_.-]{1,16}$/.test(v) : /^-?\d+\.\d{1,4}$/.test(v);
+  const shape = (k, v) => {
+    if (k === 'name') return v.replace(/\d/g, '9');
+    const m = v.match(/^-?(\d+)\.(\d+)$/);
+    return m
+      ? `${m[1].length}.${m[2].length}:${m[1].slice(0, Math.max(1, m[1].length - 3))}`
+      : null;
+  };
+  const columnShape = fields.map((k) => {
+    const counts = new Map();
+    for (const r of rows) {
+      const sh = shape(k, stored(k, r[k]));
+      if (sh) counts.set(sh, (counts.get(sh) ?? 0) + 1);
+    }
+    const [best] = [...counts].sort((a, b) => b[1] - a[1]);
+    return best && best[1] >= Math.max(3, rows.length * 0.5) ? best[0] : null;
+  });
+  let compared = 0,
+    agreed = 0,
+    replaced = 0;
+  rows.forEach((r, j) => {
+    const readings = second[j];
+    if (!readings) return;
+    r.cellConfidence ??= [0, 0, 0, 0];
+    r.disputed ??= [false, false, false, false];
+    r.uncertainChars ??= [[], [], [], []];
+    r.second = readings.map((v, i) => (v == null ? null : clean(fields[i], v)));
+    fields.forEach((k, i) => {
+      const p = r.second[i],
+        t = stored(k, r[k]);
+      // The second reader saw nothing: that says nothing about Tesseract's value.
+      if (!p) return;
+      compared++;
+      if (p === t) {
+        agreed++;
+        if (
+          valid(k, t) &&
+          columnShape[i] !== null &&
+          shape(k, t) === columnShape[i] &&
+          (r.cellConfidence[i] ?? 0) >= minConfidence
+        ) {
+          r.cellConfidence[i] = Math.max(r.cellConfidence[i] ?? 0, 90);
+          r.disputed[i] = false;
+          r.uncertainChars[i] = [];
+        }
+        return;
+      }
+      const value = valid(k, p) ? p : t,
+        other = value === p ? t : p;
+      if (value !== t) {
+        r[k] = value;
+        replaced++;
+      }
+      r.disputed[i] = true;
+      r.uncertainChars[i] = other ? disagreement(value, [{ text: other }], k === 'name') : [];
+    });
+  });
+  return { compared, agreed, replaced };
+}
+
 // Edit distance (insertions, deletions, substitutions) between two short strings.
 export function editDistance(a, b) {
   const prev = [...Array(b.length + 1).keys()];

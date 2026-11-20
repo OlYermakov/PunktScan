@@ -29,6 +29,10 @@ const assets = new Set([
   './vendor/tesseract.min.js',
   './vendor/worker.min.js',
   './vendor/lang/eng.traineddata.gz',
+  './vendor/ort/ort.wasm.min.mjs',
+  './vendor/ort/ort-wasm-simd-threaded.wasm',
+  './vendor/paddle/rec.onnx',
+  './vendor/paddle/dict.json',
 ]);
 for (const base of bases) {
   for (const asset of assets) {
@@ -77,8 +81,17 @@ console.log(
 // otherwise the browser would load a module twice and the copies would not share state.
 for (const file of modules)
   assert.ok(shell.includes('./' + file + '?v=' + version), 'Module missing from SW shell: ' + file);
-for (const asset of moduleAssets)
+// Third-party files in vendor/ keep their plain URLs: the offline pack stores them that way.
+for (const asset of moduleAssets.filter((a) => !a.startsWith('./vendor/')))
   assert.match(asset, new RegExp('\\?v=' + version + '$'), 'Unversioned module import: ' + asset);
+// The second recogniser's worker, runtime and model are in place.
+const workerSource = await fs.readFile(path.join(root, 'paddle-worker.js'), 'utf8');
+assert.match(workerSource, /from '\.\/vendor\/ort\/ort\.wasm\.min\.mjs'/, 'paddle worker import');
+assert.match(
+  await fs.readFile(path.join(root, 'ocr.js'), 'utf8'),
+  new RegExp('paddle-worker\\.js\\?v=' + version),
+  'ocr.js must start the versioned paddle worker',
+);
 // Only the LSTM cores are bundled, so the worker must stay on OEM 1 (LSTM only).
 assert.match(
   await fs.readFile(path.join(root, 'ocr.js'), 'utf8'),

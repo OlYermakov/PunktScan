@@ -100,9 +100,10 @@ export function renderPhoto() {
   $('recognizeBtn').textContent = t(s.recognized ? 'recog.rerun' : 'recog.run');
   $('columnOrder').value = s.order || 'auto';
   $('enhanceInput').checked = s.enhance !== false;
+  $('secondInput').checked = s.second !== false;
   // Advanced settings stay folded unless one of them was changed.
   if (s.order && s.order !== 'auto') $('advancedSettings').open = true;
-  if (s.enhance === false) $('advancedSettings').open = true;
+  if (s.enhance === false || s.second === false) $('advancedSettings').open = true;
   $('recognizeAllBtn').hidden = state.project.sources.filter((s) => !s.recognized).length < 2;
 }
 export function renderRows(paint = true) {
@@ -224,6 +225,7 @@ export function setBusy(value) {
     'rotateBtn',
     'columnOrder',
     'enhanceInput',
+    'secondInput',
   ])
     $(id).disabled = value;
   $('progressArea').hidden = !value;

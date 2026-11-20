@@ -21,6 +21,7 @@ for (const file of await walk('src')) {
   hash.update(await fs.readFile(file));
 }
 hash.update(await fs.readFile('package-lock.json'));
+hash.update(await fs.readFile('models/ppocrv6-tiny/rec.onnx'));
 const version = hash.digest('hex').slice(0, 10);
 await fs.rm('dist', { recursive: true, force: true });
 await fs.mkdir('dist', { recursive: true });
@@ -52,6 +53,22 @@ await fs.copyFile(
   'node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz',
   'dist/vendor/lang/eng.traineddata.gz',
 );
+// Second recogniser: PaddleOCR PP-OCRv6 tiny (models/ppocrv6-tiny) on ONNX Runtime Web, which
+// runs it single-threaded in WebAssembly (GitHub Pages cannot send the headers threads need).
+const MODEL_SHA256 = '9ef676d6ed3c88256a2d92c640c44f25b0c40947e111b14b8be8f594091563e6';
+const model = await fs.readFile('models/ppocrv6-tiny/rec.onnx');
+if (crypto.createHash('sha256').update(model).digest('hex') !== MODEL_SHA256)
+  throw new Error('models/ppocrv6-tiny/rec.onnx is not the expected PP-OCRv6 tiny model.');
+await fs.mkdir('dist/vendor/ort', { recursive: true });
+await fs.mkdir('dist/vendor/paddle', { recursive: true });
+for (const file of [
+  'ort.wasm.min.mjs',
+  'ort-wasm-simd-threaded.mjs',
+  'ort-wasm-simd-threaded.wasm',
+])
+  await fs.copyFile('node_modules/onnxruntime-web/dist/' + file, 'dist/vendor/ort/' + file);
+await fs.writeFile('dist/vendor/paddle/rec.onnx', model);
+await fs.copyFile('models/ppocrv6-tiny/dict.json', 'dist/vendor/paddle/dict.json');
 const notices = ['PunktScan\n' + (await fs.readFile('LICENSE', 'utf8'))];
 for (const pkg of ['tesseract.js', 'tesseract.js-core', '@tesseract.js-data/eng']) {
   const root = 'node_modules/' + pkg,
@@ -65,6 +82,14 @@ for (const pkg of ['tesseract.js', 'tesseract.js-core', '@tesseract.js-data/eng'
         : 'English trained data for Tesseract. Apache License 2.0. https://github.com/naptha/tessdata'),
   );
 }
+notices.push(
+  'onnxruntime-web ' +
+    JSON.parse(await fs.readFile('node_modules/onnxruntime-web/package.json', 'utf8')).version +
+    '\nMIT License\n\nCopyright (c) Microsoft Corporation\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.',
+  'PaddleOCR PP-OCRv6 tiny recognition model\n' +
+    (await fs.readFile('models/ppocrv6-tiny/README.md', 'utf8')) +
+    '\nApache License 2.0: https://www.apache.org/licenses/LICENSE-2.0',
+);
 await fs.writeFile('dist/licenses.txt', notices.join('\n\n---\n\n'));
 await fs.writeFile('dist/.nojekyll', '');
 async function list(dir) {

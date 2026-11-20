@@ -206,6 +206,12 @@ $('enhanceInput').onchange = (e) => {
     save();
   }
 };
+$('secondInput').onchange = (e) => {
+  if (source()) {
+    source().second = e.target.checked;
+    save();
+  }
+};
 $('recognizeBtn').onclick = () => recognize();
 $('recognizeAllBtn').onclick = () => recognize(true);
 $('cancelOcrBtn').onclick = cancelOcr;

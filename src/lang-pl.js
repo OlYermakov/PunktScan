@@ -110,6 +110,8 @@ export default {
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Usuń mory i siatkę',
   'recog.enhanceHint': 'Dla zdjęć ekranu i tabel papierowych',
+  'recog.second': 'Drugie rozpoznawanie (PaddleOCR)',
+  'recog.secondHint': 'Odczytuje każdą wartość drugi raz; zgodność oszczędza sprawdzanie',
   'recog.run': 'Rozpoznaj zdjęcie',
   'recog.rerun': 'Rozpoznaj ponownie',
   'recog.runAll': 'Rozpoznaj wszystkie nowe zdjęcia',
@@ -136,6 +138,9 @@ export default {
     ' Kolejność E, N rozpoznano na podstawie wartości (Rechtswert z cyfrą strefy, Hochwert od 5 000 000).',
   'ocr.orderConflict':
     ' Uwaga: nagłówki nie pasują do wartości. Kolejność E, N wybrano na podstawie wartości (Rechtswert z cyfrą strefy) — sprawdź ją.',
+  'ocr.second': 'Drugie rozpoznawanie (PaddleOCR) …',
+  'ocr.secondResult':
+    ' Drugie rozpoznawanie: {agreed} z {compared} wartości odczytane tak samo, {replaced} przejęte.',
   'ocr.skipped': ' Niektóre wiersze pominięto — otwórz „Wynik rozpoznawania”.',
   'ocr.replaceConfirm':
     'Ponowne rozpoznanie zastąpi punkty tego zdjęcia, łącznie z ręcznymi poprawkami. Kontynuować?',

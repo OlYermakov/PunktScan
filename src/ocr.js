@@ -22,6 +22,7 @@ import {
   harmonize,
   borrowSeparators,
   pointFromColumn,
+  combineReadings,
   uncertainIndices,
   disagreement,
 } from './layout.js?v=__BUILD__';
@@ -431,6 +432,68 @@ async function readLines(w, src, chosenOrder) {
   };
 }
 
+// Second recogniser (PaddleOCR) in a module worker. A failure (an old browser, a missing file)
+// only means no second reading: Tesseract's result stands.
+let paddle = null,
+  nextJob = 0;
+const jobs = new Map();
+function paddleWorker() {
+  if (paddle) return paddle;
+  paddle = new Worker(new URL('./paddle-worker.js?v=__BUILD__', import.meta.url), {
+    type: 'module',
+  });
+  paddle.onmessage = ({ data }) => {
+    const job = jobs.get(data.id);
+    if (!job) return;
+    if (data.total) return job.progress(data.done / data.total);
+    jobs.delete(data.id);
+    if (data.error) job.reject(new Error(data.error));
+    else job.resolve(data.texts);
+  };
+  paddle.onerror = (e) => {
+    e.preventDefault?.();
+    for (const job of jobs.values()) job.reject(new Error('paddle'));
+    jobs.clear();
+    paddle?.terminate();
+    paddle = null;
+  };
+  return paddle;
+}
+function readSecond(crops, progressTo, signal) {
+  return new Promise((resolve, reject) => {
+    const id = ++nextJob;
+    jobs.set(id, { resolve, reject, progress: progressTo });
+    signal.addEventListener('abort', () => {
+      if (jobs.delete(id)) reject(new Error('cancel'));
+    });
+    paddleWorker().postMessage(
+      { id, crops },
+      crops.filter(Boolean).map((c) => c.gray.buffer),
+    );
+  });
+}
+// The cells of the recognised rows as grey images, cut from the straightened plain photo.
+function cellImages(rows, plain) {
+  return rows.map((r) =>
+    [0, 1, 2, 3].map((i) => {
+      const box = r.cells?.[i];
+      if (!box || box.x1 - box.x0 <= 2) return null;
+      const x0 = Math.max(0, Math.floor(box.x0 - 3)),
+        y0 = Math.max(0, Math.floor(box.y0 - 3)),
+        x1 = Math.min(plain.width, Math.ceil(box.x1 + 3)),
+        y1 = Math.min(plain.height, Math.ceil(box.y1 + 3)),
+        w = x1 - x0,
+        h = y1 - y0;
+      if (w < 4 || h < 4) return null;
+      const gray = new Uint8Array(w * h);
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++)
+          gray[y * w + x] = plain.data[((y0 + y) * plain.width + x0 + x) * 4];
+      return { w, h, gray };
+    }),
+  );
+}
+
 // Dark pixels of a grey image: how much writing it shows.
 function ink(data) {
   let n = 0;
@@ -521,6 +584,26 @@ export async function recognizeOne(s, signal) {
   // A photo of a single number column gives no usable points: say so instead of guessing.
   if (oneColumn && !result.rows.some(goodRow)) result = { ...result, rows: [] };
   const { rows, raw, skipped } = result;
+  // The second recogniser reads the same cells again; agreement confirms, a difference is marked.
+  let second = null;
+  if (s.second !== false && rows.some((r) => r.cells?.length)) {
+    progress(t('ocr.second'), 0.9);
+    const images = cellImages(rows, src.plainPixels);
+    try {
+      const texts = await readSecond(
+        images.flat(),
+        (share) => progress(t('ocr.second'), 0.9 + 0.08 * share),
+        signal,
+      );
+      second = combineReadings(
+        rows,
+        images.map((_, j) => texts.slice(j * 4, j * 4 + 4)),
+      );
+    } catch (e) {
+      if (e.message === 'cancel') throw e;
+      second = null;
+    }
+  }
   // Decimal points too small to read are put back where the rest of the column has them.
   if (result.columns) pointFromColumn(rows);
   // E/N order: an explicit choice wins; otherwise the numbers themselves (zone digit of the
@@ -540,7 +623,13 @@ export async function recognizeOne(s, signal) {
   if (order === 'ne' && result.columns)
     for (const row of rows) {
       [row.e, row.n] = [row.n, row.e];
-      for (const list of [row.cellConfidence, row.disputed, row.cells, row.uncertainChars])
+      for (const list of [
+        row.cellConfidence,
+        row.disputed,
+        row.cells,
+        row.uncertainChars,
+        row.second,
+      ])
         if (list?.length > 2) [list[1], list[2]] = [list[2], list[1]];
     }
   if (signal.aborted) throw new Error('cancel');
@@ -569,7 +658,12 @@ export async function recognizeOne(s, signal) {
     : oneColumn
       ? t('ocr.oneColumn')
       : t('ocr.none');
-  notice(message + orderNote + (skipped.length ? t('ocr.skipped') : ''));
+  notice(
+    message +
+      orderNote +
+      (second?.compared ? t('ocr.secondResult', second) : '') +
+      (skipped.length ? t('ocr.skipped') : ''),
+  );
   render();
   save();
 }

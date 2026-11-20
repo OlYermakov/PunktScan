@@ -412,6 +412,16 @@ export function plausibility(values) {
   const typicalE = typical('e'),
     typicalN = typical('n'),
     offBy = (x, t) => (t ? Math.abs(Math.log10((x || 1e-9) / t)) : 0);
+  // A whole column on another scale (a lost column: heights where Rechtswert belongs) is not a
+  // column of coordinates; every value in it is marked.
+  const lostColumn =
+    typicalE !== null && typicalN !== null && Math.max(typicalE, typicalN) >= 100000
+      ? Math.min(typicalE, typicalN) * 100 < Math.max(typicalE, typicalN)
+        ? typicalE < typicalN
+          ? 'e'
+          : 'n'
+        : null
+      : null;
   for (const v of values) {
     const e = v.e.ok && !v.e.empty ? Math.abs(Number(v.e.value)) : null,
       n = v.n.ok && !v.n.empty ? Math.abs(Number(v.n.value)) : null,
@@ -434,6 +444,13 @@ export function plausibility(values) {
               : 'n',
         code: 'magnitude',
       });
+    if (
+      lostColumn &&
+      v[lostColumn].ok &&
+      !v[lostColumn].empty &&
+      !found.get(v.row).some((f) => f.code === 'magnitude' && f.field === lostColumn)
+    )
+      add(v, { field: lostColumn, code: 'magnitude' });
     // A "height" as large as a Gauss-Krüger or UTM coordinate is a coordinate in the wrong column.
     if (h !== null && h >= 100000 && e !== null && n !== null && Math.min(e, n) >= 100000)
       add(v, { field: 'h', code: 'heightLikeCoordinate' });

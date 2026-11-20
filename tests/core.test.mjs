@@ -452,3 +452,17 @@ test('plausibility: the magnitude check marks the value unlike its column, not j
   ]);
   assert.equal(found[0].find((f) => f.code === 'magnitude')?.field, 'n');
 });
+
+test('plausibility: a whole column of heights where Rechtswert belongs is marked in every row', () => {
+  const found = plausible([
+    ['SAP.152', '100.772', '5545947.980'],
+    ['SAP.154', '101.175', '5545956.082'],
+    ['SAP.156', '100.457', '5545955.154'],
+    ['SAP.174', '99.994', '3445805.343'],
+    ['SAP.176', '100.067', '3445805.415'],
+  ]);
+  assert.ok(
+    found.every((f) => f.some((x) => x.field === 'e' && x.code === 'magnitude')),
+    JSON.stringify(found),
+  );
+});

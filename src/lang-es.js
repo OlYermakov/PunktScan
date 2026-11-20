@@ -110,6 +110,8 @@ export default {
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Eliminar muaré y cuadrícula',
   'recog.enhanceHint': 'Para fotos de pantallas y tablas en papel',
+  'recog.second': 'Segundo reconocimiento (PaddleOCR)',
+  'recog.secondHint': 'Lee cada valor una segunda vez; la coincidencia ahorra revisión',
   'recog.run': 'Reconocer foto',
   'recog.rerun': 'Reconocer de nuevo',
   'recog.runAll': 'Reconocer todas las fotos nuevas',
@@ -137,6 +139,9 @@ export default {
     ' El orden E, N se ha deducido de los valores (Rechtswert con dígito de zona, Hochwert a partir de 5 000 000).',
   'ocr.orderConflict':
     ' Atención: los encabezados no coinciden con los valores. El orden E, N se ha elegido según los valores (Rechtswert con dígito de zona): revísalo.',
+  'ocr.second': 'Segundo reconocimiento (PaddleOCR) …',
+  'ocr.secondResult':
+    ' Segundo reconocimiento: {agreed} de {compared} valores leídos igual, {replaced} adoptados.',
   'ocr.skipped': ' Se omitieron algunas filas: abre «Resultado del reconocimiento».',
   'ocr.replaceConfirm':
     'Reconocer de nuevo sustituye los puntos de esta foto, incluidas las correcciones manuales. ¿Continuar?',

@@ -111,6 +111,8 @@ export default {
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Moiré und Gitter entfernen',
   'recog.enhanceHint': 'Für Bildschirmfotos und Papiertabellen',
+  'recog.second': 'Zweite Erkennung (PaddleOCR)',
+  'recog.secondHint': 'Liest jeden Wert ein zweites Mal; Übereinstimmung spart Prüfarbeit',
   'recog.run': 'Foto erkennen',
   'recog.rerun': 'Erneut erkennen',
   'recog.runAll': 'Alle neuen Fotos erkennen',
@@ -139,6 +141,9 @@ export default {
     ' Die Reihenfolge E, N wurde aus den Werten erkannt (Rechtswert mit Zonenziffer, Hochwert ab 5 000 000).',
   'ocr.orderConflict':
     ' Achtung: Die Überschriften passen nicht zu den Werten. Die Reihenfolge E, N wurde nach den Werten gewählt (Rechtswert mit Zonenziffer) — prüfe sie.',
+  'ocr.second': 'Zweite Erkennung (PaddleOCR) …',
+  'ocr.secondResult':
+    ' Zweite Erkennung: {agreed} von {compared} Werten gleich gelesen, {replaced} übernommen.',
   'ocr.skipped': ' Es gibt übersprungene Zeilen — öffne „Erkennungsergebnis“.',
   'ocr.replaceConfirm':
     'Die erneute Erkennung ersetzt die Punkte dieses Fotos, einschließlich manueller Korrekturen. Fortfahren?',

@@ -110,6 +110,8 @@ export default {
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Rimuovi moiré e griglia',
   'recog.enhanceHint': 'Per foto di schermi e tabelle su carta',
+  'recog.second': 'Seconda lettura (PaddleOCR)',
+  'recog.secondHint': 'Legge ogni valore una seconda volta; l’accordo riduce il controllo',
   'recog.run': 'Riconosci foto',
   'recog.rerun': 'Riconosci di nuovo',
   'recog.runAll': 'Riconosci tutte le nuove foto',
@@ -138,6 +140,9 @@ export default {
     ' L’ordine E, N è stato ricavato dai valori (Rechtswert con cifra di zona, Hochwert da 5 000 000).',
   'ocr.orderConflict':
     ' Attenzione: le intestazioni non corrispondono ai valori. L’ordine E, N è stato scelto in base ai valori (Rechtswert con cifra di zona): controllalo.',
+  'ocr.second': 'Seconda lettura (PaddleOCR) …',
+  'ocr.secondResult':
+    ' Seconda lettura: {agreed} valori su {compared} letti uguali, {replaced} ripresi.',
   'ocr.skipped': ' Alcune righe sono state saltate — apri «Risultato del riconoscimento».',
   'ocr.replaceConfirm':
     'Un nuovo riconoscimento sostituisce i punti di questa foto, comprese le correzioni manuali. Continuare?',
