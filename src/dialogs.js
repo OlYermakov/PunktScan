@@ -8,7 +8,15 @@ import {
   checkProject,
 } from './core.js?v=__BUILD__';
 import { fullQuad, validQuad, originalRegion, cellRegion } from './imaging.js?v=__BUILD__';
-import { uid, state, errors, ready, projectName } from './state.js?v=__BUILD__';
+import {
+  uid,
+  state,
+  errors,
+  ready,
+  projectName,
+  findingsFor,
+  findingText,
+} from './state.js?v=__BUILD__';
 import { $, toast, notice, imageFrom, download, esc, canShareFiles } from './dom.js?v=__BUILD__';
 import { save, startProject, storageReady } from './storage.js?v=__BUILD__';
 import { t, lang } from './i18n.js?v=__BUILD__';
@@ -23,6 +31,8 @@ import {
 
 export function warnings(v) {
   const out = [];
+  const found = findingsFor(v.row);
+  for (const f of found) out.push(findingText(f));
   if (v.e.ok && v.n.ok) {
     if (v.e.short || v.n.short) out.push(t('warn.short'));
     if (Math.abs(Number(v.e.value)) > 100000000 || Math.abs(Number(v.n.value)) > 100000000)
@@ -45,6 +55,7 @@ export function warnings(v) {
         .sort((a, b) => a - b);
       const median = others[Math.floor(others.length / 2)];
       if (
+        !found.some((f) => f.code === 'far') &&
         median > 1000 &&
         (Math.abs(Number(v[k].value)) > median * 3 || Math.abs(Number(v[k].value)) < median / 3)
       ) {
@@ -144,10 +155,12 @@ export function showReview(id, mode = 'view') {
     hasCells && r.cells[i]
       ? `<canvas class="cell-crop" data-crop-field="${k}" aria-hidden="true"></canvas>`
       : '';
+  // A field a plausibility check points at gets a yellow frame on the card.
+  const flagged = (k) => (!r.verified && findingsFor(r, k).length ? ' flagged' : '');
   const field = (k, i) =>
     editing
-      ? `<div class="review-field review-field-${k}"><label for="review-${k}">${labels[k]}</label>${crop(k, i)}<div class="review-input"><input id="review-${k}" data-review-field="${k}" value="${esc(r[k])}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${k !== 'name' ? `<button type="button" class="sign-btn" data-sign="${k}" aria-label="${esc(t('review.sign', { label: labels[k] }))}">±</button>` : ''}</div></div>`
-      : `<div class="review-field review-field-${k}"><span class="review-label">${labels[k]}</span>${crop(k, i)}<div class="review-digits" data-value-field="${k}">${markedValue(r[k], marks(k))}</div></div>`;
+      ? `<div class="review-field review-field-${k}${flagged(k)}"><label for="review-${k}">${labels[k]}</label>${crop(k, i)}<div class="review-input"><input id="review-${k}" data-review-field="${k}" value="${esc(r[k])}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${k !== 'name' ? `<button type="button" class="sign-btn" data-sign="${k}" aria-label="${esc(t('review.sign', { label: labels[k] }))}">±</button>` : ''}</div></div>`
+      : `<div class="review-field review-field-${k}${flagged(k)}"><span class="review-label">${labels[k]}</span>${crop(k, i)}<div class="review-digits" data-value-field="${k}">${markedValue(r[k], marks(k))}</div></div>`;
   const photo = s
     ? `<div class="row-crop ${hasCells ? 'has-cells' : ''}"><div class="review-crop-scroll"><canvas id="reviewCrop" class="review-image"></canvas></div>${hasCells ? '' : `<p class="crop-hint small">${t('review.scrollHint')}</p>`}</div>`
     : `<p class="small">${t('review.noPhoto')}</p>`;

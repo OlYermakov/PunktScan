@@ -191,6 +191,12 @@ export default {
   'warn.same': 'Ein anderer Punkt hat dieselben Lagekoordinaten: {names}.',
   'warn.scale':
     'Die Koordinate {axis} weicht in der Größenordnung deutlich von den anderen Punkten ab. Prüfe die Anzahl der Ziffern.',
+  'warn.far':
+    'Dieser Punkt liegt {distance} m vom nächsten Punkt entfernt, weit weg von allen anderen. Prüfe vor allem {axis}: Eine falsch gelesene Ziffer verschiebt ihn so.',
+  'warn.height': 'Die Höhe weicht um {distance} m von den übrigen Höhen ab.',
+  'warn.sequence': 'Der Name passt nicht in die Reihe der Nachbarn. Erwartet: {expected}.',
+  'warn.gap':
+    'Vor diesem Punkt fehlt {missing} in der Reihe. Prüfe, ob eine Zeile der Tabelle nicht erkannt wurde.',
   'warn.unsure':
     'Unsicher erkannte Zeichen oder abweichende Ergebnisse der Durchläufe. Prüfe den Namen, alle Ziffern und die Dezimalpunkte.',
 

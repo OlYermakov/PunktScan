@@ -193,6 +193,12 @@ export default {
   'warn.same': 'Un autre point a les mêmes coordonnées planimétriques : {names}.',
   'warn.scale':
     'L’ordre de grandeur de la coordonnée {axis} diffère nettement de celui des autres points. Vérifiez le nombre de chiffres.',
+  'warn.far':
+    'Ce point est à {distance} m du point le plus proche, loin de tous les autres. Vérifiez d’abord {axis} : un chiffre mal lu déplace un point ainsi.',
+  'warn.height': 'L’altitude s’écarte de {distance} m des autres altitudes.',
+  'warn.sequence': 'Le nom ne suit pas la série de ses voisins. Attendu : {expected}.',
+  'warn.gap':
+    '{missing} manque dans la série avant ce point. Vérifiez qu’aucune ligne du tableau n’a été oubliée.',
   'warn.unsure':
     'Certains caractères sont incertains ou les passes ne concordent pas. Vérifiez le nom, chaque chiffre et les séparateurs décimaux.',
 

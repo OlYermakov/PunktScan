@@ -355,3 +355,107 @@ export function orderFromValues(rows) {
   if (ne >= decided * 0.8) return 'ne';
   return null;
 }
+
+// Plausibility: a value can have the right format and still be misread by one digit. Geometry and
+// the naming pattern catch many of those. Returns, per row, advisory findings for the review:
+//   far       the point lies far away from all other points (one axis probably misread),
+//   height    the height differs strongly from the other heights,
+//   sequence  the name breaks a numbered series (F-1.2, F-13, F-1.4),
+//   gap       a numbered series skips a number here: a table row may have been missed.
+// Nothing here blocks the export.
+const median = (list) => {
+  const s = [...list].sort((a, b) => a - b),
+    m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+const SERIES = /^(.*?)(\d+)(\D*)$/;
+
+export function plausibility(values) {
+  const found = new Map(values.map((v) => [v.row, []]));
+  const add = (v, item) => found.get(v.row).push(item);
+
+  // Position: far from the centre of the points and far from its nearest neighbour, so a
+  // second group of points (another part of the site) is not flagged.
+  const pos = values
+    .filter((v) => v.e.ok && v.n.ok && !v.e.empty && !v.n.empty)
+    .map((v) => ({ v, e: Number(v.e.value), n: Number(v.n.value) }));
+  if (pos.length >= 4) {
+    const me = median(pos.map((p) => p.e)),
+      mn = median(pos.map((p) => p.n)),
+      centre = pos.map((p) => Math.hypot(p.e - me, p.n - mn)),
+      spread = Math.max(median(centre), 1);
+    pos.forEach((p, i) => {
+      if (centre[i] <= Math.max(8, 5 * spread)) return;
+      let nearest = Infinity;
+      for (const q of pos)
+        if (q !== p) nearest = Math.min(nearest, Math.hypot(q.e - p.e, q.n - p.n));
+      if (nearest <= Math.max(8, 3 * spread)) return;
+      const axis = Math.abs(p.e - me) >= Math.abs(p.n - mn) ? 'e' : 'n';
+      add(p.v, { field: axis, code: 'far', distance: nearest });
+    });
+  }
+
+  // Height: far from the median height, measured against the usual spread of the heights.
+  const hs = values.filter((v) => v.h.ok && !v.h.empty).map((v) => ({ v, h: Number(v.h.value) }));
+  if (hs.length >= 4) {
+    const mh = median(hs.map((x) => x.h)),
+      mad = median(hs.map((x) => Math.abs(x.h - mh)));
+    for (const x of hs) {
+      const off = Math.abs(x.h - mh);
+      if (off > Math.max(5, 8 * mad)) add(x.v, { field: 'h', code: 'height', difference: off });
+    }
+  }
+
+  // Names: only when neighbours mostly count up by one within the same pattern.
+  const parts = values.map((v) => {
+    const m = v.name.ok && v.name.name.match(SERIES);
+    return m
+      ? {
+          key: m[1] + '\u0000' + m[3],
+          prefix: m[1],
+          suffix: m[3],
+          num: Number(m[2]),
+          width: m[2].length,
+        }
+      : null;
+  });
+  const pairs = [];
+  for (let i = 1; i < parts.length; i++)
+    if (parts[i - 1] && parts[i] && parts[i - 1].key === parts[i].key)
+      pairs.push(parts[i].num - parts[i - 1].num);
+  // A misread name breaks two neighbouring steps, so half of the steps counting by one is enough.
+  const ones = pairs.filter((d) => d === 1).length;
+  if (ones < 2 || ones < pairs.length * 0.5) return found;
+  const label = (p, num) => p.prefix + String(num).padStart(p.width, '0') + p.suffix;
+  const same = (a, b) => a && b && a.key === b.key;
+  const broken = new Set();
+  parts.forEach((p, i) => {
+    const a = parts[i - 1],
+      b = parts[i + 1];
+    let expected = null;
+    // Between two points of a series that are two apart: this one should be the number between.
+    if (same(a, b) && b.num - a.num === 2 && !(same(p, a) && p.num === a.num + 1))
+      expected = label(a, a.num + 1);
+    // At the start or the end of a series only a wrong number in the same pattern is flagged.
+    const b2 = parts[i + 2],
+      a2 = parts[i - 2];
+    if (!a && same(b, b2) && same(p, b) && b2.num - b.num === 1 && p.num !== b.num - 1 && b.num > 0)
+      expected = label(b, b.num - 1);
+    if (!b && same(a, a2) && same(p, a) && a.num - a2.num === 1 && p.num !== a.num + 1)
+      expected = label(a, a.num + 1);
+    if (expected && expected.toLowerCase() !== values[i].name.name.toLowerCase()) {
+      broken.add(i);
+      add(values[i], { field: 'name', code: 'sequence', expected });
+    }
+  });
+  parts.forEach((p, i) => {
+    const a = parts[i - 1];
+    if (!same(a, p) || broken.has(i) || broken.has(i - 1)) return;
+    const step = p.num - a.num;
+    if (step < 2 || step > 4) return;
+    const missing = [];
+    for (let k = a.num + 1; k < p.num; k++) missing.push(label(a, k));
+    add(values[i], { field: 'name', code: 'gap', missing });
+  });
+  return found;
+}

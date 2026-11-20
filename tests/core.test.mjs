@@ -13,6 +13,8 @@ import {
   chooseReading,
   orderFromValues,
   PROJECT_VERSION,
+  plausibility,
+  validate,
   MAX_SOURCES,
 } from '../src/core.js';
 const row = (name = 'Af201', e = '3500030.210', n = '5600557.311', h = '') => ({
@@ -301,4 +303,100 @@ test('the E/N order is recognised from Gauss–Krüger and UTM numbers', () => {
 test('a height written with a separated sign is read', () => {
   assert.equal(coordinate('+ 100.772').value, '100.772');
   assert.equal(coordinate('- 99.994').value, '-99.994');
+});
+
+// Builds validated rows from [name, e, n, h] tuples for the plausibility checks.
+const plausible = (list) => {
+  const values = validate(list.map(([name, e, n, h = ''], i) => ({ id: 'r' + i, name, e, n, h })));
+  const found = plausibility(values);
+  return values.map((v) => found.get(v.row));
+};
+
+test('plausibility: a point far from all others is flagged on the axis that moved', () => {
+  const found = plausible([
+    ['P1', '3423197.856', '5538496.915'],
+    ['P2', '3423203.055', '5538498.482'],
+    ['P3', '3423198.026', '5538496.339'],
+    // One digit misread in N: 5538496 → 5539496, a kilometre away.
+    ['P4', '3423198.600', '5539496.512'],
+    ['P5', '3423203.231', '5538497.909'],
+  ]);
+  assert.deepEqual(
+    found.map((f) => f.map((x) => x.code)),
+    [[], [], [], ['far'], []],
+  );
+  assert.equal(found[3][0].field, 'n');
+  assert.ok(found[3][0].distance > 990 && found[3][0].distance < 1010);
+});
+
+test('plausibility: a second group of points (another part of the site) is not flagged', () => {
+  const found = plausible([
+    ['A1', '1000.000', '2000.000'],
+    ['A2', '1005.000', '2003.000'],
+    ['A3', '1002.000', '2006.000'],
+    ['B1', '1800.000', '2900.000'],
+    ['B2', '1804.000', '2903.000'],
+  ]);
+  assert.ok(
+    found.every((f) => !f.length),
+    JSON.stringify(found),
+  );
+});
+
+test('plausibility: few points or a spread-out line are left alone', () => {
+  assert.ok(
+    plausible([
+      ['A', '1.000', '2.000'],
+      ['B', '900.000', '2.000'],
+      ['C', '3.000', '2.000'],
+    ]).every((f) => !f.length),
+  );
+  const line = Array.from({ length: 12 }, (_, i) => [
+    'L' + (i + 1),
+    `${1000 + i * 50}.000`,
+    '5000.000',
+  ]);
+  assert.ok(plausible(line).every((f) => !f.length));
+});
+
+test('plausibility: a height far from the others is flagged', () => {
+  const found = plausible([
+    ['1', '10.000', '10.000', '101.20'],
+    ['2', '12.000', '10.000', '101.35'],
+    ['3', '14.000', '10.000', '191.42'],
+    ['4', '16.000', '10.000', '100.98'],
+    ['5', '18.000', '10.000', '102.10'],
+  ]);
+  assert.deepEqual(found[2], [{ field: 'h', code: 'height', difference: found[2][0].difference }]);
+  assert.ok(found[2][0].difference > 89);
+  assert.ok([0, 1, 3, 4].every((i) => !found[i].length));
+});
+
+test('plausibility: a name that breaks a numbered series gets the expected name', () => {
+  const rows = (names) => names.map((name, i) => [name, `${10 + i}.000`, '10.000']);
+  let found = plausible(rows(['F-1.1', 'F-1.2', 'F-13', 'F-1.4', 'F-1.5']));
+  assert.deepEqual(found[2], [{ field: 'name', code: 'sequence', expected: 'F-1.3' }]);
+  found = plausible(rows(['R-09-01', 'R-09-02', 'R-09-08', 'R-09-04', 'R-09-05']));
+  assert.deepEqual(found[2], [{ field: 'name', code: 'sequence', expected: 'R-09-03' }]);
+  assert.ok(
+    [0, 1, 3, 4].every((i) => !found[i].length),
+    JSON.stringify(found),
+  );
+  // At the ends of the series.
+  found = plausible(rows(['Af207', 'Af202', 'Af203', 'Af204', 'Af205']));
+  assert.deepEqual(found[0], [{ field: 'name', code: 'sequence', expected: 'Af201' }]);
+  found = plausible(rows(['Af201', 'Af202', 'Af203', 'Af204', 'Af265']));
+  assert.deepEqual(found[4], [{ field: 'name', code: 'sequence', expected: 'Af205' }]);
+});
+
+test('plausibility: a skipped number in a series points at a missed row', () => {
+  const rows = (names) => names.map((name, i) => [name, `${10 + i}.000`, '10.000']);
+  const found = plausible(rows(['P1', 'P2', 'P3', 'P5', 'P6', 'P7']));
+  assert.deepEqual(found[3], [{ field: 'name', code: 'gap', missing: ['P4'] }]);
+  assert.ok([0, 1, 2, 4, 5].every((i) => !found[i].length));
+  // Series that do not count up by one (10, 20, 30 …) and mixed names are not checked.
+  assert.ok(plausible(rows(['10', '20', '30', '40', '60'])).every((f) => !f.length));
+  assert.ok(plausible(rows(['BP', 'A7', 'X', 'K12', 'M'])).every((f) => !f.length));
+  // A large jump is a deliberate new range, not a missed row.
+  assert.ok(plausible(rows(['P1', 'P2', 'P3', 'P4', 'P100', 'P101'])).every((f) => !f.length));
 });

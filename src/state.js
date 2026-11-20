@@ -1,5 +1,5 @@
-import { validate, PROJECT_VERSION } from './core.js?v=__BUILD__';
-import { t } from './i18n.js?v=__BUILD__';
+import { validate, plausibility, PROJECT_VERSION } from './core.js?v=__BUILD__';
+import { t, lang } from './i18n.js?v=__BUILD__';
 
 // Shared, mutable application state. Modules read and write `state.*`.
 export const uid = () =>
@@ -34,6 +34,29 @@ export const projectName = (name) => {
     ? ''
     : value;
 };
+// Plausibility findings per row id (see core.js), recomputed only when a value changes.
+let findingsCache = { key: null, byId: new Map() };
+export function findings() {
+  const rows = state.project.rows,
+    key = rows.map((r) => [r.id, r.name, r.e, r.n, r.h].join('\u0001')).join('\u0002');
+  if (key !== findingsCache.key) {
+    const found = plausibility(validate(rows));
+    findingsCache = { key, byId: new Map(rows.map((r) => [r.id, found.get(r) ?? []])) };
+  }
+  return findingsCache.byId;
+}
+export const findingsFor = (row, field) =>
+  (findings().get(row.id) ?? []).filter((f) => !field || f.field === field);
+// Text of one plausibility finding (core.js) for the review card and the table.
+export function findingText(f) {
+  const number = (x) =>
+    new Intl.NumberFormat(lang, { maximumFractionDigits: x < 100 ? 1 : 0 }).format(x);
+  if (f.code === 'far')
+    return t('warn.far', { distance: number(f.distance), axis: f.field.toUpperCase() });
+  if (f.code === 'height') return t('warn.height', { distance: number(f.difference) });
+  if (f.code === 'sequence') return t('warn.sequence', { expected: f.expected });
+  return t('warn.gap', { missing: f.missing.join(', ') });
+}
 export const source = () => state.project.sources.find((s) => s.id === state.selected);
 export const ready = () =>
   state.project.rows.length > 0 &&

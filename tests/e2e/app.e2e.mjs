@@ -1016,3 +1016,67 @@ test('display: dark and sun themes are chosen in the header, follow the system a
   assert.deepEqual(problems, []);
   await context.close();
 });
+
+test('implausible points are marked and reviewed first: far away, odd height, name off the series, missing row', async () => {
+  const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+  await openPaste(page);
+  await page.locator('#pasteText').fill(
+    [
+      'P1;3423197.856;5538496.915;101.20',
+      'P2;3423203.055;5538498.482;101.35',
+      // N misread by one digit: a kilometre away.
+      'P3;3423198.026;5539496.339;100.98',
+      // Height misread: 101 → 191.
+      'P4;3423198.600;5538496.512;191.42',
+      // P5 is missing: a table row was not recognised.
+      'P6;3423203.231;5538497.909;102.10',
+      'P7;3423201.292;5538494.817;101.50',
+      // P8 read as P19.
+      'P19;3423202.100;5538495.100;101.40',
+      'P9;3423200.500;5538497.300;101.60',
+      'P10;3423199.700;5538495.900;101.10',
+    ].join('\n'),
+  );
+  await page.locator('#pasteApply').click();
+  const cell = (name, field) =>
+    page.locator(
+      `#pointsBody tr:has([data-field="name"][value="${name}"]) [data-field="${field}"]`,
+    );
+  const marked = await page
+    .locator('#pointsBody input.uncertain')
+    .evaluateAll((list) =>
+      list.map(
+        (i) => `${i.closest('tr').querySelector('[data-field="name"]').value}.${i.dataset.field}`,
+      ),
+    );
+  assert.deepEqual(marked.sort(), ['P19.name', 'P3.n', 'P4.h', 'P6.name']);
+  assert.match(
+    await cell('P3', 'n').getAttribute('title'),
+    /998 m vom nächsten Punkt.*Prüfe vor allem N/,
+  );
+  assert.match(await cell('P4', 'h').getAttribute('title'), /um 90 m/);
+  assert.match(await cell('P6', 'name').getAttribute('title'), /fehlt P5/);
+  assert.match(await cell('P19', 'name').getAttribute('title'), /Erwartet: P8/);
+  // The review starts with these points, in table order, the doubtful field framed in yellow.
+  await page.locator('#nextStepBtn').click();
+  for (const [name, field] of [
+    ['P3', 'n'],
+    ['P4', 'h'],
+    ['P6', 'name'],
+    ['P19', 'name'],
+  ]) {
+    assert.equal(await page.locator('[data-value-field="name"]').textContent(), name);
+    assert.equal(await page.locator('.review-field.flagged').count(), 1);
+    assert.equal(await page.locator(`.review-field-${field}.flagged`).count(), 1);
+    assert.ok(await page.locator('#reviewCard .review-message').isVisible());
+    await page.locator('#verifyNextBtn').click();
+  }
+  // The plausible rest is confirmed together; the file is ready.
+  await page.locator('#verifyAllBtn').click();
+  await page.locator('#dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('body').getAttribute('data-step'), 'file');
+  // Confirmed points are no longer marked.
+  assert.equal(await page.locator('#pointsBody input.uncertain').count(), 0);
+  assert.deepEqual(problems, []);
+  await context.close();
+});

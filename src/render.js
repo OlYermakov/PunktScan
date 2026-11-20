@@ -1,6 +1,6 @@
 import { coordinate, validate } from './core.js?v=__BUILD__';
 import { fullQuad, cellPolygon } from './imaging.js?v=__BUILD__';
-import { state, errors, source } from './state.js?v=__BUILD__';
+import { state, errors, source, findingsFor, findingText } from './state.js?v=__BUILD__';
 import { $, esc, toast } from './dom.js?v=__BUILD__';
 import { save, listProjects } from './storage.js?v=__BUILD__';
 import { renderFlow } from './flow.js?v=__BUILD__';
@@ -157,14 +157,21 @@ export function renderRows(paint = true) {
       const k = input.dataset.field,
         i = ['name', 'e', 'n', 'h'].indexOf(k),
         issue = v.issues.find((x) => x.field === k);
+      const found = v.row.verified ? [] : findingsFor(v.row, k);
       const unsure =
         !v.row.verified &&
         ((v.row.cellConfidence?.[i] ?? 100) < 70 ||
           v.row.disputed?.[i] ||
-          (k !== 'name' && k !== 'h' && coordinate(v.row[k]).short));
+          (k !== 'name' && k !== 'h' && coordinate(v.row[k]).short) ||
+          found.length);
       input.classList.toggle('invalid', !!issue);
       input.classList.toggle('uncertain', !!unsure);
-      input.title = unsure ? t('row.uncertain') : '';
+      // A plausibility finding explains itself; otherwise the general hint.
+      input.title = found.length
+        ? found.map(findingText).join(' ')
+        : unsure
+          ? t('row.uncertain')
+          : '';
       let message = input.parentElement.querySelector('.cell-error');
       if (issue) {
         if (!message) {
@@ -233,7 +240,10 @@ export function cellStatus(v, i) {
   if (v.issues.some((x) => x.field === field)) return 'error';
   if (r.verified) return 'verified';
   const doubtful =
-    r.uncertainChars?.[i]?.length || r.disputed?.[i] || (r.cellConfidence?.[i] ?? 100) < 70;
+    r.uncertainChars?.[i]?.length ||
+    r.disputed?.[i] ||
+    (r.cellConfidence?.[i] ?? 100) < 70 ||
+    findingsFor(r, field).length;
   return doubtful ? 'check' : 'ok';
 }
 export function renderOverlay(values = validate(state.project.rows)) {

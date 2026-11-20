@@ -2459,3 +2459,12 @@ td[data-label]::before {
 :root[data-theme='sun'] .eyebrow {
   letter-spacing: 0.06em;
 }
+
+/* Review card: a field a plausibility check points at (far away, odd height, name off the series). */
+.review-field.flagged {
+  border-radius: 10px;
+  outline: 2px solid #e0a400;
+  background: #fff6e5;
+  padding: 6px 8px 8px;
+  margin: 0 -8px;
+}

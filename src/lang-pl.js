@@ -187,6 +187,12 @@ export default {
   'warn.same': 'Inny punkt ma te same współrzędne poziome: {names}.',
   'warn.scale':
     'Rząd wielkości współrzędnej {axis} wyraźnie odbiega od pozostałych punktów. Sprawdź liczbę cyfr.',
+  'warn.far':
+    'Ten punkt leży {distance} m od najbliższego punktu, daleko od wszystkich pozostałych. Sprawdź najpierw {axis}: jedna źle odczytana cyfra tak przesuwa punkt.',
+  'warn.height': 'Wysokość różni się o {distance} m od pozostałych wysokości.',
+  'warn.sequence': 'Nazwa nie pasuje do serii sąsiednich punktów. Oczekiwano: {expected}.',
+  'warn.gap':
+    'Przed tym punktem w serii brakuje {missing}. Sprawdź, czy któryś wiersz tabeli nie został rozpoznany.',
   'warn.unsure':
     'Niektóre znaki rozpoznano niepewnie lub przebiegi dały różne wyniki. Sprawdź nazwę, każdą cyfrę i separatory dziesiętne.',
 

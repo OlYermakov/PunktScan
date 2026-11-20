@@ -189,6 +189,12 @@ export default {
   'warn.same': 'Otro punto tiene las mismas coordenadas planimétricas: {names}.',
   'warn.scale':
     'El orden de magnitud de la coordenada {axis} difiere mucho del de los demás puntos. Revisa el número de dígitos.',
+  'warn.far':
+    'Este punto está a {distance} m del punto más cercano, lejos de todos los demás. Revisa primero {axis}: un dígito mal leído desplaza así un punto.',
+  'warn.height': 'La altura difiere {distance} m de las demás alturas.',
+  'warn.sequence': 'El nombre no sigue la serie de sus vecinos. Se esperaba: {expected}.',
+  'warn.gap':
+    'Falta {missing} en la serie antes de este punto. Comprueba si alguna fila de la tabla no se reconoció.',
   'warn.unsure':
     'Hay caracteres dudosos o las pasadas no coinciden. Revisa el nombre, cada dígito y los separadores decimales.',
 

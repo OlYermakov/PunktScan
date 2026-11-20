@@ -190,6 +190,12 @@ export default {
   'warn.same': 'Un altro punto ha le stesse coordinate planimetriche: {names}.',
   'warn.scale':
     'L’ordine di grandezza della coordinata {axis} è molto diverso da quello degli altri punti. Controlla il numero di cifre.',
+  'warn.far':
+    'Questo punto dista {distance} m dal punto più vicino, lontano da tutti gli altri. Controlla prima {axis}: una cifra letta male sposta un punto così.',
+  'warn.height': 'La quota si discosta di {distance} m dalle altre quote.',
+  'warn.sequence': 'Il nome non segue la serie dei vicini. Previsto: {expected}.',
+  'warn.gap':
+    'Prima di questo punto manca {missing} nella serie. Controlla se una riga della tabella non è stata riconosciuta.',
   'warn.unsure':
     'Alcuni caratteri sono incerti o i passaggi non concordano. Controlla il nome, ogni cifra e i separatori decimali.',
 

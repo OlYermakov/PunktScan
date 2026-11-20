@@ -184,6 +184,12 @@ export default {
   'warn.same': 'Another point has the same plan coordinates: {names}.',
   'warn.scale':
     'Coordinate {axis} differs greatly in magnitude from the other points. Check the number of digits.',
+  'warn.far':
+    'This point is {distance} m from the nearest point, far away from all others. Check {axis} first: one misread digit moves a point like this.',
+  'warn.height': 'The height differs by {distance} m from the other heights.',
+  'warn.sequence': 'The name does not fit the series of its neighbours. Expected: {expected}.',
+  'warn.gap':
+    '{missing} is missing from the series before this point. Check whether a table row was not recognised.',
   'warn.unsure':
     'Some characters were recognized with low confidence or the passes disagreed. Check the name, every digit and the decimal points.',
 
