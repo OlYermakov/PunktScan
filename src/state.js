@@ -54,6 +54,10 @@ export function findingText(f) {
   if (f.code === 'far')
     return t('warn.far', { distance: number(f.distance), axis: f.field.toUpperCase() });
   if (f.code === 'height') return t('warn.height', { distance: number(f.difference) });
+  if (f.code === 'magnitude') return t('warn.magnitude', { axis: f.field.toUpperCase() });
+  if (f.code === 'heightLikeCoordinate') return t('warn.heightLikeCoordinate');
+  if (f.code === 'columnShape') return t('warn.columnShape', { axis: f.field.toUpperCase() });
+  if (f.code === 'nameShape') return t('warn.nameShape');
   if (f.code === 'sequence') return t('warn.sequence', { expected: f.expected });
   return t('warn.gap', { missing: f.missing.join(', ') });
 }

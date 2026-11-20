@@ -195,6 +195,13 @@ export default {
   'warn.sequence': 'El nombre no sigue la serie de sus vecinos. Se esperaba: {expected}.',
   'warn.gap':
     'Falta {missing} en la serie antes de este punto. Comprueba si alguna fila de la tabla no se reconoció.',
+  'warn.magnitude':
+    '{axis} es más de cien veces menor que la otra coordenada. Probablemente otro número (por ejemplo, una altura) está en la columna equivocada.',
+  'warn.heightLikeCoordinate':
+    'La altura es tan grande como una coordenada. Probablemente una coordenada está en la columna equivocada.',
+  'warn.columnShape':
+    '{axis} tiene otras cifras iniciales u otra cantidad de cifras que el resto de la columna.',
+  'warn.nameShape': 'El nombre no sigue el patrón de los demás nombres.',
   'warn.unsure':
     'Hay caracteres dudosos o las pasadas no coinciden. Revisa el nombre, cada dígito y los separadores decimales.',
 

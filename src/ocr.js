@@ -489,7 +489,9 @@ export async function recognizeOne(s, signal) {
     );
   let result = main.grid ? await readGrid(w, main.grid, main, signal, main.width) : null;
   if (result) result.view = main;
-  const incomplete = !result || result.rows.filter(goodRow).length < result.rows.length * 0.8;
+  // No rows at all is incomplete too (a grid found, but nothing readable in its cells).
+  const incomplete =
+    !result || !result.rows.length || result.rows.filter(goodRow).length < result.rows.length * 0.8;
   if (incomplete) {
     const fromWords = await readByWords(w, main, signal, main.width);
     if (fromWords && (!result || complete(fromWords) > complete(result)))
@@ -515,7 +517,7 @@ export async function recognizeOne(s, signal) {
   }
   const src = result?.view ?? main;
   const oneColumn = Boolean(result?.oneColumn);
-  if (!result || oneColumn) result = await readLines(w, src, s.order);
+  if (!result || oneColumn || !result.rows.length) result = await readLines(w, src, s.order);
   // A photo of a single number column gives no usable points: say so instead of guessing.
   if (oneColumn && !result.rows.some(goodRow)) result = { ...result, rows: [] };
   const { rows, raw, skipped } = result;

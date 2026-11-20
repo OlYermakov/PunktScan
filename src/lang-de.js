@@ -197,6 +197,13 @@ export default {
   'warn.sequence': 'Der Name passt nicht in die Reihe der Nachbarn. Erwartet: {expected}.',
   'warn.gap':
     'Vor diesem Punkt fehlt {missing} in der Reihe. Prüfe, ob eine Zeile der Tabelle nicht erkannt wurde.',
+  'warn.magnitude':
+    '{axis} ist über hundertmal kleiner als der andere Lagewert. Vermutlich steht hier eine andere Zahl (etwa eine Höhe) in der falschen Spalte.',
+  'warn.heightLikeCoordinate':
+    'Die Höhe ist so groß wie eine Koordinate. Vermutlich steht hier eine Koordinate in der falschen Spalte.',
+  'warn.columnShape':
+    '{axis} hat andere Anfangsziffern oder eine andere Stellenzahl als die übrigen Werte der Spalte.',
+  'warn.nameShape': 'Der Name folgt nicht dem Muster der übrigen Namen.',
   'warn.unsure':
     'Unsicher erkannte Zeichen oder abweichende Ergebnisse der Durchläufe. Prüfe den Namen, alle Ziffern und die Dezimalpunkte.',
 

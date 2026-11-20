@@ -190,6 +190,13 @@ export default {
   'warn.sequence': 'The name does not fit the series of its neighbours. Expected: {expected}.',
   'warn.gap':
     '{missing} is missing from the series before this point. Check whether a table row was not recognised.',
+  'warn.magnitude':
+    '{axis} is over a hundred times smaller than the other coordinate. Probably another number (such as a height) is in the wrong column.',
+  'warn.heightLikeCoordinate':
+    'The height is as large as a coordinate. Probably a coordinate is in the wrong column.',
+  'warn.columnShape':
+    '{axis} has other leading digits or another number of digits than the rest of the column.',
+  'warn.nameShape': 'The name does not follow the pattern of the other names.',
   'warn.unsure':
     'Some characters were recognized with low confidence or the passes disagreed. Check the name, every digit and the decimal points.',
 

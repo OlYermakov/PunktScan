@@ -193,6 +193,13 @@ export default {
   'warn.sequence': 'Nazwa nie pasuje do serii sąsiednich punktów. Oczekiwano: {expected}.',
   'warn.gap':
     'Przed tym punktem w serii brakuje {missing}. Sprawdź, czy któryś wiersz tabeli nie został rozpoznany.',
+  'warn.magnitude':
+    '{axis} jest ponad sto razy mniejsze od drugiej współrzędnej. Prawdopodobnie inna liczba (np. wysokość) trafiła do złej kolumny.',
+  'warn.heightLikeCoordinate':
+    'Wysokość jest tak duża jak współrzędna. Prawdopodobnie współrzędna trafiła do złej kolumny.',
+  'warn.columnShape':
+    '{axis} ma inne cyfry początkowe lub inną liczbę cyfr niż pozostałe wartości kolumny.',
+  'warn.nameShape': 'Nazwa nie pasuje do wzoru pozostałych nazw.',
   'warn.unsure':
     'Niektóre znaki rozpoznano niepewnie lub przebiegi dały różne wyniki. Sprawdź nazwę, każdą cyfrę i separatory dziesiętne.',
 

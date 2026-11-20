@@ -375,7 +375,11 @@ test('plausibility: a height far from the others is flagged', () => {
 test('plausibility: a name that breaks a numbered series gets the expected name', () => {
   const rows = (names) => names.map((name, i) => [name, `${10 + i}.000`, '10.000']);
   let found = plausible(rows(['F-1.1', 'F-1.2', 'F-13', 'F-1.4', 'F-1.5']));
-  assert.deepEqual(found[2], [{ field: 'name', code: 'sequence', expected: 'F-1.3' }]);
+  // F-13 also has another shape than F-1.x; the series check names the expected name.
+  assert.deepEqual(
+    found[2].find((f) => f.code === 'sequence'),
+    { field: 'name', code: 'sequence', expected: 'F-1.3' },
+  );
   found = plausible(rows(['R-09-01', 'R-09-02', 'R-09-08', 'R-09-04', 'R-09-05']));
   assert.deepEqual(found[2], [{ field: 'name', code: 'sequence', expected: 'R-09-03' }]);
   assert.ok(
@@ -399,4 +403,52 @@ test('plausibility: a skipped number in a series points at a missed row', () => 
   assert.ok(plausible(rows(['BP', 'A7', 'X', 'K12', 'M'])).every((f) => !f.length));
   // A large jump is a deliberate new range, not a missed row.
   assert.ok(plausible(rows(['P1', 'P2', 'P3', 'P4', 'P100', 'P101'])).every((f) => !f.length));
+});
+
+test('plausibility: a height in a coordinate column and a coordinate in the height column are flagged', () => {
+  const found = plausible([
+    ['SAP.152', '100.772', '5545947.980', ''],
+    ['SAP.154', '3445921.463', '5545956.082', '101.175'],
+    ['SAP.156', '3445920.975', '5545955.154', '5545955.154'],
+    // A local site grid: small, but E and N of the same order.
+    ['L1', '1012.350', '2034.100', '45.20'],
+  ]);
+  assert.deepEqual(found[0], [{ field: 'e', code: 'magnitude' }]);
+  assert.deepEqual(found[1], []);
+  assert.deepEqual(found[2], [{ field: 'h', code: 'heightLikeCoordinate' }]);
+  assert.deepEqual(found[3], []);
+});
+
+test('plausibility: a value of another shape than its column stands out', () => {
+  const rows = [
+    ['F-1.1', '3439901.100', '5544901.100'],
+    ['F-1.2', '3439902.200', '5544902.200'],
+    ['F-1.3', '3439903.300', '5544903.300'],
+    ['3332', '3439904.400', '5544904.400'],
+    ['F-1.5', '3439905.500', '3439905.500'],
+    ['F-1.6', '3439906.600', '5544906.600'],
+  ];
+  const found = plausible(rows);
+  assert.ok(found[3].some((f) => f.field === 'name' && f.code === 'nameShape'));
+  assert.ok(found[4].some((f) => f.field === 'n' && f.code === 'columnShape'));
+  assert.ok([0, 1, 2, 5].every((i) => !found[i].some((f) => /Shape/.test(f.code))));
+  // Mixed names (Af201 … Aufs201 …) have no clear majority: nothing is flagged.
+  const mixed = plausible(
+    ['Af201', 'Af202', 'Af203', 'Aufs201', 'Aufs202', 'Aufs203'].map((n, i) => [
+      n,
+      `3415030.${i}10`,
+      `5545557.${i}11`,
+    ]),
+  );
+  assert.ok(mixed.every((f) => !f.some((x) => /Shape/.test(x.code))));
+});
+
+test('plausibility: the magnitude check marks the value unlike its column, not just the smaller one', () => {
+  const found = plausible([
+    ['F-4.1', '3439841.100', '5544861422'.replace(/^/, '') + '.000'],
+    ['F-4.2', '3439842.200', '5544862.200'],
+    ['F-4.3', '3439843.300', '5544863.300'],
+    ['F-4.4', '3439844.400', '5544864.400'],
+  ]);
+  assert.equal(found[0].find((f) => f.code === 'magnitude')?.field, 'n');
 });

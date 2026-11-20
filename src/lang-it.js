@@ -196,6 +196,13 @@ export default {
   'warn.sequence': 'Il nome non segue la serie dei vicini. Previsto: {expected}.',
   'warn.gap':
     'Prima di questo punto manca {missing} nella serie. Controlla se una riga della tabella non è stata riconosciuta.',
+  'warn.magnitude':
+    '{axis} è oltre cento volte più piccolo dell’altra coordinata. Probabilmente un altro numero (ad esempio una quota) è nella colonna sbagliata.',
+  'warn.heightLikeCoordinate':
+    'La quota è grande quanto una coordinata. Probabilmente una coordinata è nella colonna sbagliata.',
+  'warn.columnShape':
+    '{axis} ha cifre iniziali o un numero di cifre diversi dal resto della colonna.',
+  'warn.nameShape': 'Il nome non segue lo schema degli altri nomi.',
   'warn.unsure':
     'Alcuni caratteri sono incerti o i passaggi non concordano. Controlla il nome, ogni cifra e i separatori decimali.',
 

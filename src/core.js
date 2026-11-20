@@ -359,6 +359,9 @@ export function orderFromValues(rows) {
 // Plausibility: a value can have the right format and still be misread by one digit. Geometry and
 // the naming pattern catch many of those. Returns, per row, advisory findings for the review:
 //   far       the point lies far away from all other points (one axis probably misread),
+//   magnitude E and N differ by more than a hundred times (a height in a coordinate column),
+//   heightLikeCoordinate  the height is as large as a coordinate,
+//   columnShape / nameShape  the value does not have the shape most of its column has,
 //   height    the height differs strongly from the other heights,
 //   sequence  the name breaks a numbered series (F-1.2, F-13, F-1.4),
 //   gap       a numbered series skips a number here: a table row may have been missed.
@@ -393,6 +396,81 @@ export function plausibility(values) {
       const axis = Math.abs(p.e - me) >= Math.abs(p.n - mn) ? 'e' : 'n';
       add(p.v, { field: axis, code: 'far', distance: nearest });
     });
+  }
+
+  // Magnitude: Rechtswert and Hochwert of one point have the same order of magnitude in every
+  // usual system. On Gauss-Krüger or UTM scale, a value a hundred times smaller than its partner
+  // is most likely another number in the wrong column, such as a height.
+  // The value to look at is the one unlike its own column (a lost decimal point makes N a
+  // thousand times too large; then E is fine).
+  const typical = (k) => {
+    const list = values
+      .filter((v) => v[k].ok && !v[k].empty)
+      .map((v) => Math.abs(Number(v[k].value)));
+    return list.length ? median(list) : null;
+  };
+  const typicalE = typical('e'),
+    typicalN = typical('n'),
+    offBy = (x, t) => (t ? Math.abs(Math.log10((x || 1e-9) / t)) : 0);
+  for (const v of values) {
+    const e = v.e.ok && !v.e.empty ? Math.abs(Number(v.e.value)) : null,
+      n = v.n.ok && !v.n.empty ? Math.abs(Number(v.n.value)) : null,
+      h = v.h.ok && !v.h.empty ? Math.abs(Number(v.h.value)) : null;
+    // Only on Gauss-Krüger or UTM scale: near the origin of a local grid, E 900 / N 2 is fine.
+    if (
+      e !== null &&
+      n !== null &&
+      Math.max(e, n) >= 100000 &&
+      Math.min(e, n) * 100 < Math.max(e, n)
+    )
+      add(v, {
+        field:
+          offBy(e, typicalE) === offBy(n, typicalN)
+            ? e < n
+              ? 'e'
+              : 'n'
+            : offBy(e, typicalE) > offBy(n, typicalN)
+              ? 'e'
+              : 'n',
+        code: 'magnitude',
+      });
+    // A "height" as large as a Gauss-Krüger or UTM coordinate is a coordinate in the wrong column.
+    if (h !== null && h >= 100000 && e !== null && n !== null && Math.min(e, n) >= 100000)
+      add(v, { field: 'h', code: 'heightLikeCoordinate' });
+  }
+
+  // Column shape: when three quarters of a column share one shape, a value of another shape stands
+  // out. Coordinates: the same number of digits and the same leading digits (to 10 km). Names:
+  // the same pattern of letters, digits and separators (F-1.1, F-1.2 … but "3332").
+  const dominant = (shapes) => {
+    const counts = new Map();
+    for (const sh of shapes) if (sh) counts.set(sh, (counts.get(sh) ?? 0) + 1);
+    const [best] = [...counts].sort((a, b) => b[1] - a[1]);
+    const total = shapes.filter(Boolean).length;
+    return best && best[1] >= 4 && best[1] >= total * 0.75 ? best[0] : null;
+  };
+  const coordShape = (c) => {
+    if (!c.ok || c.empty) return null;
+    const digits = String(c.value).replace(/^-/, '').split('.')[0];
+    return digits.length >= 6 ? digits.length + ':' + digits.slice(0, digits.length - 4) : null;
+  };
+  const nameShape = (v) =>
+    v.name.ok ? v.name.name.replace(/[A-Za-z]+/g, 'A').replace(/\d+/g, '9') : null;
+  for (const k of ['e', 'n']) {
+    const shapes = values.map((v) => coordShape(v[k])),
+      main = dominant(shapes);
+    if (main)
+      values.forEach((v, i) => {
+        if (shapes[i] && shapes[i] !== main) add(v, { field: k, code: 'columnShape' });
+      });
+  }
+  {
+    const shapes = values.map(nameShape),
+      main = dominant(shapes);
+    if (main)
+      values.forEach((v, i) => {
+        if (shapes[i] && shapes[i] !== main) add(v, { field: 'name', code: 'nameShape' });
+      });
   }
 
   // Height: far from the median height, measured against the usual spread of the heights.

@@ -199,6 +199,13 @@ export default {
   'warn.sequence': 'Le nom ne suit pas la série de ses voisins. Attendu : {expected}.',
   'warn.gap':
     '{missing} manque dans la série avant ce point. Vérifiez qu’aucune ligne du tableau n’a été oubliée.',
+  'warn.magnitude':
+    '{axis} est plus de cent fois plus petit que l’autre coordonnée. Un autre nombre (une altitude, par exemple) est sans doute dans la mauvaise colonne.',
+  'warn.heightLikeCoordinate':
+    'L’altitude est aussi grande qu’une coordonnée. Une coordonnée est sans doute dans la mauvaise colonne.',
+  'warn.columnShape':
+    '{axis} a d’autres premiers chiffres ou un autre nombre de chiffres que le reste de la colonne.',
+  'warn.nameShape': 'Le nom ne suit pas le modèle des autres noms.',
   'warn.unsure':
     'Certains caractères sont incertains ou les passes ne concordent pas. Vérifiez le nom, chaque chiffre et les séparateurs décimaux.',
 
