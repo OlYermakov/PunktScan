@@ -396,6 +396,8 @@ test('German by default; switching the language translates the app and is rememb
     assert.equal(await page.locator('#pointCount').textContent(), '1', 'draft kept');
   }
   await page.reload();
+  // The draft is read from IndexedDB after the page appears.
+  await page.locator('#pointCount', { hasText: '1' }).waitFor();
   assert.equal(await page.locator('#langSelect').inputValue(), 'uk', 'choice remembered');
   assert.equal(await page.locator('#exportStatus').textContent(), 'Залишилося звірити: 1');
   // Plural forms follow the language (Ukrainian: 1 точка, 2 точки, 5 точок).
