@@ -13,6 +13,16 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-180.png" />
+    <script>
+      // The saved theme applies before the first paint, so the page does not flash in another one.
+      try {
+        const theme = localStorage.getItem('punktscan-theme');
+        if (['light', 'dark', 'sun'].includes(theme))
+          document.documentElement.dataset.theme = theme;
+      } catch {
+        // Storage blocked: the automatic theme stays.
+      }
+    </script>
     <link rel="stylesheet" href="./style.css?v=__BUILD__" />
     <script defer src="./vendor/tesseract.min.js"></script>
     <script type="module" src="./app.js?v=__BUILD__"></script>

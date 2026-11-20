@@ -1,4 +1,3 @@
-import { themeCss } from './themes.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -22,13 +21,10 @@ for (const file of await walk('src')) {
   hash.update(await fs.readFile(file));
 }
 hash.update(await fs.readFile('package-lock.json'));
-hash.update(await fs.readFile('scripts/themes.mjs'));
 const version = hash.digest('hex').slice(0, 10);
 await fs.rm('dist', { recursive: true, force: true });
 await fs.mkdir('dist', { recursive: true });
 await fs.cp('src', 'dist', { recursive: true });
-// Dark and high-contrast themes are derived from the stylesheet (see scripts/themes.mjs).
-await fs.appendFile('dist/style.css', '\n' + themeCss(await fs.readFile('src/style.css', 'utf8')));
 const tesseractVersion = JSON.parse(
   await fs.readFile('node_modules/tesseract.js/package.json', 'utf8'),
 ).version;
