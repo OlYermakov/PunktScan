@@ -9,6 +9,7 @@ import {
   uncertainIndices,
   disagreement,
   pointFromColumn,
+  combineReadings,
 } from '../src/layout.js';
 
 const word = (text, x, y, w = 120, h = 30, confidence = 90) => ({
@@ -219,4 +220,76 @@ test('a decimal point too small to read is put back where the column has it', ()
   // Too few values with a point to know the format: nothing changes.
   const few = [{ e: '3415168520' }, { e: '3415153.890' }, { e: '3415123.250' }];
   assert.equal(pointFromColumn(few), 0);
+});
+
+// Rows as the grid reader makes them, for the second-reading tests.
+const readRows = (list) =>
+  list.map(([name, e, n, conf = [90, 90, 90, 90]]) => ({
+    name,
+    e,
+    n,
+    h: '',
+    cellConfidence: [...conf],
+    disputed: [false, true, true, false],
+    uncertainChars: [[], [3], [3], []],
+  }));
+const table = [
+  ['P1', '3423197.856', '5538496.915'],
+  ['P2', '3423203.055', '5538498.482'],
+  ['P3', '3423198.026', '5538496.339'],
+  ['P4', '3423198.600', '5538496.512'],
+];
+
+test('second reading: the same valid value of its column shape confirms it', () => {
+  const rows = readRows(table);
+  const counts = combineReadings(
+    rows,
+    rows.map((r) => [r.name, r.e, r.n, null]),
+  );
+  assert.deepEqual(counts, { compared: 12, agreed: 12, replaced: 0 });
+  for (const r of rows) {
+    assert.deepEqual(r.disputed.slice(0, 3), [false, false, false]);
+    assert.deepEqual(r.uncertainChars.slice(0, 3), [[], [], []]);
+  }
+});
+
+test('second reading: agreement does not confirm an unsure reading or a value off its column', () => {
+  const rows = readRows([
+    ...table,
+    // Tesseract unsure (35 %): agreement alone is not enough.
+    ['P5', '3423199.111', '5538497.222', [90, 35, 90, 90]],
+    // A height in the Rechtswert column: same reading, but not the column's shape.
+    ['P6', '100.772', '5538497.333'],
+  ]);
+  combineReadings(
+    rows,
+    rows.map((r) => [r.name, r.e, r.n, null]),
+  );
+  assert.equal(rows[4].disputed[1], true);
+  assert.equal(rows[5].disputed[1], true);
+  assert.equal(rows[0].disputed[1], false);
+});
+
+test('second reading: a difference keeps the field marked, the valid reading wins', () => {
+  const rows = readRows(table);
+  rows[1].e = '3423203055'; // Tesseract lost the point
+  rows[2].n = '5538496.339';
+  const second = rows.map((r) => [r.name, r.e, r.n, null]);
+  second[1][1] = '3423203.055';
+  second[2][2] = '5538496.389'; // one digit differs
+  second[3][0] = '－P4'; // a full-width dash from the cell border: cleaned to P4
+  second[0][1] = null; // a cell that was not read
+  second[0][2] = ''; // read as nothing
+  const counts = combineReadings(rows, second);
+  assert.equal(rows[1].e, '3423203.055');
+  assert.equal(rows[1].disputed[1], true);
+  assert.equal(rows[2].n, '5538496.389');
+  assert.equal(rows[2].disputed[2], true);
+  assert.deepEqual(rows[2].uncertainChars[2], [9]);
+  assert.equal(rows[3].name, 'P4');
+  assert.equal(rows[3].disputed[0], false);
+  // Unread cells leave Tesseract's value and doubt as they were.
+  assert.equal(rows[0].disputed[1], true);
+  assert.equal(rows[0].disputed[2], true);
+  assert.equal(counts.replaced, 2);
 });
