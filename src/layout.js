@@ -275,6 +275,41 @@ export function borrowSeparators(rows, others) {
   return changed;
 }
 
+// A decimal point too small to read: when most values of a column share one format (for example
+// 3415xxx.xxx) and a value has exactly that many digits with the same leading digits, the point
+// goes where the column has it. The digits never change, and the value stays marked for review.
+export function pointFromColumn(rows) {
+  let changed = 0;
+  ['e', 'n', 'h'].forEach((k, i) => {
+    const values = rows.map((r) => String(r[k] ?? '').trim());
+    const formats = new Map();
+    for (const v of values) {
+      const m = v.match(/^([+-]?)(\d+)[.,](\d{1,4})$/);
+      if (!m) continue;
+      const key = `${m[2].length}.${m[3].length}`;
+      formats.set(key, [...(formats.get(key) ?? []), m[2]]);
+    }
+    const [best] = [...formats].sort((a, b) => b[1].length - a[1].length);
+    if (!best) return;
+    const [key, integers] = best;
+    const pointed = values.filter((v) => /^[+-]?\d+[.,]\d+$/.test(v)).length;
+    if (integers.length < 3 || integers.length < pointed * 0.8) return;
+    const [intLen, decLen] = key.split('.').map(Number);
+    // Leading digits shared by the column (zone and kilometre digits of the coordinates).
+    const lead = Math.max(1, intLen - 3);
+    const prefixes = new Set(integers.map((d) => d.slice(0, lead)));
+    rows.forEach((r, j) => {
+      const m = values[j].match(/^([+-]?)(\d+)$/);
+      if (!m || m[2].length !== intLen + decLen || !prefixes.has(m[2].slice(0, lead))) return;
+      r[k] = `${m[1]}${m[2].slice(0, intLen)}.${m[2].slice(intLen)}`;
+      if (r.disputed) r.disputed[i + 1] = true;
+      if (r.uncertainChars) r.uncertainChars[i + 1] = [m[1].length + intLen];
+      changed++;
+    });
+  });
+  return changed;
+}
+
 // Edit distance (insertions, deletions, substitutions) between two short strings.
 export function editDistance(a, b) {
   const prev = [...Array(b.length + 1).keys()];

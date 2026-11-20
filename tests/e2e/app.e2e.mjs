@@ -638,8 +638,8 @@ test(
     console.log(report.join('\n') + `\nTOTAL ${correct}/${total}`);
     // The safety property: a value read wrongly is always marked for review.
     assert.deepEqual(silent, []);
-    // 250/283 when the last photos were added; allow small differences between browser builds.
-    assert.ok(correct >= 240, `accuracy regressed: ${correct}/${total}`);
+    // 283/313 when the last photo was added; allow small differences between browser builds.
+    assert.ok(correct >= 273, `accuracy regressed: ${correct}/${total}`);
     // Headings "Hoch | Rechts" over Rechtswert | Hochwert values: order taken from the values,
     // and the user is told (the values themselves are checked above).
     assert.match(

@@ -8,6 +8,7 @@ import {
   borrowSeparators,
   uncertainIndices,
   disagreement,
+  pointFromColumn,
 } from '../src/layout.js';
 
 const word = (text, x, y, w = 120, h = 30, confidence = 90) => ({
@@ -190,4 +191,32 @@ test('differences are marked exactly, and a pass without the decimal point is ig
   assert.deepEqual(disagreement('5545557.784', [{ text: '5545557784' }]), []);
   assert.deepEqual(disagreement('5545557.31', [{ text: '5545557.311' }]), [8, 9]);
   assert.deepEqual(disagreement('R-09-06', [{ text: 'R-0906' }], true), [4]);
+});
+
+test('a decimal point too small to read is put back where the column has it', () => {
+  const rows = [
+    ['ES101', '3415168520', '5545468.320'],
+    ['ES102', '3415153.890', '5545481940'],
+    ['ES103', '3415123.250', '5545507.660'],
+    ['ES104', '3415084.959', '5545536.486'],
+    // Different leading digits or digit count: not the column's number, left alone.
+    ['ES105', '9915087708', '55455364910'],
+  ].map(([name, e, n]) => ({
+    name,
+    e,
+    n,
+    h: '',
+    disputed: [false, false, false, false],
+    uncertainChars: [[], [], [], []],
+  }));
+  assert.equal(pointFromColumn(rows), 2);
+  assert.equal(rows[0].e, '3415168.520');
+  assert.equal(rows[1].n, '5545481.940');
+  assert.deepEqual([rows[4].e, rows[4].n], ['9915087708', '55455364910']);
+  // The value is marked: the point is the character to check.
+  assert.equal(rows[0].disputed[1], true);
+  assert.deepEqual(rows[0].uncertainChars[1], [7]);
+  // Too few values with a point to know the format: nothing changes.
+  const few = [{ e: '3415168520' }, { e: '3415153.890' }, { e: '3415123.250' }];
+  assert.equal(pointFromColumn(few), 0);
 });

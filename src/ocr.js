@@ -21,6 +21,7 @@ import {
   tableFromWords,
   harmonize,
   borrowSeparators,
+  pointFromColumn,
   uncertainIndices,
   disagreement,
 } from './layout.js?v=__BUILD__';
@@ -430,6 +431,13 @@ async function readLines(w, src, chosenOrder) {
   };
 }
 
+// Dark pixels of a grey image: how much writing it shows.
+function ink(data) {
+  let n = 0;
+  for (let i = 0; i < data.length; i += 4) if (data[i] < 150) n++;
+  return n;
+}
+
 export async function recognizeOne(s, signal) {
   if (signal.aborted) throw new Error('cancel');
   if (!validQuad(s.quad)) throw new Error(t('ocr.crossed'));
@@ -440,10 +448,14 @@ export async function recognizeOne(s, signal) {
   // A "view" is the photo straightened inside one frame, ready for reading.
   const view = (quad) => {
     const plain = rectify(input.data, s.width, s.height, quad, false),
-      prepared = s.enhance ? rectify(input.data, s.width, s.height, quad, true) : plain,
       // Word pass image: the plain photo without table lines and value boxes.
       bare = new Uint8ClampedArray(plain.data);
     removeLines(bare, plain.width, plain.height);
+    let prepared = s.enhance ? rectify(input.data, s.width, s.height, quad, true) : plain;
+    // Moire cleaning blurs before it raises the contrast. Thin, crisp strokes (a CAD export, a
+    // screenshot) fade away in that blur: when almost all the writing is gone (2 % left on a CAD
+    // export, against 30 % or more on photos the cleaning helps), read the plain image.
+    if (prepared !== plain && ink(prepared.data) < 0.1 * ink(bare)) prepared = plain;
     return {
       quad: quad.map((p) => ({ ...p })),
       width: prepared.width,
@@ -507,6 +519,8 @@ export async function recognizeOne(s, signal) {
   // A photo of a single number column gives no usable points: say so instead of guessing.
   if (oneColumn && !result.rows.some(goodRow)) result = { ...result, rows: [] };
   const { rows, raw, skipped } = result;
+  // Decimal points too small to read are put back where the rest of the column has them.
+  if (result.columns) pointFromColumn(rows);
   // E/N order: an explicit choice wins; otherwise the numbers themselves (zone digit of the
   // Rechtswert), then the headings, then E, N. A conflict with the headings is reported.
   const headingOrder = result.autoOrder ?? null,
