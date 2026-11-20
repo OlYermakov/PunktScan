@@ -725,3 +725,73 @@ test('review cards: doubtful points first, marked characters, swipes and confirm
   assert.deepEqual(problems, []);
   await context.close();
 });
+
+// Fake share sheet: records shared files; window.__shareMode = 'ok' | 'cancel' | 'fail'.
+function stubShare() {
+  window.__shared = [];
+  window.__shareMode = 'ok';
+  // Navigator's own properties cannot simply be assigned in Chromium.
+  const define = (name, value) =>
+    Object.defineProperty(navigator, name, { value, configurable: true });
+  define('canShare', (data) => Array.isArray(data?.files));
+  define('share', async (data) => {
+    if (window.__shareMode === 'cancel') throw new DOMException('closed', 'AbortError');
+    if (window.__shareMode === 'fail') throw new DOMException('not allowed', 'NotAllowedError');
+    for (const f of data.files)
+      window.__shared.push({ name: f.name, type: f.type, text: await f.text() });
+  });
+}
+
+test('export through the share sheet: sent, cancelled, or saved when sending fails', async () => {
+  const { context, page, problems } = await openApp({ init: stubShare });
+  const reference = await fs.readFile('examples/test-reference.GSI', 'latin1');
+  const table = (await fs.readFile('examples/test-points.csv', 'utf8')).replace(/^\ufeff/, '');
+  await openPaste(page);
+  await page.locator('#pasteText').fill(table);
+  await page.locator('#pasteApply').click();
+  await verifyAll(page, 14);
+
+  // Cancelled: the export dialog stays open.
+  await page.evaluate(() => (window.__shareMode = 'cancel'));
+  await page.locator('#exportBtn').click();
+  await page.locator('#exportName').fill('Absteckung');
+  await page.locator('#shareExport').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.locator('#dialog').isVisible(), true);
+
+  // Sent: the GSI file goes to the share sheet with the exact content.
+  await page.evaluate(() => (window.__shareMode = 'ok'));
+  await page.locator('#shareExport').click();
+  await page.locator('#dialog').waitFor({ state: 'hidden' });
+  const [shared] = await page.evaluate(() => window.__shared);
+  assert.equal(shared.name, 'Absteckung.GSI');
+  assert.equal(shared.text, reference);
+  await page.locator('#toast', { hasText: 'übergeben' }).waitFor();
+
+  // Sharing refused by the browser: the file is saved the usual way instead.
+  await page.evaluate(() => (window.__shareMode = 'fail'));
+  await page.locator('#csvBtn').click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#shareExport').click(),
+  ]);
+  assert.match(download.suggestedFilename(), /\.CSV$/);
+  await page.locator('#toast', { hasText: 'gespeichert' }).waitFor();
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('without a share sheet the export dialog only offers saving', async () => {
+  const { context, page } = await openApp({
+    init: () =>
+      Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true }),
+  });
+  await openPaste(page);
+  await page.locator('#pasteText').fill('P1;10.000;20.000');
+  await page.locator('#pasteApply').click();
+  await verifyAll(page, 1);
+  await page.locator('#exportBtn').click();
+  await page.locator('#confirmExport').waitFor();
+  assert.equal(await page.locator('#shareExport').count(), 0);
+  await context.close();
+});

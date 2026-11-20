@@ -52,3 +52,24 @@ export function download(content, type, name) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+
+// System share sheet (iPhone, Android): sends a file straight to mail, AirDrop, Teams, a drive…
+// Downloads on iOS end up in the Files app and are easy to lose.
+export function canShareFiles() {
+  try {
+    const probe = new File(['x'], 'x.txt', { type: 'text/plain' });
+    return Boolean(navigator.canShare?.({ files: [probe] }));
+  } catch {
+    return false;
+  }
+}
+
+// 'shared', 'cancelled' (the user closed the sheet) or 'failed'.
+export async function shareFile(content, type, name) {
+  try {
+    await navigator.share({ files: [new File([content], name, { type })], title: name });
+    return 'shared';
+  } catch (e) {
+    return e?.name === 'AbortError' ? 'cancelled' : 'failed';
+  }
+}

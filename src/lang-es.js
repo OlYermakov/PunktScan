@@ -257,6 +257,9 @@ export default {
   'export.note':
     'Las coordenadas no se transforman. En el GSI los nombres se completan con ceros a la izquierda hasta 16 caracteres: lo exige el formato.',
   'export.save': 'Guardar .{format}',
+  'export.share': 'Enviar…',
+  'export.sharedToast': 'Archivo .{format} enviado.',
+  'export.shareFailed': 'No se pudo enviar: el archivo se ha guardado en su lugar.',
   'export.savedToast': 'El archivo .{format} está listo para guardarse.',
 
   'save.local': 'Borrador local',

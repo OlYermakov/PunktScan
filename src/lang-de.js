@@ -259,6 +259,9 @@ export default {
   'export.note':
     'Koordinaten werden nicht umgerechnet. Im GSI werden Namen links mit Nullen auf 16 Zeichen aufgefüllt — so verlangt es das Format.',
   'export.save': 'Als .{format} speichern',
+  'export.share': 'Senden …',
+  'export.sharedToast': 'Datei .{format} übergeben.',
+  'export.shareFailed': 'Senden war nicht möglich — die Datei wurde stattdessen gespeichert.',
   'export.savedToast': 'Datei .{format} zum Speichern bereitgestellt.',
 
   'save.local': 'Lokaler Entwurf',

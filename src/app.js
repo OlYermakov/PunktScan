@@ -18,6 +18,7 @@ import {
   pixelsFor,
   download,
   esc,
+  shareFile,
 } from './dom.js?v=__BUILD__';
 import { save, restore, flushSave } from './storage.js?v=__BUILD__';
 import { snapshot, undo, render, renderPhoto, renderRows, setBusy } from './render.js?v=__BUILD__';
@@ -315,16 +316,27 @@ $('dialog').addEventListener('click', (e) => {
   if (e.target.dataset.sign) toggleSign(e.target.dataset.sign);
   if (e.target.id === 'pasteApply') applyPaste();
   if (e.target.id === 'cacheOfflineBtn') cacheOffline();
-  if (e.target.id === 'confirmExport') {
+  if (e.target.id === 'confirmExport' || e.target.id === 'shareExport') {
     const format = e.target.dataset.format;
     if (!ready()) return;
-    download(
-      format === 'GSI' ? gsi(state.project.rows) : csv(state.project.rows),
-      format === 'GSI' ? 'text/plain;charset=us-ascii' : 'text/csv;charset=utf-8',
-      safeFilename($('exportName').value, format),
-    );
-    closeDialog();
-    toast(t('export.savedToast', { format }));
+    const content = format === 'GSI' ? gsi(state.project.rows) : csv(state.project.rows),
+      type = format === 'GSI' ? 'text/plain' : 'text/csv',
+      name = safeFilename($('exportName').value, format);
+    if (e.target.id === 'confirmExport') {
+      download(content, type + (format === 'GSI' ? ';charset=us-ascii' : ';charset=utf-8'), name);
+      closeDialog();
+      toast(t('export.savedToast', { format }));
+      return;
+    }
+    // The share sheet must open within this tap, so nothing is awaited before it.
+    shareFile(content, type, name).then((result) => {
+      if (result === 'cancelled') return;
+      if (result === 'failed') {
+        download(content, type, name);
+        toast(t('export.shareFailed'));
+      } else toast(t('export.sharedToast', { format }));
+      closeDialog();
+    });
   }
 });
 $('dialog').addEventListener('input', (e) => {

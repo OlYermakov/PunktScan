@@ -260,6 +260,9 @@ export default {
   'export.note':
     'Le coordinate non vengono trasformate. Nel GSI i nomi vengono completati con zeri a sinistra fino a 16 caratteri — lo richiede il formato.',
   'export.save': 'Salva .{format}',
+  'export.share': 'Invia…',
+  'export.sharedToast': 'File .{format} inviato.',
+  'export.shareFailed': 'Invio non riuscito: il file è stato salvato.',
   'export.savedToast': 'Il file .{format} è pronto per il salvataggio.',
 
   'save.local': 'Bozza locale',

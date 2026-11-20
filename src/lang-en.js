@@ -251,6 +251,9 @@ export default {
   'export.note':
     'Coordinates are not transformed. In GSI, names are padded with zeros on the left to 16 characters — the format requires it.',
   'export.save': 'Save .{format}',
+  'export.share': 'Send…',
+  'export.sharedToast': '.{format} file handed over.',
+  'export.shareFailed': 'Sending was not possible — the file was saved instead.',
   'export.savedToast': '.{format} file is ready to save.',
 
   'save.local': 'Local draft',

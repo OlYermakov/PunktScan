@@ -255,6 +255,9 @@ export default {
   'export.note':
     'Współrzędne nie są przeliczane. W GSI nazwy są uzupełniane zerami z lewej strony do 16 znaków — wymaga tego format.',
   'export.save': 'Zapisz .{format}',
+  'export.share': 'Wyślij…',
+  'export.sharedToast': 'Plik .{format} przekazany.',
+  'export.shareFailed': 'Wysłanie nie powiodło się — plik został zapisany.',
   'export.savedToast': 'Plik .{format} jest gotowy do zapisania.',
 
   'save.local': 'Lokalna wersja robocza',

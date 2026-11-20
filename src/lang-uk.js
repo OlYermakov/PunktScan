@@ -250,6 +250,9 @@ export default {
   'export.note':
     'Координати не перетворюються. Для GSI назви доповнюються нулями зліва до 16 символів — це структура формату.',
   'export.save': 'Зберегти .{format}',
+  'export.share': 'Надіслати…',
+  'export.sharedToast': 'Файл .{format} передано.',
+  'export.shareFailed': 'Надіслати не вдалося — файл збережено натомість.',
   'export.savedToast': 'Файл .{format} підготовлено до збереження.',
 
   'save.local': 'Локальна чернетка',

@@ -262,6 +262,9 @@ export default {
   'export.note':
     'Les coordonnées ne sont pas transformées. Dans le GSI, les noms sont complétés par des zéros à gauche jusqu’à 16 caractères — le format l’exige.',
   'export.save': 'Enregistrer en .{format}',
+  'export.share': 'Envoyer…',
+  'export.sharedToast': 'Fichier .{format} transmis.',
+  'export.shareFailed': 'L’envoi a échoué — le fichier a été enregistré à la place.',
   'export.savedToast': 'Le fichier .{format} est prêt à être enregistré.',
 
   'save.local': 'Brouillon local',
