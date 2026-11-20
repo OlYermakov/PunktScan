@@ -213,6 +213,16 @@ export default {
   'review.next': 'Nächster Punkt',
   'review.verified': 'Geprüft',
   'review.verifiedNext': 'Geprüft · weiter',
+  'review.correct': '✓ Richtig',
+  'review.edit': 'Korrigieren',
+  'review.left': 'Noch {n} zu prüfen',
+  'review.unsureLegend': 'Gelb: unsicher erkannte Zeichen — mit dem Foto vergleichen.',
+  'review.swipeHint': 'Nach rechts wischen: richtig · nach links: später prüfen',
+  'review.bulkTitle': 'Restliche Punkte',
+  'review.bulkText':
+    'Diese {n} Punkte wurden ohne Unsicherheiten erkannt. Vergleiche jeden mit seinem Fotoausschnitt; tippe auf einen Punkt, um ihn einzeln zu öffnen.',
+  'review.bulkOneByOne': 'Einzeln prüfen',
+  'review.bulkConfirm': '✓ Alle {n} richtig',
   'review.finished': 'Prüfung abgeschlossen.',
 
   'paste.title': 'Tabelle einfügen',

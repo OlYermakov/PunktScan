@@ -66,7 +66,45 @@ export function closeDialog() {
   dialogKind = '';
   renderRows();
 }
-export function showReview(id) {
+// Review order: points with errors first, then uncertain ones, then the rest, in table order.
+function reviewPriority(v) {
+  if (v.issues.length) return 0;
+  const r = v.row;
+  const unsure =
+    r.disputed?.some(Boolean) ||
+    r.cellConfidence?.some((c) => c < 70) ||
+    r.uncertainChars?.some((list) => list?.length) ||
+    warnings(v).length > 0;
+  return unsure ? 1 : 2;
+}
+export function reviewQueue(exceptId = null) {
+  const rows = state.project.rows;
+  return validate(rows)
+    .filter((v) => (v.issues.length || !v.row.verified) && v.row.id !== exceptId)
+    .map((v) => ({ v, priority: reviewPriority(v), index: rows.indexOf(v.row) }))
+    .sort((a, b) => a.priority - b.priority || a.index - b.index);
+}
+
+// Opens what needs checking next: a single point, or — when only confidently recognised points
+// are left — one screen to compare them all and confirm them together.
+export function openNextReview(exceptId = null) {
+  const queue = reviewQueue(exceptId);
+  if (!queue.length) return false;
+  if (queue.length >= 2 && queue.every((q) => q.priority === 2)) showBulkReview(queue);
+  else showReview(queue[0].v.row.id);
+  return true;
+}
+
+// A value with its doubtful characters marked.
+function markedValue(text, marks = []) {
+  if (!text) return '<span class="review-empty">—</span>';
+  const set = new Set(marks);
+  return [...String(text)]
+    .map((ch, i) => (set.has(i) ? `<mark>${esc(ch)}</mark>` : esc(ch)))
+    .join('');
+}
+
+export function showReview(id, mode = 'view') {
   const index = state.project.rows.findIndex((r) => r.id === id);
   if (index < 0) return;
   const r = state.project.rows[index],
@@ -80,7 +118,10 @@ export function showReview(id) {
   const values = validate(state.project.rows),
     v = values.find((v) => v.row.id === id),
     warn = warnings(v),
+    left = values.filter((x) => !x.row.verified || x.issues.length).length,
     morePending = values.some((x) => x.row.id !== id && (!x.row.verified || x.issues.length));
+  // A point with errors cannot be confirmed as it is: it opens ready for editing.
+  const editing = mode === 'edit' || v.issues.length > 0;
   // Grid recognition stores one box per cell: show each photo cell right above its field.
   const hasCells = Boolean(s?.resultQuad && r.cells?.length);
   const labels = {
@@ -89,20 +130,131 @@ export function showReview(id) {
     n: t('review.n'),
     h: t('review.h'),
   };
+  const marks = (k) =>
+    r.verified ? [] : (r.uncertainChars?.[['name', 'e', 'n', 'h'].indexOf(k)] ?? []);
+  const anyMarks = ['name', 'e', 'n', 'h'].some((k) => marks(k).length && r[k]);
+  const crop = (k, i) =>
+    hasCells && r.cells[i]
+      ? `<canvas class="cell-crop" data-crop-field="${k}" aria-hidden="true"></canvas>`
+      : '';
   const field = (k, i) =>
-    `<div class="review-field review-field-${k}"><label for="review-${k}">${labels[k]}</label>${hasCells && r.cells[i] ? `<canvas class="cell-crop" data-crop-field="${k}" aria-hidden="true"></canvas>` : ''}<div class="review-input"><input id="review-${k}" data-review-field="${k}" value="${esc(r[k])}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${k !== 'name' ? `<button type="button" class="sign-btn" data-sign="${k}" aria-label="${esc(t('review.sign', { label: labels[k] }))}">±</button>` : ''}</div></div>`;
+    editing
+      ? `<div class="review-field review-field-${k}"><label for="review-${k}">${labels[k]}</label>${crop(k, i)}<div class="review-input"><input id="review-${k}" data-review-field="${k}" value="${esc(r[k])}" autocomplete="off" spellcheck="false" ${k !== 'name' ? 'inputmode="decimal"' : ''}>${k !== 'name' ? `<button type="button" class="sign-btn" data-sign="${k}" aria-label="${esc(t('review.sign', { label: labels[k] }))}">±</button>` : ''}</div></div>`
+      : `<div class="review-field review-field-${k}"><span class="review-label">${labels[k]}</span>${crop(k, i)}<div class="review-digits" data-value-field="${k}">${markedValue(r[k], marks(k))}</div></div>`;
   const photo = s
     ? `<div class="row-crop ${hasCells ? 'has-cells' : ''}"><div class="review-crop-scroll"><canvas id="reviewCrop" class="review-image"></canvas></div>${hasCells ? '' : `<p class="crop-hint small">${t('review.scrollHint')}</p>`}</div>`
     : `<p class="small">${t('review.noPhoto')}</p>`;
-  const body = `<span class="eyebrow">${t(s ? 'review.eyebrowPhoto' : 'review.eyebrowManual')}</span>${photo}<div class="review-fields">${['name', 'e', 'n', 'h'].map(field).join('')}</div><div id="reviewErrors"></div>${warn.length ? `<div class="review-message">${warn.map(esc).join('<br>')}</div>` : ''}<p class="small">${t('review.note')}</p>${s ? `<details style="margin-top:15px"><summary class="small">${esc(t('review.fullPhoto', { name: s.name }))}</summary><div class="review-original"><img src="${s.image}" alt="${t('review.originalAlt')}"></div></details>` : ''}`;
-  showDialog(
-    t('review.title'),
-    body,
-    `<div class="review-navigation"><button class="icon-btn" id="prevReview" aria-label="${t('review.prev')}" ${index === 0 ? 'disabled' : ''}>‹</button><span>${index + 1} / ${state.project.rows.length}</span><button class="icon-btn" id="nextReview" aria-label="${t('review.next')}" ${index === state.project.rows.length - 1 ? 'disabled' : ''}>›</button></div><button class="button subtle" data-close>${t('common.close')}</button><button class="button primary" id="verifyNextBtn">${t(morePending ? 'review.verifiedNext' : 'review.verified')}</button>`,
-    'review',
-  );
+  const body = `<div class="review-card ${editing ? 'editing' : ''}" id="reviewCard"><div class="review-top"><span class="eyebrow">${t(s ? 'review.eyebrowPhoto' : 'review.eyebrowManual')}</span><span class="review-left">${t('review.left', { n: left })}</span></div>${photo}<div class="review-fields">${['name', 'e', 'n', 'h'].map(field).join('')}</div>${!editing && anyMarks ? `<p class="review-legend"><mark>0</mark> ${t('review.unsureLegend')}</p>` : ''}<div id="reviewErrors"></div>${warn.length ? `<div class="review-message">${warn.map(esc).join('<br>')}</div>` : ''}${editing ? `<p class="small">${t('review.note')}</p>` : `<p class="small swipe-hint">${t('review.swipeHint')}</p>`}${s ? `<details style="margin-top:15px"><summary class="small">${esc(t('review.fullPhoto', { name: s.name }))}</summary><div class="review-original"><img src="${s.image}" alt="${t('review.originalAlt')}"></div></details>` : ''}</div>`;
+  const nav = `<div class="review-navigation"><button class="icon-btn" id="prevReview" aria-label="${t('review.prev')}" ${index === 0 ? 'disabled' : ''}>‹</button><span>${index + 1} / ${state.project.rows.length}</span><button class="icon-btn" id="nextReview" aria-label="${t('review.next')}" ${index === state.project.rows.length - 1 ? 'disabled' : ''}>›</button></div>`;
+  const actions = editing
+    ? `${v.issues.length ? `<button class="button subtle" data-close>${t('common.close')}</button>` : `<button class="button subtle" id="reviewViewBtn">${t('common.cancel')}</button>`}<button class="button primary" id="verifyNextBtn">${t(morePending ? 'review.verifiedNext' : 'review.verified')}</button>`
+    : `<button class="button subtle" id="reviewEditBtn">${t('review.edit')}</button><button class="button primary review-correct" id="verifyNextBtn">${t('review.correct')}</button>`;
+  showDialog(t('review.title'), body, nav + actions, 'review');
   if (s) drawReview(s, r);
-  updateReviewErrors();
+  if (editing) updateReviewErrors();
+  else enableSwipe($('reviewCard'));
+}
+
+// Swipe a point card: right = correct, left = look at it later.
+function enableSwipe(card) {
+  let start = null;
+  const reset = () => {
+    card.style.transform = '';
+    card.classList.remove('swipe-ok', 'swipe-skip', 'swiping');
+    start = null;
+  };
+  card.addEventListener('pointerdown', (e) => {
+    if (e.button > 0 || e.target.closest('button, input, summary, a')) return;
+    start = { x: e.clientX, y: e.clientY, id: e.pointerId, dx: 0 };
+  });
+  card.addEventListener('pointermove', (e) => {
+    if (!start || e.pointerId !== start.id) return;
+    const dx = e.clientX - start.x,
+      dy = e.clientY - start.y;
+    if (!card.classList.contains('swiping')) {
+      if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 12) return;
+      card.classList.add('swiping');
+      try {
+        card.setPointerCapture(e.pointerId);
+      } catch {
+        // Synthetic pointers cannot be captured; moves still arrive.
+      }
+    }
+    start.dx = dx;
+    card.style.transform = `translateX(${dx}px) rotate(${dx / 40}deg)`;
+    card.classList.toggle('swipe-ok', dx > 80);
+    card.classList.toggle('swipe-skip', dx < -80);
+  });
+  const end = (e) => {
+    if (!start || e.pointerId !== start.id) return;
+    const dx = start.dx;
+    reset();
+    if (dx > 80) verifyNext();
+    else if (dx < -80) skipReview();
+  };
+  card.addEventListener('pointerup', end);
+  card.addEventListener('pointercancel', reset);
+}
+
+// Leaves the current point unconfirmed and shows the next one in the review order.
+export function skipReview() {
+  const current = reviewId;
+  flushReview();
+  if (!openNextReview(current)) closeDialog();
+}
+
+export function editReview(on = true) {
+  if (reviewId) showReview(reviewId, on ? 'edit' : 'view');
+}
+
+// All remaining points were recognised without doubt: compare them on one screen.
+function showBulkReview(queue) {
+  reviewId = null;
+  const items = queue
+    .map(({ v }) => {
+      const r = v.row,
+        s = state.project.sources.find((x) => x.id === r.sourceId);
+      return `<button type="button" class="bulk-item" data-open-review="${esc(r.id)}">${s ? `<canvas data-bulk-crop="${esc(r.id)}" aria-hidden="true"></canvas>` : ''}<span class="bulk-values"><b>${esc(r.name)}</b> <span>${esc(r.e)}</span> <span>${esc(r.n)}</span>${r.h ? ` <span>${esc(r.h)}</span>` : ''}</span></button>`;
+    })
+    .join('');
+  showDialog(
+    t('review.bulkTitle'),
+    `<p class="small">${t('review.bulkText', { n: queue.length })}</p><div class="bulk-list">${items}</div>`,
+    `<button class="button subtle" data-open-review="${esc(queue[0].v.row.id)}">${t('review.bulkOneByOne')}</button><button class="button primary" id="verifyAllBtn">${t('review.bulkConfirm', { n: queue.length })}</button>`,
+    'bulk',
+  );
+  for (const { v } of queue) {
+    const r = v.row,
+      s = state.project.sources.find((x) => x.id === r.sourceId),
+      c = document.querySelector(`[data-bulk-crop="${CSS.escape(r.id)}"]`);
+    if (!s || !c) continue;
+    imageFrom(s.image).then((image) => {
+      const region =
+        r.bbox && s.resultQuad
+          ? originalRegion(s.resultQuad, r.bbox, s.pw, s.ph, s.width, s.height)
+          : { x: 0, y: 0, w: s.width, h: s.height };
+      drawRegion(c, image, region, 900);
+    });
+  }
+}
+
+// Confirms every remaining point that was recognised without doubt (after the bulk screen).
+export function verifyAllConfident() {
+  const queue = reviewQueue().filter((q) => q.priority === 2);
+  if (!queue.length) return;
+  snapshot();
+  for (const { v } of queue)
+    Object.assign(v.row, {
+      name: v.name.name,
+      e: v.e.value,
+      n: v.n.value,
+      h: v.h.value,
+      verified: true,
+    });
+  save();
+  closeDialog();
+  toast(t('review.finished'));
+  renderRows();
 }
 export async function drawReview(s, r) {
   const image = await imageFrom(s.image);
@@ -139,6 +291,9 @@ export function flushReview() {
   if (changes.length) {
     snapshot();
     for (const k of changes) r[k] = $('review-' + k).value;
+    // Edited values are the user's own: their recognition highlights no longer apply.
+    for (const k of changes)
+      if (r.uncertainChars) r.uncertainChars[['name', 'e', 'n', 'h'].indexOf(k)] = [];
     r.verified = false;
     save();
   }
@@ -181,18 +336,8 @@ export function verifyNext() {
   snapshot();
   Object.assign(r, { name: v.name.name, e: v.e.value, n: v.n.value, h: v.h.value, verified: true });
   save();
-  // Continue with the next point that still needs checking, wrapping around to earlier ones.
-  const rows = state.project.rows,
-    issues = new Set(
-      validate(rows)
-        .filter((x) => x.issues.length)
-        .map((x) => x.row.id),
-    ),
-    pending = (x) => !x.verified || issues.has(x.id),
-    next = rows.slice(i + 1).find(pending) ?? rows.slice(0, i).find(pending);
-  if (next) {
-    showReview(next.id);
-  } else {
+  // Continue in review order (errors, then uncertain points, then the rest).
+  if (!openNextReview()) {
     closingReview = true;
     closeDialog();
     closingReview = false;

@@ -22,7 +22,6 @@ import {
 import { save, restore, flushSave } from './storage.js?v=__BUILD__';
 import { snapshot, undo, render, renderPhoto, renderRows, setBusy } from './render.js?v=__BUILD__';
 import { addPhotos } from './photos.js?v=__BUILD__';
-import { nextReviewRow } from './flow.js?v=__BUILD__';
 import { initFrameDrag } from './frame.js?v=__BUILD__';
 import { recognize, cancelOcr } from './ocr.js?v=__BUILD__';
 import {
@@ -41,6 +40,9 @@ import {
   prepareOffline,
   cacheOffline,
   stepReview,
+  openNextReview,
+  editReview,
+  verifyAllConfident,
   toggleSign,
 } from './dialogs.js?v=__BUILD__';
 
@@ -211,6 +213,8 @@ $('pointsBody').addEventListener('input', (e) => {
   }
   r[el.dataset.field] = el.value;
   r.verified = false;
+  // A typed value is the user's own: its recognition highlights no longer apply.
+  if (r.uncertainChars) r.uncertainChars[['name', 'e', 'n', 'h'].indexOf(el.dataset.field)] = [];
   renderRows(false);
   save();
 });
@@ -301,6 +305,11 @@ $('dialog').addEventListener('click', (e) => {
     return;
   }
   if (e.target.id === 'verifyNextBtn') verifyNext();
+  if (e.target.id === 'reviewEditBtn') editReview(true);
+  if (e.target.id === 'reviewViewBtn') editReview(false);
+  if (e.target.id === 'verifyAllBtn') verifyAllConfident();
+  const open = e.target.closest('[data-open-review]');
+  if (open) showReview(open.dataset.openReview);
   if (e.target.id === 'prevReview' || e.target.id === 'nextReview')
     stepReview(e.target.id === 'nextReview' ? 1 : -1);
   if (e.target.dataset.sign) toggleSign(e.target.dataset.sign);
@@ -367,8 +376,7 @@ $('nextStepBtn').onclick = (e) => {
   if (action === 'recognizeAll') recognize(true);
   if (action === 'export') exportDialog('GSI');
   if (action === 'review') {
-    const row = nextReviewRow();
-    if (row) showReview(row.id);
+    openNextReview();
   }
 };
 $('nextCsvBtn').onclick = () => exportDialog('CSV');

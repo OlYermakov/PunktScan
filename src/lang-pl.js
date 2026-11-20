@@ -209,6 +209,16 @@ export default {
   'review.next': 'Następny punkt',
   'review.verified': 'Sprawdzone',
   'review.verifiedNext': 'Sprawdzone · dalej',
+  'review.correct': '✓ Poprawne',
+  'review.edit': 'Popraw',
+  'review.left': 'Do sprawdzenia: {n}',
+  'review.unsureLegend': 'Na żółto: znaki rozpoznane niepewnie — porównaj ze zdjęciem.',
+  'review.swipeHint': 'Przesuń w prawo: poprawne · w lewo: sprawdź później',
+  'review.bulkTitle': 'Pozostałe punkty',
+  'review.bulkText':
+    'Te punkty ({n}) rozpoznano bez wątpliwości. Porównaj każdy z wycinkiem zdjęcia; dotknij punktu, aby otworzyć go osobno.',
+  'review.bulkOneByOne': 'Sprawdzaj pojedynczo',
+  'review.bulkConfirm': '✓ Wszystkie poprawne ({n})',
   'review.finished': 'Sprawdzanie zakończone.',
 
   'paste.title': 'Wklej tabelę',

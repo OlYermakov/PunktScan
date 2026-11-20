@@ -96,9 +96,15 @@ async function addTestPhotos(page) {
   await page.locator('#sourceCount', { hasText: '2' }).waitFor();
 }
 
+// Confirms every point: card by card, or all at once on the "remaining points" screen.
 async function verifyAll(page, count) {
   await page.locator('[data-review]').first().click();
   for (let i = 0; i < count; i++) {
+    if (!(await page.locator('#dialog').isVisible())) break;
+    if (await page.locator('#verifyAllBtn').isVisible()) {
+      await page.locator('#verifyAllBtn').click();
+      break;
+    }
     const button = page.locator('#verifyNextBtn');
     await assert.doesNotReject(button.waitFor(), 'review dialog for point ' + (i + 1));
     assert.equal(await button.isDisabled(), false, 'point ' + (i + 1) + ' has validation errors');
@@ -278,6 +284,7 @@ test('the ± button flips the sign on touch screens, where the keypad has no min
   await page.locator('#pasteText').fill('P1;10.000;20.000;5.000');
   await page.locator('#pasteApply').click();
   await page.locator('[data-review]').first().click();
+  await page.locator('#reviewEditBtn').click();
   for (const field of ['e', 'n', 'h']) {
     const sign = page.locator(`.sign-btn[data-sign="${field}"]`);
     await sign.click();
@@ -298,6 +305,8 @@ test('the ± button is hidden with a mouse, where the keyboard has a minus key',
   await page.locator('#pasteText').fill('P1;10.000;20.000');
   await page.locator('#pasteApply').click();
   await page.locator('[data-review]').first().click();
+  await page.locator('#reviewEditBtn').click();
+  await page.locator('#review-e').waitFor();
   assert.equal(await page.locator('.sign-btn[data-sign="e"]').isHidden(), true);
   await context.close();
 });
@@ -325,8 +334,9 @@ test('on a phone the bottom button walks through every step to the GSI file', as
   assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Geprüft · weiter');
   await page.locator('#verifyNextBtn').click();
   // The dialog moves on to the point that still needs checking, then closes after the last one.
-  assert.equal(await page.locator('#review-name').inputValue(), 'A');
-  assert.equal(await page.locator('#verifyNextBtn').textContent(), 'Geprüft');
+  // A has no errors: it opens as a card to confirm, with its values shown large.
+  assert.equal(await page.locator('[data-value-field="name"]').textContent(), 'A');
+  assert.equal(await page.locator('#verifyNextBtn').textContent(), '✓ Richtig');
   await page.locator('#verifyNextBtn').click();
   await page.locator('#dialog').waitFor({ state: 'hidden' });
   assert.equal(await caption.textContent(), 'Schritt 4 von 4 · Bereit für den Export: 2 Punkte');
@@ -646,3 +656,72 @@ test(
     await context.close();
   },
 );
+
+test('review cards: doubtful points first, marked characters, swipes and confirming the rest at once', async () => {
+  const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+  const point = (name, e, n, extra = {}) => ({ id: name, name, e, n, h: '', ...extra });
+  const project = {
+    format: 'PunktScan',
+    version: 1,
+    name: 'Karten',
+    sources: [],
+    rows: [
+      point('A', '3439861.598', '5544885.470'),
+      // Recognition was unsure about one digit of B's Rechtswert.
+      point('B', '3439860.465', '5544883.242', {
+        disputed: [false, true, false, false],
+        uncertainChars: [[], [8], [], []],
+      }),
+      point('C', '3439858.236', '5544884.375'),
+      point('D', '3439859.370', '5544886.604'),
+    ],
+  };
+  await page.locator('#projectInput').setInputFiles({
+    name: 'karten.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(project)),
+  });
+  await page.locator('#pointCount', { hasText: '4' }).waitFor();
+  const swipe = (dx) =>
+    page.locator('#reviewCard').evaluate((card, dx) => {
+      const ev = (type, x) =>
+        card.dispatchEvent(
+          new PointerEvent(type, {
+            clientX: x,
+            clientY: 300,
+            pointerId: 9,
+            pointerType: 'touch',
+            isPrimary: true,
+            bubbles: true,
+          }),
+        );
+      ev('pointerdown', 150);
+      ev('pointermove', 150 + dx / 2);
+      ev('pointermove', 150 + dx);
+      ev('pointerup', 150 + dx);
+    }, dx);
+
+  // The doubtful point comes first, with the doubtful digit marked.
+  await page.locator('#nextStepBtn').click();
+  assert.equal(await page.locator('[data-value-field="name"]').textContent(), 'B');
+  assert.equal(await page.locator('[data-value-field="e"] mark').textContent(), '4');
+  // Swipe left: later. Only confident points are left, so they are shown together.
+  await swipe(-160);
+  await page.locator('#verifyAllBtn').waitFor();
+  assert.equal(await page.locator('.bulk-item').count(), 3);
+  assert.match(await page.locator('#verifyAllBtn').textContent(), /3/);
+  await page.locator('#verifyAllBtn').click();
+  await page.locator('#dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('#nextStepBtn').textContent(), 'Punkte prüfen · noch 1');
+  // B again; swipe right confirms it.
+  await page.locator('#nextStepBtn').click();
+  assert.equal(await page.locator('[data-value-field="name"]').textContent(), 'B');
+  await swipe(160);
+  await page.locator('#dialog').waitFor({ state: 'hidden' });
+  assert.equal(
+    await page.locator('#nextStepCaption').textContent(),
+    'Schritt 4 von 4 · Bereit für den Export: 4 Punkte',
+  );
+  assert.deepEqual(problems, []);
+  await context.close();
+});

@@ -216,6 +216,16 @@ export default {
   'review.next': 'Point suivant',
   'review.verified': 'Contrôlé',
   'review.verifiedNext': 'Contrôlé · suivant',
+  'review.correct': '✓ Correct',
+  'review.edit': 'Corriger',
+  'review.left': 'Encore {n} à contrôler',
+  'review.unsureLegend': 'En jaune : caractères reconnus avec un doute — comparez avec la photo.',
+  'review.swipeHint': 'Glisser à droite : correct · à gauche : contrôler plus tard',
+  'review.bulkTitle': 'Points restants',
+  'review.bulkText':
+    'Ces {n} points ont été reconnus sans doute. Comparez chacun avec son extrait de photo ; touchez un point pour l’ouvrir seul.',
+  'review.bulkOneByOne': 'Contrôler un par un',
+  'review.bulkConfirm': '✓ Les {n} sont corrects',
   'review.finished': 'Contrôle terminé.',
 
   'paste.title': 'Coller un tableau',

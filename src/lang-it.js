@@ -213,6 +213,17 @@ export default {
   'review.next': 'Punto successivo',
   'review.verified': 'Verificato',
   'review.verifiedNext': 'Verificato · avanti',
+  'review.correct': '✓ Corretto',
+  'review.edit': 'Correggi',
+  'review.left': 'Ancora {n} da verificare',
+  'review.unsureLegend':
+    'In giallo: caratteri riconosciuti con incertezza — confronta con la foto.',
+  'review.swipeHint': 'Scorri a destra: corretto · a sinistra: verifica dopo',
+  'review.bulkTitle': 'Punti rimanenti',
+  'review.bulkText':
+    'Questi {n} punti sono stati riconosciuti senza incertezze. Confronta ciascuno con il suo ritaglio di foto; tocca un punto per aprirlo da solo.',
+  'review.bulkOneByOne': 'Verifica uno per uno',
+  'review.bulkConfirm': '✓ Tutti i {n} corretti',
   'review.finished': 'Verifica completata.',
 
   'paste.title': 'Incolla tabella',

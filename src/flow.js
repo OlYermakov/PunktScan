@@ -17,14 +17,6 @@ export function flowStep() {
   return ready() ? 'file' : 'review';
 }
 
-// The row the review button opens: the first one with an error, else the first unchecked one.
-export function nextReviewRow() {
-  const values = validate(state.project.rows);
-  return (
-    values.find((v) => v.issues.length)?.row ?? values.find((v) => !v.row.verified)?.row ?? null
-  );
-}
-
 export function nextAction() {
   const step = flowStep(),
     s = source(),

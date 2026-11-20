@@ -6,6 +6,8 @@ import {
   harmonize,
   shape,
   borrowSeparators,
+  uncertainIndices,
+  disagreement,
 } from '../src/layout.js';
 
 const word = (text, x, y, w = 120, h = 30, confidence = 90) => ({
@@ -158,4 +160,34 @@ test('a lost decimal point is taken from another reading with exactly the same d
   assert.equal(rows[0].disputed[2], true);
   assert.equal(rows[1].e, '3439843.032');
   assert.equal(rows[2].e, '3439841898', 'never changes digits');
+});
+
+test('uncertain characters: low confidence and where other passes disagree', () => {
+  // Tesseract unsure about the "3" (index 8).
+  const chars = [99, 99, 99, 99, 99, 99, 99, 98, 40, 98, 98];
+  assert.deepEqual(uncertainIndices('5544860.327', chars), [8]);
+  // Another pass read "5544860.321": only the last digit differs.
+  assert.deepEqual(uncertainIndices('5544860.327', null, [{ text: '5544860.321' }]), [10]);
+  // A pass with one digit more ("…31" vs "…311"): the last two characters are marked.
+  assert.deepEqual(uncertainIndices('5545557.31', null, [{ text: '5545557.311' }]), [8, 9]);
+  // Names are stored without spaces; indices follow the stored form.
+  assert.deepEqual(uncertainIndices('Af 205', [99, 99, 100, 50, 99, 99], [], true), [2]);
+  assert.deepEqual(uncertainIndices('3414960.105', null, [{ text: '3414960.105' }]), []);
+});
+
+test('only close alternative readings count as disagreement; dots need much lower confidence', () => {
+  assert.deepEqual(disagreement('3415029.264', [{ text: '3615025264' }, { text: '34150' }]), []);
+  assert.deepEqual(disagreement('3415029.264', [{ text: '3415029.284' }]), [9]);
+  const dot = [99, 99, 99, 99, 99, 99, 99, 60, 99, 99, 99];
+  assert.deepEqual(uncertainIndices('5545557.784', dot), [], 'a dot at 60 is normal');
+  dot[7] = 20;
+  assert.deepEqual(uncertainIndices('5545557.784', dot), [7]);
+});
+
+test('differences are marked exactly, and a pass without the decimal point is ignored', () => {
+  // Two separate differences: 4→6 and a lost point — only the 4 is marked.
+  assert.deepEqual(disagreement('3415029.264', [{ text: '3615029264' }]), [1]);
+  assert.deepEqual(disagreement('5545557.784', [{ text: '5545557784' }]), []);
+  assert.deepEqual(disagreement('5545557.31', [{ text: '5545557.311' }]), [8, 9]);
+  assert.deepEqual(disagreement('R-09-06', [{ text: 'R-0906' }], true), [4]);
 });

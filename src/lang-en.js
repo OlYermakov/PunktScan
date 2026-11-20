@@ -206,6 +206,16 @@ export default {
   'review.next': 'Next point',
   'review.verified': 'Reviewed',
   'review.verifiedNext': 'Reviewed · next',
+  'review.correct': '✓ Correct',
+  'review.edit': 'Fix',
+  'review.left': '{n} left to review',
+  'review.unsureLegend': 'Yellow: characters recognised with doubt — compare with the photo.',
+  'review.swipeHint': 'Swipe right: correct · swipe left: check later',
+  'review.bulkTitle': 'Remaining points',
+  'review.bulkText':
+    'These {n} points were recognised without doubt. Compare each with its photo crop; tap a point to open it on its own.',
+  'review.bulkOneByOne': 'Review one by one',
+  'review.bulkConfirm': '✓ All {n} correct',
   'review.finished': 'Review complete.',
 
   'paste.title': 'Paste table',

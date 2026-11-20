@@ -235,7 +235,13 @@ export function harmonize(cells) {
         .filter((x) => shape(x.text) === usual)
         .sort((a, b) => b.confidence - a.confidence)[0];
       if (fit)
-        Object.assign(cell, { text: fit.text.trim(), confidence: fit.confidence, disputed: true });
+        Object.assign(cell, {
+          text: fit.text.trim(),
+          confidence: fit.confidence,
+          chars: fit.chars,
+          disputed: true,
+          harmonized: true,
+        });
     }
   }
   return cells;
@@ -262,7 +268,97 @@ export function borrowSeparators(rows, others) {
       if (!found) return;
       r[k] = found;
       if (r.disputed) r.disputed[i + 1] = true;
+      // The borrowed point is the part to look at.
+      if (r.uncertainChars) r.uncertainChars[i + 1] = [found.search(/[.,]/)];
       changed++;
     });
   return changed;
+}
+
+// Edit distance (insertions, deletions, substitutions) between two short strings.
+export function editDistance(a, b) {
+  const prev = [...Array(b.length + 1).keys()];
+  for (let i = 1; i <= a.length; i++) {
+    let diag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const up = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diag = up;
+    }
+  }
+  return prev[b.length];
+}
+
+const normalized = (s, isName) =>
+  isName ? String(s ?? '').replace(/\s/g, '') : String(s ?? '').trim();
+
+// Positions of `value` that differ from `other` in a minimal alignment: substituted or missing
+// characters, and the neighbour of an extra character in `other`.
+function alignedDifferences(value, other, ignoreLostSeparator = false) {
+  const n = value.length,
+    m = other.length,
+    d = Array.from({ length: n + 1 }, (_, i) => [i, ...Array(m).fill(0)]);
+  for (let j = 1; j <= m; j++) d[0][j] = j;
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + (value[i - 1] === other[j - 1] ? 0 : 1),
+      );
+  const marks = [];
+  for (let i = n, j = m; i > 0 || j > 0;) {
+    if (i && j && d[i][j] === d[i - 1][j - 1] + (value[i - 1] === other[j - 1] ? 0 : 1)) {
+      if (value[i - 1] !== other[j - 1]) marks.push(i - 1);
+      i--;
+      j--;
+    } else if (i && d[i][j] === d[i - 1][j] + 1) {
+      if (!(ignoreLostSeparator && /[.,]/.test(value[i - 1]))) marks.push(i - 1);
+      i--;
+    } else {
+      // An extra character in `other` sits between two of ours: both neighbours are suspect.
+      for (const k of [i - 1, i]) if (k >= 0 && k < n) marks.push(k);
+      j--;
+    }
+  }
+  return marks;
+}
+
+// Where another pass of the same cell read something slightly different (at most two characters
+// apart). Passes that read something else entirely are noise, and a pass that only lacks the
+// decimal point is no evidence against a point that was read.
+export function disagreement(text, candidates = [], isName = false) {
+  const value = normalized(text, isName),
+    digits = (v) => v.replace(/[.,]/g, ''),
+    marks = new Set();
+  for (const c of candidates) {
+    const other = normalized(c?.text, isName);
+    if (!other || other === value || editDistance(value, other) > 2) continue;
+    if (!isName && digits(other) === digits(value) && !/[.,]/.test(other)) continue;
+    for (const i of alignedDifferences(value, other, !isName && !/[.,]/.test(other))) marks.add(i);
+  }
+  return [...marks].sort((a, b) => a - b);
+}
+
+// Which characters of a reading deserve a second look: characters Tesseract was unsure of and
+// the places where a close alternative reading differs. Decimal points are small and always read
+// with lower confidence, so they count as doubtful only when much lower.
+// Indices refer to the value as stored (names without spaces, values trimmed).
+export function uncertainIndices(text, chars, candidates = [], isName = false) {
+  const raw = String(text ?? ''),
+    value = normalized(raw, isName),
+    marks = new Set(disagreement(raw, candidates, isName));
+  if (Array.isArray(chars)) {
+    const kept = [...raw]
+      .map((ch, i) => [ch, chars[i]])
+      .filter(([ch]) => !(isName && /\s/.test(ch)));
+    const offset = isName ? 0 : raw.length - raw.trimStart().length;
+    const aligned = isName ? kept : kept.slice(offset, offset + value.length);
+    if (aligned.length === value.length)
+      aligned.forEach(([ch, c], i) => {
+        if (typeof c === 'number' && c < (/[.,]/.test(ch) ? 40 : 70)) marks.add(i);
+      });
+  }
+  return [...marks].sort((a, b) => a - b);
 }

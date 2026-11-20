@@ -205,6 +205,16 @@ export default {
   'review.next': 'Наступна точка',
   'review.verified': 'Звірено',
   'review.verifiedNext': 'Звірено · наступна',
+  'review.correct': '✓ Правильно',
+  'review.edit': 'Виправити',
+  'review.left': 'Залишилось звірити: {n}',
+  'review.unsureLegend': 'Жовтим — символи, розпізнані з сумнівом: порівняй із фото.',
+  'review.swipeHint': 'Свайп вправо — правильно · вліво — перевірити пізніше',
+  'review.bulkTitle': 'Решта точок',
+  'review.bulkText':
+    'Ці точки ({n}) розпізнано без сумнівів. Порівняй кожну з фрагментом фото; натисни на точку, щоб відкрити її окремо.',
+  'review.bulkOneByOne': 'Звіряти по одній',
+  'review.bulkConfirm': '✓ Усі {n} правильні',
   'review.finished': 'Звіряння завершено.',
 
   'paste.title': 'Вставити таблицю',

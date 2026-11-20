@@ -17,7 +17,13 @@ import {
   otsu,
   hasBox,
 } from './imaging.js?v=__BUILD__';
-import { tableFromWords, harmonize, borrowSeparators } from './layout.js?v=__BUILD__';
+import {
+  tableFromWords,
+  harmonize,
+  borrowSeparators,
+  uncertainIndices,
+  disagreement,
+} from './layout.js?v=__BUILD__';
 import { uid, state, source } from './state.js?v=__BUILD__';
 import { $, toast, notice, canvas, pixelsFor, canvasFrom } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
@@ -109,8 +115,25 @@ function cropRegion(source, rect, stretch = 1, boxed = null) {
 
 async function ocrText(w, image, signal) {
   if (signal.aborted) throw new Error('cancel');
-  const { data } = await w.recognize(image.toDataURL('image/png'), {}, { text: true });
-  return { text: data.text.trim().replace(/\s+/g, ' '), confidence: data.confidence };
+  const { data } = await w.recognize(
+    image.toDataURL('image/png'),
+    {},
+    { text: true, blocks: true },
+  );
+  const text = data.text.trim().replace(/\s+/g, ' ');
+  // Per-character confidence, aligned with `text` (spaces count as certain).
+  const symbols = (data.blocks || [])
+    .flatMap((b) => b.paragraphs || [])
+    .flatMap((p) => p.lines || [])
+    .flatMap((l) => l.words || [])
+    .flatMap((x) => x.symbols || []);
+  let k = 0;
+  const chars = [...text].map((ch) => (ch === ' ' ? 100 : symbols[k++]?.confidence));
+  return {
+    text,
+    confidence: data.confidence,
+    chars: k === symbols.length && !chars.includes(undefined) ? chars : null,
+  };
 }
 
 const wholeCrop = (image) =>
@@ -200,7 +223,15 @@ function harmonizeRows(rows) {
       h: texts[3] || '',
       confidence: Math.min(...r.readings.map((x) => x.confidence)),
       cellConfidence: r.readings.map((x) => x.confidence),
-      disputed: r.readings.map((x) => Boolean(x.disputed)),
+      // Disputed only when a close alternative reading exists (or the column check replaced the
+      // reading); passes that read something else entirely do not count.
+      disputed: r.readings.map(
+        (x, k) => Boolean(x.harmonized) || disagreement(x.text, x.candidates, k === 0).length > 0,
+      ),
+      // Characters to highlight during review (name, e, n, h).
+      uncertainChars: r.readings.map((x, k) =>
+        uncertainIndices(x.text, x.chars, x.candidates, k === 0),
+      ),
       raw: texts.join(' ; '),
     });
     delete r.readings;
@@ -493,7 +524,7 @@ export async function recognizeOne(s, signal) {
   if (order === 'ne' && result.columns)
     for (const row of rows) {
       [row.e, row.n] = [row.n, row.e];
-      for (const list of [row.cellConfidence, row.disputed, row.cells])
+      for (const list of [row.cellConfidence, row.disputed, row.cells, row.uncertainChars])
         if (list?.length > 2) [list[1], list[2]] = [list[2], list[1]];
     }
   if (signal.aborted) throw new Error('cancel');
