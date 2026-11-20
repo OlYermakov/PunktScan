@@ -14,11 +14,8 @@ const block = (selector) => {
   );
 };
 const light = block(':root');
-const themes = {
-  light,
-  dark: { ...light, ...block(":root[data-theme='dark']") },
-  sun: { ...light, ...block(":root[data-theme='sun']") },
-};
+// The app has one, light theme.
+const themes = { light };
 
 const luminance = (hex) => {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -33,31 +30,20 @@ const contrast = (a, b) => {
 };
 
 test('no colour is named outside the palette', () => {
-  const outside = css
-    .replace(/:root(\[data-theme='[a-z]+'\])? \{[^}]*\}/g, '')
-    .match(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g);
+  const outside = css.replace(/:root \{[^}]*\}/, '').match(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g);
   assert.equal(outside, null, String(outside));
 });
 
-test('every role used is defined, and the automatic dark theme equals the dark one', () => {
-  const used = new Set([...css.matchAll(/var\(--([\w-]+)\)/g)].map((m) => m[1]));
+test('every role used is defined and every role is a plain colour', () => {
+  // Palette roles plus the glass recipes built from them (html block at the end of style.css).
+  const used = new Set([...css.matchAll(/var\(--([\w-]+)\)/g)].map((m) => m[1])),
+    defined = new Set([...css.matchAll(/--([\w-]+):/g)].map((m) => m[1]));
   assert.deepEqual(
-    [...used].filter((name) => !(name in light)),
+    [...used].filter((name) => !defined.has(name)),
     [],
   );
-  const auto = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'));
-  assert.deepEqual(
-    Object.fromEntries(
-      [...auto.slice(0, auto.indexOf('}')).matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [
-        m[1],
-        m[2].trim(),
-      ]),
-    ),
-    block(":root[data-theme='dark']"),
-  );
-  for (const [name, values] of Object.entries(themes))
-    for (const [role, value] of Object.entries(values))
-      assert.match(value, /^#[0-9a-f]{6}$/, `${name} ${role}`);
+  for (const [role, value] of Object.entries(light)) assert.match(value, /^#[0-9a-f]{6}$/, role);
+  assert.doesNotMatch(css, /data-theme|prefers-color-scheme/);
 });
 
 // Text roles and the surfaces they are used on (WCAG AA: 4.5 for normal text).
@@ -74,7 +60,7 @@ const PAIRS = [
   ['ink', 'err-soft'],
   ['ink', 'info-soft'],
   ...['on-brand', 'on-brand-muted', 'on-brand-faint'].flatMap((text) =>
-    ['brand-900', 'brand-800'].map((bg) => [text, bg]),
+    ['brand-900', 'brand-800', 'brand-700', 'brand-600'].map((bg) => [text, bg]),
   ),
   ['on-brand', 'primary'],
   ['on-brand', 'primary-hover'],
@@ -90,9 +76,3 @@ for (const [name, palette] of Object.entries(themes))
       .map(([text, bg, ratio]) => `${text} on ${bg}: ${ratio.toFixed(2)}`);
     assert.deepEqual(low, []);
   });
-
-test('layers: cards sit above the page and fields above the cards in the dark theme', () => {
-  const { canvas, surface } = themes.dark;
-  assert.ok(luminance(surface) > luminance(canvas));
-  assert.ok(luminance(themes.dark['surface-soft']) > luminance(surface));
-});

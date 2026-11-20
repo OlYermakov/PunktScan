@@ -4,22 +4,23 @@
 }
 /* Palette, after a teal and burnt-orange scheme: night #0a0f14, deep teal #0f3d3e, teal #2e6f73,
    light teal #7fb3b8, sand #eadcc8 and orange #c6601f. Every colour of the app is one of these
-   roles; nothing else in this file names a colour. The page (canvas) is the lowest layer, cards
-   (surface) sit above it and fields (surface-soft) above those, in light and dark alike. Status
+   roles; nothing else in this file names a colour. The app has one, light theme. The page (canvas) is the lowest layer, cards
+   (surface) sit above it and fields (surface-soft) above those. Status
    colours mean the same everywhere: ok = checked or sure, warn = look again, err = error. */
 :root {
   /* Neutrals: warm sand in the light theme */
   --canvas: #f6f1ea;
   --surface: #ffffff;
   --surface-soft: #f1eadf;
-  --line: #e3d8c6;
-  --line-strong: #cdbfa9;
+  --line: #d9ccb7;
+  --line-strong: #bfae94;
   --ink: #0a0f14;
-  --ink-soft: #1b3134;
-  --muted: #4f5a5c;
-  --faint: #5e696b;
+  --ink-soft: #16282b;
+  --muted: #414c4e;
+  --faint: #505b5d;
   --shadow: #0a0f14;
-  /* Brand: deep teal header and sidebar (the same in every theme), teal action, orange accent */
+  /* Brand: deep teal header and sidebar, teal action; lime accent on the dark teal surfaces,
+     orange accent on light ones and on the photo */
   --brand-900: #0c3334;
   --brand-800: #0f3d3e;
   --brand-700: #15494a;
@@ -29,11 +30,12 @@
   --brand-line-strong: #4f8c90;
   --on-brand: #f1f5f4;
   --on-brand-muted: #b5d3d6;
-  --on-brand-faint: #94bfc3;
+  --on-brand-faint: #a3c8cb;
   --primary: #2e6f73;
   --primary-hover: #0f3d3e;
-  --accent: #c6601f;
-  --on-accent: #0a0f14;
+  --accent: #bcf34e;
+  --on-accent: #1d3326;
+  --accent-warm: #c6601f;
   --focus: #c6601f;
   --brand-text: #2a6569;
   --brand-soft: #e2eeee;
@@ -54,92 +56,6 @@
   --danger: #9b4a35;
   --info: #1f6fd3;
   --info-soft: #e5effb;
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --canvas: #0a0f14;
-  --surface: #111a20;
-  --surface-soft: #18242b;
-  --line: #233139;
-  --line-strong: #36505a;
-  --ink: #eef3f4;
-  --ink-soft: #d5e3e5;
-  --muted: #a7b8bc;
-  --faint: #8a9ca1;
-  --shadow: #000000;
-  --primary: #2e6f73;
-  --primary-hover: #24595c;
-  --accent: #e0782f;
-  --on-accent: #0a0f14;
-  --focus: #e0782f;
-  --brand-text: #7fb3b8;
-  --brand-soft: #12292c;
-  --ok: #93d68a;
-  --ok-soft: #16261b;
-  --ok-line: #3d6a44;
-  --warn: #f2c46b;
-  --warn-soft: #262012;
-  --warn-line: #6b5427;
-  --err: #f5907c;
-  --err-soft: #2a1714;
-  --err-line: #7a3a2e;
-  --info-soft: #142236;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-theme='auto'] {
-    color-scheme: dark;
-    --canvas: #0a0f14;
-    --surface: #111a20;
-    --surface-soft: #18242b;
-    --line: #233139;
-    --line-strong: #36505a;
-    --ink: #eef3f4;
-    --ink-soft: #d5e3e5;
-    --muted: #a7b8bc;
-    --faint: #8a9ca1;
-    --shadow: #000000;
-    --primary: #2e6f73;
-    --primary-hover: #24595c;
-    --accent: #e0782f;
-    --on-accent: #0a0f14;
-    --focus: #e0782f;
-    --brand-text: #7fb3b8;
-    --brand-soft: #12292c;
-    --ok: #93d68a;
-    --ok-soft: #16261b;
-    --ok-line: #3d6a44;
-    --warn: #f2c46b;
-    --warn-soft: #262012;
-    --warn-line: #6b5427;
-    --err: #f5907c;
-    --err-soft: #2a1714;
-    --err-line: #7a3a2e;
-    --info-soft: #142236;
-  }
-}
-/* Sun: paper white, black text, dark lines and strong status tints for bright daylight. */
-:root[data-theme='sun'] {
-  --canvas: #ffffff;
-  --surface: #ffffff;
-  --surface-soft: #f3eee6;
-  --line: #7d7466;
-  --line-strong: #4c463d;
-  --ink: #000000;
-  --ink-soft: #0a1214;
-  --muted: #252d30;
-  --faint: #3a4346;
-  --brand-text: #164e52;
-  --brand-soft: #d9ebec;
-  --ok: #1e5414;
-  --ok-soft: #d9f0c6;
-  --ok-line: #4e8a3a;
-  --warn: #503500;
-  --warn-soft: #ffe9a8;
-  --warn-line: #a8820f;
-  --err: #85190a;
-  --err-soft: #ffd9cc;
-  --err-line: #b84a33;
-  --info-soft: #cfe2fb;
 }
 * {
   box-sizing: border-box;
@@ -358,8 +274,8 @@ h2 {
   position: relative;
 }
 .source-card.selected {
-  background: var(--brand-500);
-  border-color: var(--brand-line-strong);
+  background: var(--brand-600);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .source-select {
   all: unset;
@@ -735,7 +651,7 @@ main {
 }
 .frame-handle {
   cursor: grab;
-  fill: var(--accent);
+  fill: var(--accent-warm);
   stroke: var(--primary-hover);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
@@ -1121,9 +1037,16 @@ dialog::backdrop {
   font-size: 1.25rem;
   letter-spacing: -0.035em;
 }
+/* The head and the footer always stay in view; only the body scrolls, whatever the footer's height. */
+#dialogContent {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
 .dialog-body {
   padding: 22px 25px;
-  max-height: calc(90vh - 160px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
 }
 .dialog-footer {
@@ -1690,7 +1613,9 @@ dialog::backdrop {
   }
   .dialog-body {
     padding: 18px 16px;
-    max-height: calc(90dvh - 160px);
+  }
+  #dialogContent {
+    max-height: 92dvh;
   }
   .dialog-head {
     padding: 17px 16px;
@@ -1741,7 +1666,6 @@ dialog::backdrop {
   dialog {
     max-height: 92dvh;
     width: calc(100% - 16px);
-    border-radius: 11px;
   }
   .review-image {
     min-height: 45px;
@@ -2246,7 +2170,7 @@ td[data-label]::before {
   transition: none;
 }
 .review-card.swipe-ok {
-  box-shadow: 0 0 0 3px var(--focus);
+  box-shadow: 0 0 0 3px var(--ok-strong);
 }
 .review-card.swipe-skip {
   box-shadow: 0 0 0 3px var(--warn-line);
@@ -2436,7 +2360,7 @@ td[data-label]::before {
     display: none !important;
   }
   .flow-steps li.shown button {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-warm);
     outline-offset: 1px;
   }
 }
@@ -2559,9 +2483,6 @@ td[data-label]::before {
   color: var(--err);
   background: var(--err-soft);
 }
-.theme-picker {
-  padding: 0 8px;
-}
 @media (max-width: 1200px) {
   .recent-projects {
     grid-column: 1;
@@ -2585,22 +2506,6 @@ td[data-label]::before {
   }
 }
 
-/* Sun: high contrast for bright daylight. Colours come from scripts/themes.mjs; here only what a
-   colour map cannot do: larger digits, heavier lines and text, no decoration. */
-:root[data-theme='sun'] body {
-  font-weight: 500;
-}
-:root[data-theme='sun'] :is(.panel, .project-item, .empty-state, .notice, .flow-steps button) {
-  border-width: 2px;
-}
-:root[data-theme='sun'] :is(#pointsBody input, .review-digits) {
-  font-size: 1.08em;
-  font-weight: 650;
-}
-:root[data-theme='sun'] .eyebrow {
-  letter-spacing: 0.06em;
-}
-
 /* Review card: a field a plausibility check points at (far away, odd height, name off the series). */
 .review-field.flagged {
   border-radius: 10px;
@@ -2612,8 +2517,8 @@ td[data-label]::before {
 
 /* Frame on the photo and the point map: drawn in SVG, coloured from the palette. */
 .frame-shape {
-  fill: color-mix(in srgb, var(--accent) 10%, transparent);
-  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--accent-warm) 10%, transparent);
+  stroke: var(--accent-warm);
   stroke-width: 3;
   vector-effect: non-scaling-stroke;
 }
@@ -2638,4 +2543,264 @@ td[data-label]::before {
 .map-label {
   fill: var(--ink-soft);
   font-size: 11px;
+}
+
+/* ── Liquid Glass ──────────────────────────────────────────────────────────────────────────────
+   Translucent layers that blur what lies behind them, a bright specular edge on top, large radii
+   and capsule controls. Behind the glass: soft spots of teal, orange and lime on sand, so the glass
+   has something to show. Text stays on near-opaque glass, so it keeps its contrast. */
+html {
+  --glass: color-mix(in srgb, var(--surface) 68%, transparent);
+  --glass-strong: color-mix(in srgb, var(--surface) 86%, transparent);
+  --glass-edge: color-mix(in srgb, var(--surface) 80%, transparent);
+  --glass-blur: blur(22px) saturate(170%);
+  --glass-shine:
+    inset 0 1px 0 color-mix(in srgb, var(--surface) 90%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--shadow) 5%, transparent);
+  --glass-lift:
+    0 12px 36px color-mix(in srgb, var(--shadow) 10%, transparent),
+    0 2px 6px color-mix(in srgb, var(--shadow) 5%, transparent);
+  --radius-panel: 22px;
+  --radius-control: 999px;
+}
+body {
+  background-color: var(--canvas);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      70vw 60vh at 0% 0%,
+      color-mix(in srgb, var(--brand-500) 26%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      55vw 50vh at 100% 12%,
+      color-mix(in srgb, var(--accent-warm) 15%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      60vw 55vh at 55% 105%,
+      color-mix(in srgb, var(--accent) 24%, transparent),
+      transparent 70%
+    ),
+    var(--canvas);
+}
+
+/* Glass panels */
+.panel,
+.empty-state,
+.export-bar,
+.project-item,
+.file-summary,
+.bulk-item {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--glass-shine), var(--glass-lift);
+}
+.empty-state .workflow,
+thead,
+.panel-toolbar {
+  background: color-mix(in srgb, var(--surface-soft) 55%, transparent);
+}
+.notice {
+  background: color-mix(in srgb, var(--warn-soft) 82%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 16px;
+  box-shadow: var(--glass-shine);
+}
+
+/* Capsule controls */
+.button,
+.side-btn,
+.text-btn,
+.filter-tabs button,
+.top-btn,
+.lang-picker {
+  border-radius: var(--radius-control);
+}
+.subtle,
+.icon-btn {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+  box-shadow:
+    var(--glass-shine),
+    0 1px 3px color-mix(in srgb, var(--shadow) 8%, transparent);
+}
+.subtle:hover,
+.icon-btn:hover {
+  background: var(--glass-strong);
+}
+.icon-btn {
+  border-radius: var(--radius-control);
+}
+.primary,
+.export-button {
+  border-radius: var(--radius-control);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 16%, transparent),
+    transparent 55%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--surface) 30%, transparent),
+    0 6px 18px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+.segmented {
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  border-radius: var(--radius-control);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--shadow) 8%, transparent);
+}
+.segmented button {
+  border-radius: var(--radius-control);
+}
+.segmented button.active {
+  box-shadow:
+    var(--glass-shine),
+    0 2px 8px color-mix(in srgb, var(--shadow) 12%, transparent);
+}
+td input,
+.table-tools input,
+select,
+.review-fields input,
+.review-digits,
+.paste-area,
+.cell-crop,
+.review-image {
+  border-radius: 12px;
+}
+.photo-viewport {
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
+}
+
+/* Step bar: glass capsules */
+.flow-steps button {
+  border-radius: var(--radius-control);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-shine);
+}
+.flow-steps .done button {
+  background: color-mix(in srgb, var(--ok-soft) 72%, transparent);
+  border-color: color-mix(in srgb, var(--ok-line) 70%, transparent);
+}
+.flow-steps .current button {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 16%, transparent),
+    transparent 55%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--surface) 30%, transparent),
+    0 6px 18px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+/* Header and sidebar: dark teal glass */
+.topbar {
+  background: color-mix(in srgb, var(--brand-900) 90%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom-color: color-mix(in srgb, var(--on-brand) 10%, transparent);
+}
+.sidebar {
+  background: color-mix(in srgb, var(--brand-800) 95%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--on-brand) 8%, transparent);
+}
+.dropzone,
+.source-card {
+  border-radius: 18px;
+}
+.dropzone small {
+  color: var(--on-brand-muted);
+}
+.dropzone {
+  background: color-mix(in srgb, var(--on-brand) 6%, transparent);
+  border-color: color-mix(in srgb, var(--on-brand) 28%, transparent);
+}
+.source-card {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--on-brand) 10%, transparent);
+}
+
+/* Floating layers: dialog, menu, toast */
+dialog {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--glass-edge);
+  border-radius: 28px;
+  box-shadow:
+    var(--glass-shine),
+    0 30px 90px color-mix(in srgb, var(--shadow) 26%, transparent);
+}
+dialog::backdrop {
+  background: color-mix(in srgb, var(--brand-900) 30%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.more-menu {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+  border-radius: 20px;
+  box-shadow: var(--glass-shine), var(--glass-lift);
+}
+.more-menu button {
+  border-radius: 12px;
+}
+.toast {
+  background: color-mix(in srgb, var(--brand-900) 86%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid color-mix(in srgb, var(--on-brand) 14%, transparent);
+  border-radius: var(--radius-control);
+}
+@media (max-width: 760px) {
+  /* The next-step bar floats as a glass capsule above the content. */
+  .next-step-bar {
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 12px 12px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 28px;
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow:
+      var(--glass-shine),
+      0 14px 40px color-mix(in srgb, var(--shadow) 18%, transparent);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel,
+  .empty-state,
+  .export-bar,
+  .project-item,
+  .file-summary,
+  .bulk-item,
+  .flow-steps button,
+  .subtle,
+  .icon-btn,
+  dialog,
+  .more-menu,
+  .next-step-bar {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

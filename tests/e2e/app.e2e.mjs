@@ -982,46 +982,97 @@ const luminance = (rgb) => {
     });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
-const contrast = (a, b) => {
-  const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
-  return (x + 0.05) / (y + 0.05);
-};
 
-test('display: dark and sun themes are chosen in the header, follow the system and are remembered', async () => {
-  const { context, page, problems } = await openApp({ context: { colorScheme: 'dark' } });
-  const colors = () =>
-    page.evaluate(() => {
-      const body = getComputedStyle(document.body),
-        panel = getComputedStyle(document.querySelector('.empty-state'));
-      return { bg: body.backgroundColor, text: body.color, panel: panel.backgroundColor };
-    });
-  // "Automatic" follows the system setting, here dark.
-  assert.equal(await page.locator('html').getAttribute('data-theme'), 'auto');
-  assert.ok(luminance((await colors()).bg) < 0.05, 'dark page with a dark system setting');
-  await page.locator('#themeSelect').selectOption('sun');
-  await page.waitForTimeout(400);
-  const sun = await colors();
-  assert.ok(luminance(sun.bg) > 0.9, 'sun: a white page');
-  assert.ok(contrast(sun.text, sun.bg) >= 12, 'sun: near-black text');
-  await page.reload();
-  await page.locator('#emptyState').waitFor();
-  assert.equal(await page.locator('html').getAttribute('data-theme'), 'sun');
-  assert.equal(await page.locator('#themeSelect').inputValue(), 'sun');
-  await page.locator('#themeSelect').selectOption('dark');
-  await page.waitForTimeout(400);
-  const dark = await colors();
-  // Layers as in Standpunktprotokoll: the page darkest, cards lighter, bright text on both.
-  assert.ok(luminance(dark.bg) < 0.02, dark.bg);
-  assert.ok(luminance(dark.panel) > luminance(dark.bg), 'dark: cards above the page');
-  assert.ok(contrast(dark.text, dark.bg) >= 12, 'dark: bright text');
-  const muted = await page.evaluate(() => {
-    const panel = document.querySelector('.panel'),
-      small = document.querySelector('.photo-caption, .points-heading p');
-    return [getComputedStyle(small).color, getComputedStyle(panel).backgroundColor];
+// Every visible text against what is really behind it: glass panels are blended over the page.
+function lowContrastTexts() {
+  const parse = (c) => {
+    const m = c.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0, 0];
+    if (c.startsWith('color('))
+      return { r: m[0] * 255, g: m[1] * 255, b: m[2] * 255, a: m[3] ?? 1 };
+    return { r: m[0], g: m[1], b: m[2], a: m[3] ?? 1 };
+  };
+  const lum = ({ r, g, b }) =>
+    [r, g, b]
+      .map((v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+      .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const over = (top, under) => ({
+    r: top.r * top.a + under.r * (1 - top.a),
+    g: top.g * top.a + under.g * (1 - top.a),
+    b: top.b * top.a + under.b * (1 - top.a),
+    a: 1,
   });
-  assert.ok(contrast(...muted) >= 7, 'dark: secondary text readable on cards ' + muted);
-  assert.deepEqual(problems, []);
-  await context.close();
+  const behind = (el) => {
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const c = parse(getComputedStyle(e).backgroundColor);
+      if (c.a > 0) layers.push(c);
+      if (c.a >= 1) break;
+    }
+    let base = parse(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--canvas')
+        .trim()
+        .replace(
+          /^#(..)(..)(..)$/,
+          (_, r, g, b) => `rgb(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)})`,
+        ),
+    );
+    for (const c of layers.reverse()) base = over(c, base);
+    return base;
+  };
+  const low = [];
+  for (const el of document.querySelectorAll('body *')) {
+    if (
+      !el.checkVisibility() ||
+      el.closest('svg, :disabled') ||
+      ['IMG', 'CANVAS', 'OPTION', 'SELECT'].includes(el.tagName)
+    )
+      continue;
+    const cs = getComputedStyle(el);
+    const own =
+      [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) ||
+      (el.tagName === 'INPUT' && el.value);
+    if (!own || parseFloat(cs.fontSize) === 0) continue;
+    const bg = behind(el),
+      fg = over(parse(cs.color), bg);
+    const [x, y] = [lum(fg), lum(bg)].sort((a, b) => b - a),
+      ratio = (x + 0.05) / (y + 0.05);
+    const large =
+      parseFloat(cs.fontSize) >= 24 ||
+      (parseFloat(cs.fontSize) >= 18.66 && parseInt(cs.fontWeight) >= 600);
+    if (ratio < (large ? 3 : 4.5))
+      low.push(`${(el.value || el.textContent).trim().slice(0, 30)}: ${ratio.toFixed(2)}`);
+  }
+  return low;
+}
+
+test('one light theme, also with a dark system setting, and every text readable on the glass', async () => {
+  for (const context of [{ viewport: { width: 1440, height: 900 } }, devices['iPhone 13']]) {
+    const {
+      context: ctx,
+      page,
+      problems,
+    } = await openApp({ context: { ...context, colorScheme: 'dark', reducedMotion: 'reduce' } });
+    assert.equal(await page.locator('#themeSelect').count(), 0, 'no theme picker');
+    const body = await page.evaluate(() => getComputedStyle(document.body).color);
+    assert.ok(luminance(body) < 0.02, 'dark text: the light theme stays ' + body);
+    assert.deepEqual(await page.evaluate(lowContrastTexts), [], 'start screen');
+    await openPaste(page);
+    await page
+      .locator('#pasteText')
+      .fill('P1;3423197.856;5538496.915;101.20\nP2;x;5538498.482\nP3;3423198.026;5538496.339');
+    await page.locator('#pasteApply').click();
+    await page
+      .locator('#toast')
+      .waitFor({ state: 'hidden' })
+      .catch(() => {});
+    assert.deepEqual(await page.evaluate(lowContrastTexts), [], 'points');
+    await page.locator('[data-review]').first().click();
+    await page.locator('#dialog').waitFor();
+    assert.deepEqual(await page.evaluate(lowContrastTexts), [], 'review card');
+    assert.deepEqual(problems, []);
+    await ctx.close();
+  }
 });
 
 test('implausible points are marked and reviewed first: far away, odd height, name off the series, missing row', async () => {

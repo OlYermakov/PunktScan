@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-theme="auto">
+<html lang="de">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -13,16 +13,6 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-180.png" />
-    <script>
-      // The saved theme applies before the first paint, so the page does not flash in another one.
-      try {
-        const theme = localStorage.getItem('punktscan-theme');
-        if (['light', 'dark', 'sun'].includes(theme))
-          document.documentElement.dataset.theme = theme;
-      } catch {
-        // Storage blocked: the automatic theme stays.
-      }
-    </script>
     <link rel="stylesheet" href="./style.css?v=__BUILD__" />
     <script defer src="./vendor/tesseract.min.js"></script>
     <script type="module" src="./app.js?v=__BUILD__"></script>
@@ -54,17 +44,6 @@
             /></svg
           ><span id="langCode">DE</span
           ><select id="langSelect" data-i18n-attr="aria-label:lang.label"></select></label
-        ><label class="lang-picker theme-picker"
-          ><svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" /></svg
-          ><select id="themeSelect" data-i18n-attr="aria-label:theme.label"></select></label
         ><button
           class="top-btn"
           id="offlineBtn"

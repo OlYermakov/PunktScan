@@ -70,32 +70,6 @@ $('langSelect').onchange = async (e) => {
   location.reload();
 };
 
-// Display: automatic (follows the system), light, dark, or high contrast for bright sunlight.
-const THEMES = ['auto', 'light', 'dark', 'sun'];
-function storedTheme() {
-  try {
-    return localStorage.getItem('punktscan-theme');
-  } catch {
-    return null;
-  }
-}
-// The header keeps its colour in every theme, so the phone's status bar colour stays the same.
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-}
-const theme = THEMES.includes(storedTheme()) ? storedTheme() : 'auto';
-for (const code of THEMES)
-  $('themeSelect').append(new Option(t('theme.' + code), code, code === theme, code === theme));
-applyTheme(theme);
-$('themeSelect').onchange = (e) => {
-  applyTheme(e.target.value);
-  try {
-    localStorage.setItem('punktscan-theme', e.target.value);
-  } catch {
-    // Private mode: the choice lasts for this page only.
-  }
-};
-
 $('uploadBtn').onclick = () => $('photoInput').click();
 $('photoInput').onchange = (e) => addPhotos([...e.target.files]);
 for (const event of ['dragenter', 'dragover'])

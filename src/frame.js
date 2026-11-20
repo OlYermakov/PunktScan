@@ -54,7 +54,7 @@ function drawLoupe(clientX, clientY) {
     (q.y * img.naturalHeight - cy) * k + size / 2,
   ];
   ctx.lineWidth = 2 * dpr;
-  ctx.strokeStyle = color('--accent');
+  ctx.strokeStyle = color('--accent-warm');
   ctx.beginPath();
   for (const q of [s.quad[(drag.corner + 3) % 4], s.quad[(drag.corner + 1) % 4]]) {
     ctx.moveTo(size / 2, size / 2);
