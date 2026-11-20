@@ -2,127 +2,134 @@
   font-family: AppSystem;
   src: local('Inter'), local('SF Pro Text'), local('Segoe UI');
 }
-/* Palette. Every colour of the app is one of these roles; nothing else in this file names a colour.
-   As in Standpunktprotokoll, the page (canvas) is the lowest layer, cards (surface) sit above it and
-   fields (surface-soft) above those, in light and dark alike. Status colours mean the same
-   everywhere: ok = checked or sure, warn = look again, err = error. */
+/* Palette, after a teal and burnt-orange scheme: night #0a0f14, deep teal #0f3d3e, teal #2e6f73,
+   light teal #7fb3b8, sand #eadcc8 and orange #c6601f. Every colour of the app is one of these
+   roles; nothing else in this file names a colour. The page (canvas) is the lowest layer, cards
+   (surface) sit above it and fields (surface-soft) above those, in light and dark alike. Status
+   colours mean the same everywhere: ok = checked or sure, warn = look again, err = error. */
 :root {
-  /* Neutrals */
-  --canvas: #f4f6f5;
+  /* Neutrals: warm sand in the light theme */
+  --canvas: #f6f1ea;
   --surface: #ffffff;
-  --surface-soft: #eef2ed;
-  --line: #dce5da;
-  --line-strong: #c9d6c8;
-  --ink: #1d3435;
-  --ink-soft: #2f4b3c;
-  --muted: #566a5e;
-  --faint: #617065;
-  --shadow: #13291a;
-  /* Brand: header, sidebar, primary action, lime accent. Brand surfaces are dark in every theme. */
-  --brand-900: #172e30;
-  --brand-800: #1d3638;
-  --brand-700: #264345;
-  --brand-600: #304a4b;
-  --brand-500: #36554e;
-  --brand-line: #345052;
-  --brand-line-strong: #597b72;
-  --on-brand: #e8efec;
-  --on-brand-muted: #b4c9c3;
-  --on-brand-faint: #9fb6b1;
-  --primary: #264d41;
-  --primary-hover: #153c31;
-  --accent: #bcf34e;
-  --on-accent: #1d3326;
-  --focus: #7eb842;
-  --brand-text: #355f48;
-  --brand-soft: #eaf1e6;
+  --surface-soft: #f1eadf;
+  --line: #e3d8c6;
+  --line-strong: #cdbfa9;
+  --ink: #0a0f14;
+  --ink-soft: #1b3134;
+  --muted: #4f5a5c;
+  --faint: #5e696b;
+  --shadow: #0a0f14;
+  /* Brand: deep teal header and sidebar (the same in every theme), teal action, orange accent */
+  --brand-900: #0c3334;
+  --brand-800: #0f3d3e;
+  --brand-700: #15494a;
+  --brand-600: #1c5557;
+  --brand-500: #2e6f73;
+  --brand-line: #1f5354;
+  --brand-line-strong: #4f8c90;
+  --on-brand: #f1f5f4;
+  --on-brand-muted: #b5d3d6;
+  --on-brand-faint: #94bfc3;
+  --primary: #2e6f73;
+  --primary-hover: #0f3d3e;
+  --accent: #c6601f;
+  --on-accent: #0a0f14;
+  --focus: #c6601f;
+  --brand-text: #2a6569;
+  --brand-soft: #e2eeee;
   /* Status */
-  --ok: #426f30;
-  --ok-soft: #e9f4df;
-  --ok-line: #b7cea0;
+  --ok: #3f6b2c;
+  --ok-soft: #e7f2dc;
+  --ok-line: #b3cc9b;
   --ok-strong: #2f9a4a;
-  --warn: #7f5a24;
-  --warn-soft: #fff7e7;
-  --warn-line: #e3cda2;
+  --warn: #7a5520;
+  --warn-soft: #fbf0d9;
+  --warn-line: #e0c792;
   --warn-strong: #e0a400;
   --mark: #ffd84d;
-  --err: #a3432a;
-  --err-soft: #fff5ee;
-  --err-line: #e9b3a6;
+  --err: #a3402a;
+  --err-soft: #fde9e1;
+  --err-line: #e5ad9c;
   --err-strong: #d23b2f;
-  --danger: #9b503b;
+  --danger: #9b4a35;
   --info: #1f6fd3;
-  --info-soft: #e8f1fc;
+  --info-soft: #e5effb;
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --canvas: #0b100e;
-  --surface: #151d1a;
-  --surface-soft: #202a26;
-  --line: #2b3934;
-  --line-strong: #405149;
-  --ink: #f1f5f3;
-  --ink-soft: #dce6e1;
-  --muted: #aebbb5;
-  --faint: #8d9b95;
+  --canvas: #0a0f14;
+  --surface: #111a20;
+  --surface-soft: #18242b;
+  --line: #233139;
+  --line-strong: #36505a;
+  --ink: #eef3f4;
+  --ink-soft: #d5e3e5;
+  --muted: #a7b8bc;
+  --faint: #8a9ca1;
   --shadow: #000000;
-  --primary: #2a5747;
-  --primary-hover: #224a3c;
-  --brand-text: #8fd1a6;
-  --brand-soft: #1a2d25;
+  --primary: #2e6f73;
+  --primary-hover: #24595c;
+  --accent: #e0782f;
+  --on-accent: #0a0f14;
+  --focus: #e0782f;
+  --brand-text: #7fb3b8;
+  --brand-soft: #12292c;
   --ok: #93d68a;
-  --ok-soft: #1a2c1f;
+  --ok-soft: #16261b;
   --ok-line: #3d6a44;
   --warn: #f2c46b;
-  --warn-soft: #2b2414;
+  --warn-soft: #262012;
   --warn-line: #6b5427;
   --err: #f5907c;
-  --err-soft: #2e1a16;
+  --err-soft: #2a1714;
   --err-line: #7a3a2e;
-  --info-soft: #17263a;
+  --info-soft: #142236;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-theme='auto'] {
     color-scheme: dark;
-    --canvas: #0b100e;
-    --surface: #151d1a;
-    --surface-soft: #202a26;
-    --line: #2b3934;
-    --line-strong: #405149;
-    --ink: #f1f5f3;
-    --ink-soft: #dce6e1;
-    --muted: #aebbb5;
-    --faint: #8d9b95;
+    --canvas: #0a0f14;
+    --surface: #111a20;
+    --surface-soft: #18242b;
+    --line: #233139;
+    --line-strong: #36505a;
+    --ink: #eef3f4;
+    --ink-soft: #d5e3e5;
+    --muted: #a7b8bc;
+    --faint: #8a9ca1;
     --shadow: #000000;
-    --primary: #2a5747;
-    --primary-hover: #224a3c;
-    --brand-text: #8fd1a6;
-    --brand-soft: #1a2d25;
+    --primary: #2e6f73;
+    --primary-hover: #24595c;
+    --accent: #e0782f;
+    --on-accent: #0a0f14;
+    --focus: #e0782f;
+    --brand-text: #7fb3b8;
+    --brand-soft: #12292c;
     --ok: #93d68a;
-    --ok-soft: #1a2c1f;
+    --ok-soft: #16261b;
     --ok-line: #3d6a44;
     --warn: #f2c46b;
-    --warn-soft: #2b2414;
+    --warn-soft: #262012;
     --warn-line: #6b5427;
     --err: #f5907c;
-    --err-soft: #2e1a16;
+    --err-soft: #2a1714;
     --err-line: #7a3a2e;
-    --info-soft: #17263a;
+    --info-soft: #142236;
   }
 }
 /* Sun: paper white, black text, dark lines and strong status tints for bright daylight. */
 :root[data-theme='sun'] {
   --canvas: #ffffff;
   --surface: #ffffff;
-  --surface-soft: #eef1ef;
-  --line: #7d8a82;
-  --line-strong: #4f5c54;
+  --surface-soft: #f3eee6;
+  --line: #7d7466;
+  --line-strong: #4c463d;
   --ink: #000000;
-  --ink-soft: #0b1610;
-  --muted: #26332c;
-  --faint: #3d4a42;
-  --brand-text: #1d4630;
-  --brand-soft: #dcebd5;
+  --ink-soft: #0a1214;
+  --muted: #252d30;
+  --faint: #3a4346;
+  --brand-text: #164e52;
+  --brand-soft: #d9ebec;
   --ok: #1e5414;
   --ok-soft: #d9f0c6;
   --ok-line: #4e8a3a;
@@ -2601,4 +2608,34 @@ td[data-label]::before {
   background: var(--warn-soft);
   padding: 6px 8px 8px;
   margin: 0 -8px;
+}
+
+/* Frame on the photo and the point map: drawn in SVG, coloured from the palette. */
+.frame-shape {
+  fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  stroke: var(--accent);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.map-grid {
+  fill: none;
+  stroke: var(--line);
+}
+.map-axis {
+  fill: var(--brand-text);
+  font-size: 14px;
+}
+.map-point {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.map-point.ok {
+  fill: var(--ok);
+}
+.map-point.check {
+  fill: var(--warn-strong);
+}
+.map-label {
+  fill: var(--ink-soft);
+  font-size: 11px;
 }

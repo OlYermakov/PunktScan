@@ -79,7 +79,7 @@ export function renderPhoto() {
         ry: (radius * 1000) / (box.height || 300),
       };
     $('frameOverlay').innerHTML =
-      `<polygon points="${q.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')}" fill="#c8ef6915" stroke="#bcf34e" stroke-width="3" vector-effect="non-scaling-stroke"/>${q.map((p, i) => `<ellipse data-corner="${i}" cx="${p.x * 1000}" cy="${p.y * 1000}" class="frame-handle${i === activeCorner() ? ' active' : ''}" rx="${handle.rx}" ry="${handle.ry}" role="slider" tabindex="0" aria-label="${t('photo.corner', { n: i + 1 })}"/>`).join('')}`;
+      `<polygon points="${q.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')}" class="frame-shape"/>${q.map((p, i) => `<ellipse data-corner="${i}" cx="${p.x * 1000}" cy="${p.y * 1000}" class="frame-handle${i === activeCorner() ? ' active' : ''}" rx="${handle.rx}" ry="${handle.ry}" role="slider" tabindex="0" aria-label="${t('photo.corner', { n: i + 1 })}"/>`).join('')}`;
   }
   for (const b of $('viewTabs').children) {
     b.classList.toggle('active', b.dataset.view === state.view);

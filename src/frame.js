@@ -43,7 +43,9 @@ function drawLoupe(clientX, clientY) {
     cy = p.y * img.naturalHeight,
     k = size / span,
     ctx = loupe.getContext('2d');
-  ctx.fillStyle = '#e6ebe7';
+  // Colours come from the palette in style.css.
+  const color = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  ctx.fillStyle = color('--surface-soft');
   ctx.fillRect(0, 0, size, size);
   ctx.drawImage(img, cx - span / 2, cy - span / 2, span, span, 0, 0, size, size);
   // Frame edges to the two neighbouring corners, then a cross-hair on the corner itself.
@@ -52,14 +54,14 @@ function drawLoupe(clientX, clientY) {
     (q.y * img.naturalHeight - cy) * k + size / 2,
   ];
   ctx.lineWidth = 2 * dpr;
-  ctx.strokeStyle = '#7fbf1f';
+  ctx.strokeStyle = color('--accent');
   ctx.beginPath();
   for (const q of [s.quad[(drag.corner + 3) % 4], s.quad[(drag.corner + 1) % 4]]) {
     ctx.moveTo(size / 2, size / 2);
     ctx.lineTo(...at(q));
   }
   ctx.stroke();
-  ctx.strokeStyle = '#173c2c';
+  ctx.strokeStyle = color('--brand-900');
   ctx.lineWidth = 1.5 * dpr;
   ctx.beginPath();
   ctx.moveTo(size / 2, size / 2 - 14 * dpr);
