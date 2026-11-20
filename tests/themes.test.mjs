@@ -10,11 +10,12 @@ test('OKLab conversion round-trips sRGB colours', () => {
   assert.equal(oklabToHex(hexToOklab('#13291a55')), '#13291a55');
 });
 
-test('the dark theme mirrors lightness: white surfaces get dark grey, dark text gets light', () => {
-  const page = darkColor(hexToOklab('#ffffff'));
-  // Dark, but not black.
-  assert.ok(page.L > 0.25 && page.L < 0.35, String(page.L));
-  assert.ok(darkColor(hexToOklab('#1c3636'), 'text').L > 0.8);
+test('dark theme: tinted surfaces become dark tints that keep their hue, coloured text gets bright', () => {
+  const warning = hexToOklab('#fff7df'),
+    dark = darkColor(warning);
+  assert.ok(dark.L > 0.2 && dark.L < 0.3, String(dark.L));
+  assert.ok(Math.sign(dark.b) === Math.sign(warning.b) && Math.abs(dark.b) > Math.abs(warning.b));
+  assert.ok(darkColor(hexToOklab('#a34d30'), 'text').L > 0.7);
 });
 
 test('every colour rule is repeated under each theme, in the same media query', () => {
@@ -55,7 +56,12 @@ test('the app stylesheet parses and yields both themes', async () => {
     tree = parseCss(css),
     out = themeCss(css);
   assert.ok(tree.length > 200);
-  assert.ok(out.includes(`:root[data-theme='dark'] body {`));
-  assert.ok(out.includes(`:root[data-theme='sun'] body {`));
+  // Neutrals are roles with hand-picked values per theme; coloured rules are derived.
+  for (const theme of ['dark', 'sun'])
+    assert.match(css, new RegExp(`:root\\[data-theme='${theme}'\\] \\{\\n  --canvas:`));
+  assert.ok(out.includes(`:root[data-theme='dark'] .notice {`));
+  assert.ok(out.includes(`:root[data-theme='sun'] .notice {`));
+  // Hand-written theme rules are not derived a second time.
+  assert.doesNotMatch(out, /\] :root\[data-theme/);
   assert.equal((out.match(/\{/g) || []).length, (out.match(/\}/g) || []).length);
 });

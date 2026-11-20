@@ -1010,9 +1010,16 @@ test('display: dark and sun themes are chosen in the header, follow the system a
   await page.locator('#themeSelect').selectOption('dark');
   await page.waitForTimeout(400);
   const dark = await colors();
-  // Dark grey, not black, with readable text.
-  assert.ok(luminance(dark.bg) > 0.01 && luminance(dark.bg) < 0.05, dark.bg);
-  assert.ok(contrast(dark.text, dark.bg) >= 7, 'dark: readable text');
+  // Layers as in Standpunktprotokoll: the page darkest, cards lighter, bright text on both.
+  assert.ok(luminance(dark.bg) < 0.02, dark.bg);
+  assert.ok(luminance(dark.panel) > luminance(dark.bg), 'dark: cards above the page');
+  assert.ok(contrast(dark.text, dark.bg) >= 12, 'dark: bright text');
+  const muted = await page.evaluate(() => {
+    const panel = document.querySelector('.panel'),
+      small = document.querySelector('.photo-caption, .points-heading p');
+    return [getComputedStyle(small).color, getComputedStyle(panel).backgroundColor];
+  });
+  assert.ok(contrast(...muted) >= 7, 'dark: secondary text readable on cards ' + muted);
   assert.deepEqual(problems, []);
   await context.close();
 });

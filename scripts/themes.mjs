@@ -9,7 +9,7 @@ const COLOR_PROPS =
 // buttons, toasts and the current step are already dark green with light text, and the marks drawn
 // on top of the photo must match the photo.
 const KEEP =
-  /\.topbar|\.brand|\.top-|\.lang-picker|\.private-label|\.live-dot|\.sidebar|\.dropzone|\.upload-mark|\.source-|\.local-note|\.side-btn|#sourceCount|#resultOverlay|\.frame-|\.loupe|\.map-wrap|\.primary|\.toast|\.flow-steps \.current|::backdrop/;
+  /\.topbar|\.brand|\.top-|\.lang-picker|\.private-label|\.live-dot|\.sidebar|\.dropzone|\.upload-mark|\.source-|\.local-note|\.side-btn|#sourceCount|#resultOverlay|\.frame-|\.loupe|\.map-wrap|\.primary|\.toast|\.flow-steps \.current|::backdrop|\.export-button|\.danger\b|\.count\b|progress|\bmark\b/;
 
 // Strips comments and splits the stylesheet into rules and at-rule blocks.
 export function parseCss(text) {
@@ -124,10 +124,16 @@ const KIND = (prop) =>
 // Dark: lightness is mirrored, so every pair keeps its contrast; colour is toned down a little.
 // Surfaces land on a dark grey-green rather than black; text is lifted more, so it keeps a
 // contrast of at least 7:1 on the page.
+// Neutrals are roles (var(--…) in style.css) with hand-picked dark values; what is left here are
+// coloured values. Tinted surfaces (yellow "check", red "error", green "done") become dark tints
+// that stay recognisable, between the card and the field level; coloured text gets bright.
 export function darkColor(c, kind = 'surface') {
-  const L =
-    kind === 'text' ? 1.05 - 0.75 * c.L : kind === 'line' ? 0.97 - 0.6 * c.L : 0.97 - 0.68 * c.L;
-  return { ...c, L: clamp(L), a: c.a * 0.85, b: c.b * 0.85 };
+  if (kind === 'text') return { ...c, L: clamp(1.08 - 0.7 * c.L), a: c.a * 1.15, b: c.b * 1.15 };
+  if (kind === 'line') return { ...c, L: clamp(0.95 - 0.6 * c.L) };
+  // Stronger tint, but within what a dark colour can show without changing its hue.
+  const chroma = Math.hypot(c.a, c.b),
+    k = chroma ? Math.min(1.6, 0.05 / chroma) : 1;
+  return { ...c, L: clamp(0.95 - 0.72 * c.L), a: c.a * k, b: c.b * k };
 }
 // Sun: light surfaces become paper-white, text and lines get much darker, status colours stronger.
 export function sunColor(c, kind) {
@@ -170,7 +176,8 @@ function emit(nodes, theme, auto) {
       const inner = emit(n.children, theme, auto);
       if (inner) out.push(`${n.head} {\n${inner}\n}`);
     }
-    if (n.type !== 'rule') continue;
+    // Theme rules written by hand (role values, sun extras) are not derived again.
+    if (n.type !== 'rule' || n.selector.includes('data-theme')) continue;
     // Kept parts are repeated with their own colours: a more general themed rule would otherwise
     // outrank the original rule now that it carries the theme selector.
     const keep = KEEP.test(n.selector);
