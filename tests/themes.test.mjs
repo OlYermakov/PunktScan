@@ -10,9 +10,11 @@ test('OKLab conversion round-trips sRGB colours', () => {
   assert.equal(oklabToHex(hexToOklab('#13291a55')), '#13291a55');
 });
 
-test('the dark theme mirrors lightness: white surfaces get dark, dark text gets light', () => {
-  assert.ok(darkColor(hexToOklab('#ffffff')).L < 0.25);
-  assert.ok(darkColor(hexToOklab('#1c3636')).L > 0.7);
+test('the dark theme mirrors lightness: white surfaces get dark grey, dark text gets light', () => {
+  const page = darkColor(hexToOklab('#ffffff'));
+  // Dark, but not black.
+  assert.ok(page.L > 0.25 && page.L < 0.35, String(page.L));
+  assert.ok(darkColor(hexToOklab('#1c3636'), 'text').L > 0.8);
 });
 
 test('every colour rule is repeated under each theme, in the same media query', () => {
@@ -43,7 +45,8 @@ test('every colour rule is repeated under each theme, in the same media query', 
     /\] \.e \{\n {2}background: transparent;\n {2}color: #[0-9a-f]{6};\n {2}box-shadow: none;/,
   );
   assert.match(out, /\] \.ring \{\n {2}box-shadow: 0 0 0 3px #/);
-  assert.doesNotMatch(out, /sidebar/);
+  // Kept parts keep their own colours, but still under the theme selector.
+  assert.match(out, /:root\[data-theme='dark'\] \.sidebar \.x \{\n {2}color: #fff;\n\}/);
   assert.doesNotMatch(out, /keyframes|rotate/);
 });
 

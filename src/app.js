@@ -79,11 +79,9 @@ function storedTheme() {
     return null;
   }
 }
+// The header keeps its colour in every theme, so the phone's status bar colour stays the same.
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  const dark =
-    theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.querySelector('meta[name="theme-color"]').content = dark ? '#101615' : '#172e30';
 }
 const theme = THEMES.includes(storedTheme()) ? storedTheme() : 'auto';
 for (const code of THEMES)

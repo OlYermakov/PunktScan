@@ -9,7 +9,7 @@ const COLOR_PROPS =
 // buttons, toasts and the current step are already dark green with light text, and the marks drawn
 // on top of the photo must match the photo.
 const KEEP =
-  /\.topbar|\.brand|\.top-|\.lang-picker|\.private-label|\.live-dot|\.sidebar|\.dropzone|\.upload-mark|\.source-|\.local-note|\.side-btn|#sourceCount|#resultOverlay|\.frame-|\.loupe|\.map-wrap|\.primary|\.toast|\.flow-steps \.current/;
+  /\.topbar|\.brand|\.top-|\.lang-picker|\.private-label|\.live-dot|\.sidebar|\.dropzone|\.upload-mark|\.source-|\.local-note|\.side-btn|#sourceCount|#resultOverlay|\.frame-|\.loupe|\.map-wrap|\.primary|\.toast|\.flow-steps \.current|::backdrop/;
 
 // Strips comments and splits the stylesheet into rules and at-rule blocks.
 export function parseCss(text) {
@@ -122,8 +122,12 @@ const KIND = (prop) =>
       : 'surface';
 
 // Dark: lightness is mirrored, so every pair keeps its contrast; colour is toned down a little.
-export function darkColor(c) {
-  return { ...c, L: clamp(0.98 - 0.8 * c.L), a: c.a * 0.85, b: c.b * 0.85 };
+// Surfaces land on a dark grey-green rather than black; text is lifted more, so it keeps a
+// contrast of at least 7:1 on the page.
+export function darkColor(c, kind = 'surface') {
+  const L =
+    kind === 'text' ? 1.05 - 0.75 * c.L : kind === 'line' ? 0.97 - 0.6 * c.L : 0.97 - 0.68 * c.L;
+  return { ...c, L: clamp(L), a: c.a * 0.85, b: c.b * 0.85 };
 }
 // Sun: light surfaces become paper-white, text and lines get much darker, status colours stronger.
 export function sunColor(c, kind) {
@@ -146,7 +150,7 @@ function remap(prop, value, theme) {
   const kind = KIND(prop);
   return value.replace(/#[0-9a-fA-F]{3,8}\b|\b(white|black)\b/g, (m) => {
     const lab = hexToOklab(NAMED[m] ?? m);
-    return oklabToHex(theme === 'dark' ? darkColor(lab) : sunColor(lab, kind));
+    return oklabToHex(theme === 'dark' ? darkColor(lab, kind) : sunColor(lab, kind));
   });
 }
 
@@ -166,13 +170,16 @@ function emit(nodes, theme, auto) {
       const inner = emit(n.children, theme, auto);
       if (inner) out.push(`${n.head} {\n${inner}\n}`);
     }
-    if (n.type !== 'rule' || KEEP.test(n.selector)) continue;
+    if (n.type !== 'rule') continue;
+    // Kept parts are repeated with their own colours: a more general themed rule would otherwise
+    // outrank the original rule now that it carries the theme selector.
+    const keep = KEEP.test(n.selector);
     const decls = n.decls.filter(([p]) => COLOR_PROPS.test(p));
     // Only rules that set an actual colour are themed, but then all their colour declarations are
     // repeated (also "transparent"), so overrides keep the original cascade between rules.
     if (!decls.some(([p, v]) => /#[0-9a-fA-F]{3,8}\b|\b(white|black)\b/.test(v))) continue;
     out.push(
-      `${scope(n.selector, theme, auto)} {\n${decls.map(([p, v]) => `  ${p}: ${mapValue(p, v, theme)};`).join('\n')}\n}`,
+      `${scope(n.selector, theme, auto)} {\n${decls.map(([p, v]) => `  ${p}: ${keep ? v : mapValue(p, v, theme)};`).join('\n')}\n}`,
     );
   }
   return out.join('\n');

@@ -1010,9 +1010,9 @@ test('display: dark and sun themes are chosen in the header, follow the system a
   await page.locator('#themeSelect').selectOption('dark');
   await page.waitForTimeout(400);
   const dark = await colors();
-  assert.ok(luminance(dark.bg) < 0.05);
+  // Dark grey, not black, with readable text.
+  assert.ok(luminance(dark.bg) > 0.01 && luminance(dark.bg) < 0.05, dark.bg);
   assert.ok(contrast(dark.text, dark.bg) >= 7, 'dark: readable text');
-  assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'), '#101615');
   assert.deepEqual(problems, []);
   await context.close();
 });
