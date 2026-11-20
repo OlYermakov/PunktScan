@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="auto">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -44,6 +44,17 @@
             /></svg
           ><span id="langCode">DE</span
           ><select id="langSelect" data-i18n-attr="aria-label:lang.label"></select></label
+        ><label class="lang-picker theme-picker"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" /></svg
+          ><select id="themeSelect" data-i18n-attr="aria-label:theme.label"></select></label
         ><button
           class="top-btn"
           id="offlineBtn"
@@ -73,7 +84,9 @@
         <input hidden id="projectInput" type="file" accept=".json,application/json" />
         <div class="source-list" id="sourceList"></div>
         <div class="sidebar-tools">
-          <button id="pasteBtn" class="side-btn" data-i18n="side.paste">Text einfügen</button
+          <button id="projectsBtn" class="side-btn" data-i18n="projects.button">
+            Meine Objekte</button
+          ><button id="pasteBtn" class="side-btn" data-i18n="side.paste">Text einfügen</button
           ><button id="openProjectBtn" class="side-btn" data-i18n="side.openProject">
             Projekt öffnen
           </button>
@@ -135,6 +148,7 @@
             <div id="moreMenu" class="more-menu" hidden>
               <button data-proxy="saveProjectBtn" data-i18n="menu.save">
                 Projekt als Datei speichern</button
+              ><button data-proxy="projectsBtn" data-i18n="projects.button">Meine Objekte</button
               ><button data-proxy="openProjectBtn" data-i18n="menu.open">Projekt öffnen</button
               ><button data-proxy="pasteBtn" data-i18n="menu.paste">Text einfügen</button
               ><button data-proxy="newProjectBtn" data-i18n="menu.new">Neues Projekt</button>
@@ -174,6 +188,10 @@
           </button>
         </div>
         <section id="emptyState" class="empty-state">
+          <section id="recentProjects" class="recent-projects" hidden>
+            <h2 data-i18n="projects.recent">Zuletzt bearbeitet</h2>
+            <ul id="recentList" class="project-list"></ul>
+          </section>
           <div class="empty-copy">
             <span class="eyebrow" data-i18n="empty.eyebrow">VOM PLAN ZUM INSTRUMENT</span>
             <h1 data-i18n-html="empty.titleHtml">
@@ -183,27 +201,6 @@
               Füge ein Foto der Tabelle hinzu, prüfe die erkannten Punkte und speichere die Datei
               für CAPLAN oder Leica.
             </p>
-          </div>
-          <div class="preview-illustration" aria-hidden="true">
-            <div class="crosshair c1"></div>
-            <div class="crosshair c2"></div>
-            <div class="paper">
-              <div class="paper-title">ABSTECKPUNKTE <span>GSI-16</span></div>
-              <div class="paper-grid">
-                <span>Punkt</span><span>Rechtswert</span><span>Hochwert</span><b>Af201</b
-                ><code>3500030.210</code><code>5600557.311</code><b>Af202</b><code>3500029.444</code
-                ><code>5600557.784</code><b>Af203</b><code>3500029.736</code
-                ><code>5600556.545</code>
-              </div>
-              <div class="scan-line"></div>
-              <div class="paper-footer">
-                <span data-i18n="empty.paperFooter">JEDE ZIFFER UNTER KONTROLLE</span
-                ><span>＋</span>
-              </div>
-            </div>
-            <div class="file-tag">
-              <span>✓</span> <span data-i18n="empty.fileTag">Exaktes GSI-Format</span>
-            </div>
           </div>
           <div class="workflow">
             <div>

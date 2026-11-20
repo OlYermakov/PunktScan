@@ -30,12 +30,8 @@ export default {
   'project.save': 'Zapisz projekt',
   'project.new': 'Nowy',
   'project.more': 'Więcej działań projektu',
-  'project.newConfirm':
-    'Rozpocząć nowy projekt? Bieżąca wersja robocza zostanie zastąpiona. W razie potrzeby najpierw zapisz ją do pliku.',
   'project.savedToast': 'Projekt ze zdjęciami jest gotowy do zapisania.',
   'project.tooBig': 'Plik jest za duży (ponad 120 MB).',
-  'project.replaceConfirm':
-    'Zastąpić bieżącą wersję roboczą? Jeśli jest jeszcze potrzebna, najpierw zapisz ją do pliku.',
   'project.opened':
     'Projekt otwarty. Status sprawdzenia zaimportowanych punktów został zresetowany — sprawdź dane przed eksportem.',
   'project.openFailed': 'Nie udało się otworzyć projektu PunktScan. ',
@@ -64,8 +60,6 @@ export default {
   'empty.titleHtml': 'Współrzędne ze zdjęć.<br /><em>Bez przepisywania.</em>',
   'empty.text':
     'Dodaj zdjęcie tabeli, sprawdź rozpoznane punkty i zapisz plik dla CAPLAN lub Leica.',
-  'empty.paperFooter': 'KAŻDA CYFRA POD KONTROLĄ',
-  'empty.fileTag': 'Dokładny format GSI',
   'empty.card1Title': 'Zdjęcie tabeli',
   'empty.card1Text': 'Kilka zdjęć w jednym projekcie.',
   'empty.card2Title': 'Porównanie z oryginałem',
@@ -307,6 +301,21 @@ export default {
   'file.unitMm': 'GSI w milimetrach',
   'file.unitTenth': 'GSI w 0,1 mm (4 miejsca po przecinku)',
   'file.hint': 'Na dole: wyślij lub zapisz GSI; CSV dla Excela.',
+  'theme.label': 'Wygląd',
+  'theme.auto': 'Automatycznie',
+  'theme.light': 'Jasny',
+  'theme.dark': 'Ciemny',
+  'theme.sun': 'Słońce (wysoki kontrast)',
+  'projects.recent': 'Ostatnio edytowane',
+  'projects.title': 'Moje obiekty',
+  'projects.button': 'Moje obiekty',
+  'projects.meta': '{date} · {points} · sprawdzone: {verified}',
+  'projects.none': 'W tej przeglądarce nie ma jeszcze innych obiektów.',
+  'projects.delete': 'Usuń {name}',
+  'projects.deleteConfirm': 'Usunąć „{name}” ze wszystkimi zdjęciami z tej przeglądarki?',
+  'projects.openFailed': 'Nie udało się otworzyć obiektu.',
+  'projects.opened': 'Otwarto: {name}',
+  'projects.kept': 'Poprzedni obiekt pozostaje zapisany w „Moje obiekty”.',
   'footer.text':
     'Współrzędne pozostają w układzie źródłowym. Nie jest wykonywana żadna transformacja współrzędnych.',
 

@@ -29,11 +29,8 @@ export default {
   'project.save': 'Save project',
   'project.new': 'New',
   'project.more': 'More project actions',
-  'project.newConfirm':
-    'Start a new project? The current draft will be replaced. Save it as a file first if you need it.',
   'project.savedToast': 'Project with photos is ready to save.',
   'project.tooBig': 'File is too large (over 120 MB).',
-  'project.replaceConfirm': 'Replace the current draft? Save it as a file first if you need it.',
   'project.opened':
     'Project opened. The review status of imported points has been reset — check the data before exporting.',
   'project.openFailed': 'Could not open the PunktScan project. ',
@@ -62,8 +59,6 @@ export default {
   'empty.titleHtml': 'Coordinates from photos.<br /><em>No retyping.</em>',
   'empty.text':
     'Add a photo of the table, review the recognized points and save the file for CAPLAN or Leica.',
-  'empty.paperFooter': 'EVERY DIGIT CHECKED',
-  'empty.fileTag': 'Exact GSI format',
   'empty.card1Title': 'Photo of the table',
   'empty.card1Text': 'Several photos in one project.',
   'empty.card2Title': 'Check against the original',
@@ -302,6 +297,21 @@ export default {
   'file.unitMm': 'GSI in millimetres',
   'file.unitTenth': 'GSI in 0.1 mm (4 decimals)',
   'file.hint': 'Below: send or save the GSI; CSV for Excel.',
+  'theme.label': 'Display',
+  'theme.auto': 'Automatic',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+  'theme.sun': 'Sun (high contrast)',
+  'projects.recent': 'Recently edited',
+  'projects.title': 'My sites',
+  'projects.button': 'My sites',
+  'projects.meta': '{date} · {points} · {verified} checked',
+  'projects.none': 'No other sites in this browser yet.',
+  'projects.delete': 'Delete {name}',
+  'projects.deleteConfirm': 'Delete “{name}” and all its photos from this browser?',
+  'projects.openFailed': 'The site could not be opened.',
+  'projects.opened': 'Opened: {name}',
+  'projects.kept': 'The previous site stays saved under “My sites”.',
   'footer.text':
     'Coordinates stay in the source system. No coordinate transformation is performed.',
 

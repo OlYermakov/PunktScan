@@ -875,3 +875,142 @@ test(
     }
   },
 );
+
+// Pastes rows into the open project and names it.
+async function pasteProject(page, name, text) {
+  await openPaste(page);
+  await page.locator('#pasteText').fill(text);
+  await page.locator('#pasteApply').click();
+  await page.locator('#projectName').fill(name);
+  await page.locator('#projectName').blur();
+}
+
+test('projects stay in the browser: new keeps the old one, the list opens and deletes them', async () => {
+  const { context, page, problems } = await openApp();
+  page.on('dialog', (d) => d.accept());
+  await pasteProject(page, 'Nord', 'A;1.000;2.000\nB;3.000;4.000');
+  await page.locator('#newProjectBtn').click();
+  // The start screen lists the previous project; the new one is empty.
+  await page.locator('#recentProjects:not([hidden])').waitFor();
+  assert.equal(await page.locator('#pointsBody tr[data-row]').count(), 0);
+  const item = page.locator('#recentList .project-item');
+  assert.equal(await item.count(), 1);
+  assert.equal(await item.locator('strong').textContent(), 'Nord');
+  assert.match(await item.locator('small').textContent(), /2 Punkte · 0 geprüft/);
+  await pasteProject(page, 'Süd', 'C;5.000;6.000');
+  await page.waitForTimeout(800);
+  // After a reload the last project is open and the other one is in "Meine Objekte".
+  await page.reload();
+  await page.locator('#pointsBody tr[data-row]').first().waitFor();
+  assert.equal(await page.locator('#projectName').inputValue(), 'Süd');
+  await page.locator('#projectsBtn').click();
+  const listed = page.locator('#dialog .project-item');
+  assert.deepEqual(await listed.locator('strong').allTextContents(), ['Nord']);
+  await listed.locator('[data-project-open]').click();
+  await page.locator('#dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('#projectName').inputValue(), 'Nord');
+  assert.equal(await page.locator('#pointsBody tr[data-row]').count(), 2);
+  assert.equal(await page.locator('#undoBtn').isDisabled(), true, 'no undo into another project');
+  // Delete "Süd" from the list; it stays gone after a reload.
+  await page.locator('#projectsBtn').click();
+  assert.deepEqual(await listed.locator('strong').allTextContents(), ['Süd']);
+  await listed.locator('[data-project-delete]').click();
+  await page.locator('#dialog .project-list').waitFor({ state: 'detached' });
+  await page.reload();
+  await page.locator('#pointsBody tr[data-row]').first().waitFor();
+  await page.locator('#projectsBtn').click();
+  assert.equal(await page.locator('#dialog .project-item').count(), 0);
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('the single draft of earlier versions becomes the first project of the list', async () => {
+  const { context, page, problems } = await openApp();
+  await page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const r = indexedDB.open('punktscan-v1', 1);
+        r.onsuccess = () => {
+          const tx = r.result.transaction('projects', 'readwrite'),
+            store = tx.objectStore('projects');
+          store.clear();
+          store.put(
+            {
+              format: 'PunktScan',
+              version: 1,
+              name: 'Alt',
+              sources: [],
+              rows: [{ id: 'r1', name: 'X', e: '1.000', n: '2.000', h: '', verified: false }],
+            },
+            'current',
+          );
+          tx.oncomplete = () => {
+            r.result.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+  await page.reload();
+  await page.locator('#pointsBody tr[data-row]').first().waitFor();
+  assert.equal(await page.locator('#projectName').inputValue(), 'Alt');
+  const keys = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const r = indexedDB.open('punktscan-v1', 1);
+        r.onsuccess = () => {
+          const q = r.result.transaction('projects').objectStore('projects').getAllKeys();
+          q.onsuccess = () => resolve(q.result.map((k) => String(k).replace(/:.*/, ':id')).sort());
+        };
+      }),
+  );
+  assert.deepEqual(keys, ['active', 'index', 'p:id']);
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+const luminance = (rgb) => {
+  const [r, g, b] = rgb
+    .match(/\d+/g)
+    .slice(0, 3)
+    .map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+
+test('display: dark and sun themes are chosen in the header, follow the system and are remembered', async () => {
+  const { context, page, problems } = await openApp({ context: { colorScheme: 'dark' } });
+  const colors = () =>
+    page.evaluate(() => {
+      const body = getComputedStyle(document.body),
+        panel = getComputedStyle(document.querySelector('.empty-state'));
+      return { bg: body.backgroundColor, text: body.color, panel: panel.backgroundColor };
+    });
+  // "Automatic" follows the system setting, here dark.
+  assert.equal(await page.locator('html').getAttribute('data-theme'), 'auto');
+  assert.ok(luminance((await colors()).bg) < 0.05, 'dark page with a dark system setting');
+  await page.locator('#themeSelect').selectOption('sun');
+  await page.waitForTimeout(400);
+  const sun = await colors();
+  assert.ok(luminance(sun.bg) > 0.9, 'sun: a white page');
+  assert.ok(contrast(sun.text, sun.bg) >= 12, 'sun: near-black text');
+  await page.reload();
+  await page.locator('#emptyState').waitFor();
+  assert.equal(await page.locator('html').getAttribute('data-theme'), 'sun');
+  assert.equal(await page.locator('#themeSelect').inputValue(), 'sun');
+  await page.locator('#themeSelect').selectOption('dark');
+  await page.waitForTimeout(400);
+  const dark = await colors();
+  assert.ok(luminance(dark.bg) < 0.05);
+  assert.ok(contrast(dark.text, dark.bg) >= 7, 'dark: readable text');
+  assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'), '#101615');
+  assert.deepEqual(problems, []);
+  await context.close();
+});

@@ -449,7 +449,7 @@ main {
   border: 1px solid #d9e2da;
   border-radius: 12px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   overflow: hidden;
   margin-bottom: 26px;
 }
@@ -484,132 +484,6 @@ main {
 .empty-actions .subtle {
   background: transparent;
   border-color: #afc1b1;
-}
-.preview-illustration {
-  align-self: stretch;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 290px;
-  overflow: hidden;
-  background-image:
-    linear-gradient(#dfe6dd 1px, transparent 1px),
-    linear-gradient(90deg, #dfe6dd 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(90deg, transparent, #000 18%);
-}
-.paper {
-  transform: rotate(-5deg);
-  padding: 20px;
-  width: 355px;
-  min-width: 310px;
-  border: 1px solid #cad8c9;
-  border-radius: 7px;
-  background: #fff;
-  box-shadow: 0 17px 35px #2541251a;
-  position: relative;
-}
-.paper-title {
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  color: #46634c;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-.paper-title span {
-  letter-spacing: 0;
-  font-size: 0.6rem;
-  background: #ecf6db;
-  padding: 2px 5px;
-  border-radius: 3px;
-}
-.paper-grid {
-  display: grid;
-  grid-template-columns: 0.7fr 1.1fr 1.1fr;
-  font-size: 0.65rem;
-  gap: 0;
-}
-.paper-grid > * {
-  border-bottom: 1px solid #e6ece4;
-  padding: 9px 4px;
-}
-.paper-grid > span {
-  font-weight: 500;
-  color: #758574;
-  padding: 4px;
-}
-.paper-grid code {
-  font-size: 0.65rem;
-}
-.paper-grid b {
-  font-weight: 500;
-}
-.paper-footer {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-  color: #6b806c;
-  font-size: 0.55rem;
-  letter-spacing: 0.12em;
-}
-.scan-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 58%;
-  height: 2px;
-  background: #92bd57;
-  box-shadow: 0 -12px 25px 5px #b3d67922;
-}
-.file-tag {
-  position: absolute;
-  bottom: 26px;
-  right: 32px;
-  background: #254a3f;
-  color: #fff;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  box-shadow: 0 10px 20px #17362b25;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.file-tag > span {
-  color: #c8ef69;
-}
-.crosshair {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-}
-.crosshair:before,
-.crosshair:after {
-  content: '';
-  position: absolute;
-  background: #72986d;
-}
-.crosshair:before {
-  top: 8px;
-  left: 0;
-  width: 18px;
-  height: 1px;
-}
-.crosshair:after {
-  top: 0;
-  left: 8px;
-  width: 1px;
-  height: 18px;
-}
-.c1 {
-  left: 30px;
-  top: 22px;
-}
-.c2 {
-  right: 20px;
-  bottom: 20px;
 }
 .workflow {
   grid-column: 1/-1;
@@ -1335,9 +1209,6 @@ dialog::backdrop {
   .empty-copy {
     padding: 50px;
   }
-  .preview-illustration .paper {
-    width: 420px;
-  }
   .photo-viewport {
     height: 420px;
   }
@@ -1354,9 +1225,6 @@ dialog::backdrop {
   }
   .empty-state {
     grid-template-columns: 1fr;
-  }
-  .preview-illustration {
-    display: none;
   }
   .empty-copy {
     padding: 30px;
@@ -2455,4 +2323,139 @@ td[data-label]::before {
   body:is([data-step='review'], [data-step='file']) main > #pointsSection {
     grid-column: 2;
   }
+}
+
+/* Start screen: the copy on the left, recently edited projects on the right. */
+.empty-copy {
+  grid-column: 1;
+  grid-row: 1;
+}
+.empty-state:has(#recentProjects[hidden]) .empty-copy {
+  grid-column: 1 / -1;
+}
+.recent-projects {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 30px 28px 24px 8px;
+  min-width: 0;
+}
+.recent-projects h2 {
+  margin-bottom: 10px;
+}
+.project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.project-item {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border: 1px solid #d9e2da;
+  border-radius: 9px;
+  overflow: hidden;
+}
+.project-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.project-open:hover {
+  background: #f4f7ef;
+}
+.project-thumb {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #e6ebe7;
+  color: #6f8169;
+  overflow: hidden;
+}
+.project-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.project-text {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.project-text strong {
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-text small {
+  font-size: 0.78rem;
+  color: #587063;
+}
+.project-delete {
+  flex: none;
+  width: 48px;
+  border: 0;
+  border-left: 1px solid #e4eae3;
+  background: transparent;
+  color: #6f8169;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.project-delete:hover {
+  color: #a3432a;
+  background: #fff5ee;
+}
+.theme-picker {
+  padding: 0 8px;
+}
+@media (max-width: 1200px) {
+  .recent-projects {
+    grid-column: 1;
+    grid-row: auto;
+    padding: 0 30px 24px;
+  }
+}
+@media (max-width: 760px) {
+  .recent-projects {
+    padding: 18px 16px;
+  }
+  /* A returning user sees the list first. */
+  .recent-projects:not([hidden]) {
+    grid-row: 1;
+  }
+  .empty-state:has(#recentProjects:not([hidden])) .empty-copy {
+    grid-row: 2;
+  }
+  .project-open {
+    min-height: 64px;
+  }
+}
+
+/* Sun: high contrast for bright daylight. Colours come from scripts/themes.mjs; here only what a
+   colour map cannot do: larger digits, heavier lines and text, no decoration. */
+:root[data-theme='sun'] body {
+  font-weight: 500;
+}
+:root[data-theme='sun'] :is(.panel, .project-item, .empty-state, .notice, .flow-steps button) {
+  border-width: 2px;
+}
+:root[data-theme='sun'] :is(#pointsBody input, .review-digits) {
+  font-size: 1.08em;
+  font-weight: 650;
+}
+:root[data-theme='sun'] .eyebrow {
+  letter-spacing: 0.06em;
 }

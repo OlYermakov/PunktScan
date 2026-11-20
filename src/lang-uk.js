@@ -29,12 +29,8 @@ export default {
   'project.save': 'Зберегти проєкт',
   'project.new': 'Новий',
   'project.more': 'Інші дії з проєктом',
-  'project.newConfirm':
-    'Почати новий проєкт? Поточна чернетка буде замінена. За потреби спочатку збережи її файлом.',
   'project.savedToast': 'Проєкт підготовлено до збереження разом із фото.',
   'project.tooBig': 'Файл завеликий (понад 120 МБ).',
-  'project.replaceConfirm':
-    'Замінити поточну чернетку? Спочатку збережи її файлом, якщо вона потрібна.',
   'project.opened':
     'Проєкт відкрито. Статус звіряння імпортованих точок скинуто — перевір дані перед експортом.',
   'project.openFailed': 'Не вдалося відкрити проєкт PunktScan. ',
@@ -62,8 +58,6 @@ export default {
   'empty.eyebrow': 'ВІД ПЛАНУ ДО ПРИЛАДУ',
   'empty.titleHtml': 'Координати з фото.<br /><em>Без ручного переписування.</em>',
   'empty.text': 'Додай знімок таблиці, звір розпізнані точки та збережи файл для CAPLAN або Leica.',
-  'empty.paperFooter': 'КОЖНА ЦИФРА ПІД КОНТРОЛЕМ',
-  'empty.fileTag': 'Точний формат GSI',
   'empty.card1Title': 'Фото таблиці',
   'empty.card1Text': 'Кілька знімків в одному проєкті.',
   'empty.card2Title': 'Звіряння з оригіналом',
@@ -302,6 +296,21 @@ export default {
   'file.unitMm': 'GSI у міліметрах',
   'file.unitTenth': 'GSI в 0,1 мм (4 десяткові знаки)',
   'file.hint': 'Унизу: надіслати чи зберегти GSI; CSV для Excel.',
+  'theme.label': 'Вигляд',
+  'theme.auto': 'Автоматично',
+  'theme.light': 'Світлий',
+  'theme.dark': 'Темний',
+  'theme.sun': 'Сонце (високий контраст)',
+  'projects.recent': 'Нещодавні',
+  'projects.title': 'Мої об’єкти',
+  'projects.button': 'Мої об’єкти',
+  'projects.meta': '{date} · {points} · звірено {verified}',
+  'projects.none': 'У цьому браузері ще немає інших об’єктів.',
+  'projects.delete': 'Видалити {name}',
+  'projects.deleteConfirm': 'Видалити «{name}» з усіма фото з цього браузера?',
+  'projects.openFailed': 'Не вдалося відкрити об’єкт.',
+  'projects.opened': 'Відкрито: {name}',
+  'projects.kept': 'Попередній об’єкт збережено в «Мої об’єкти».',
   'footer.text':
     'Координати зберігаються у вихідній системі. Перетворення систем координат не виконується.',
 

@@ -10,9 +10,16 @@ import {
 import { fullQuad, validQuad, originalRegion, cellRegion } from './imaging.js?v=__BUILD__';
 import { uid, state, errors, ready, projectName } from './state.js?v=__BUILD__';
 import { $, toast, notice, imageFrom, download, esc, canShareFiles } from './dom.js?v=__BUILD__';
-import { save } from './storage.js?v=__BUILD__';
+import { save, startProject, storageReady } from './storage.js?v=__BUILD__';
 import { t, lang } from './i18n.js?v=__BUILD__';
-import { snapshot, render, renderSources, renderPhoto, renderRows } from './render.js?v=__BUILD__';
+import {
+  snapshot,
+  render,
+  renderSources,
+  renderPhoto,
+  renderRows,
+  projectItems,
+} from './render.js?v=__BUILD__';
 
 export function warnings(v) {
   const out = [];
@@ -397,17 +404,24 @@ export function saveProject() {
   );
   toast(t('project.savedToast'));
 }
+// All projects saved in this browser; the open one is not listed.
+export function projectsDialog() {
+  const items = projectItems();
+  showDialog(
+    t('projects.title'),
+    storageReady()
+      ? items
+        ? `<ul class="project-list">${items}</ul>`
+        : `<p class="small">${t('projects.none')}</p>`
+      : `<p class="small">${t('save.unavailable')}</p>`,
+    `<button class="button subtle" data-close>${t('common.close')}</button><button class="button primary" id="dialogNewProject">${t('menu.new')}</button>`,
+  );
+}
 export async function openProject(file) {
   if (!file) return;
   try {
     if (file.size > 120 * 1024 * 1024) throw new Error(t('project.tooBig'));
     const imported = checkProject(JSON.parse(await file.text()));
-    if (
-      (state.project.rows.length || state.project.sources.length) &&
-      !confirm(t('project.replaceConfirm'))
-    )
-      return;
-    snapshot();
     const ids = new Map();
     for (const s of imported.sources) {
       const id = uid();
@@ -423,13 +437,9 @@ export async function openProject(file) {
       sourceId: r.sourceId ? ids.get(r.sourceId) : null,
       verified: false,
     }));
-    state.project = { ...imported, name: projectName(imported.name) };
-    state.selected = state.project.sources[0]?.id || null;
-    state.view = 'original';
-    state.zoom = 1;
-    $('projectName').value = state.project.name;
+    // The file opens as a new project; the one that was open stays in the list.
+    await startProject({ ...imported, id: uid(), name: projectName(imported.name) });
     render();
-    save();
     notice(t('project.opened'));
   } catch (e) {
     notice(

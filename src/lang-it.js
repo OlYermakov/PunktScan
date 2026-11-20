@@ -29,12 +29,8 @@ export default {
   'project.save': 'Salva progetto',
   'project.new': 'Nuovo',
   'project.more': 'Altre azioni del progetto',
-  'project.newConfirm':
-    'Iniziare un nuovo progetto? La bozza attuale verrà sostituita. Se serve, salvala prima in un file.',
   'project.savedToast': 'Il progetto con le foto è pronto per il salvataggio.',
   'project.tooBig': 'File troppo grande (oltre 120 MB).',
-  'project.replaceConfirm':
-    'Sostituire la bozza attuale? Se ti serve ancora, salvala prima in un file.',
   'project.opened':
     'Progetto aperto. Lo stato di verifica dei punti importati è stato azzerato — controlla i dati prima di esportare.',
   'project.openFailed': 'Impossibile aprire il progetto PunktScan. ',
@@ -63,8 +59,6 @@ export default {
   'empty.titleHtml': 'Coordinate dalle foto.<br /><em>Senza ricopiarle a mano.</em>',
   'empty.text':
     'Aggiungi una foto della tabella, verifica i punti riconosciuti e salva il file per CAPLAN o Leica.',
-  'empty.paperFooter': 'OGNI CIFRA SOTTO CONTROLLO',
-  'empty.fileTag': 'Formato GSI esatto',
   'empty.card1Title': 'Foto della tabella',
   'empty.card1Text': 'Più foto in un unico progetto.',
   'empty.card2Title': 'Confronto con l’originale',
@@ -312,6 +306,21 @@ export default {
   'file.unitMm': 'GSI in millimetri',
   'file.unitTenth': 'GSI in 0,1 mm (4 decimali)',
   'file.hint': 'In basso: invia o salva il GSI; CSV per Excel.',
+  'theme.label': 'Aspetto',
+  'theme.auto': 'Automatico',
+  'theme.light': 'Chiaro',
+  'theme.dark': 'Scuro',
+  'theme.sun': 'Sole (contrasto elevato)',
+  'projects.recent': 'Modificati di recente',
+  'projects.title': 'I miei cantieri',
+  'projects.button': 'I miei cantieri',
+  'projects.meta': '{date} · {points} · {verified} verificati',
+  'projects.none': 'Nessun altro cantiere in questo browser.',
+  'projects.delete': 'Elimina {name}',
+  'projects.deleteConfirm': 'Eliminare «{name}» con tutte le foto da questo browser?',
+  'projects.openFailed': 'Impossibile aprire il cantiere.',
+  'projects.opened': 'Aperto: {name}',
+  'projects.kept': 'Il cantiere precedente resta salvato in «I miei cantieri».',
   'footer.text':
     'Le coordinate restano nel sistema di origine. Non viene eseguita alcuna trasformazione di coordinate.',
 

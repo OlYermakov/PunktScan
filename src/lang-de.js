@@ -30,12 +30,8 @@ export default {
   'project.save': 'Projekt speichern',
   'project.new': 'Neu',
   'project.more': 'Weitere Projektaktionen',
-  'project.newConfirm':
-    'Neues Projekt beginnen? Der aktuelle Entwurf wird ersetzt. Speichere ihn bei Bedarf vorher als Datei.',
   'project.savedToast': 'Projekt samt Fotos zum Speichern bereitgestellt.',
   'project.tooBig': 'Datei zu groß (über 120 MB).',
-  'project.replaceConfirm':
-    'Aktuellen Entwurf ersetzen? Speichere ihn vorher als Datei, falls du ihn noch brauchst.',
   'project.opened':
     'Projekt geöffnet. Der Prüfstatus der importierten Punkte wurde zurückgesetzt — prüfe die Daten vor dem Export.',
   'project.openFailed': 'Das PunktScan-Projekt konnte nicht geöffnet werden. ',
@@ -64,8 +60,6 @@ export default {
   'empty.titleHtml': 'Koordinaten aus Fotos.<br /><em>Ohne Abtippen.</em>',
   'empty.text':
     'Füge ein Foto der Tabelle hinzu, prüfe die erkannten Punkte und speichere die Datei für CAPLAN oder Leica.',
-  'empty.paperFooter': 'JEDE ZIFFER UNTER KONTROLLE',
-  'empty.fileTag': 'Exaktes GSI-Format',
   'empty.card1Title': 'Foto der Tabelle',
   'empty.card1Text': 'Mehrere Aufnahmen in einem Projekt.',
   'empty.card2Title': 'Abgleich mit dem Original',
@@ -312,6 +306,21 @@ export default {
   'file.unitMm': 'GSI in Millimetern',
   'file.unitTenth': 'GSI in 0,1 mm (4 Dezimalstellen)',
   'file.hint': 'Unten: GSI senden oder speichern; CSV für Excel.',
+  'theme.label': 'Darstellung',
+  'theme.auto': 'Automatisch',
+  'theme.light': 'Hell',
+  'theme.dark': 'Dunkel',
+  'theme.sun': 'Sonne (hoher Kontrast)',
+  'projects.recent': 'Zuletzt bearbeitet',
+  'projects.title': 'Meine Objekte',
+  'projects.button': 'Meine Objekte',
+  'projects.meta': '{date} · {points} · {verified} geprüft',
+  'projects.none': 'Noch keine weiteren Objekte in diesem Browser.',
+  'projects.delete': '{name} löschen',
+  'projects.deleteConfirm': '„{name}“ mit allen Fotos aus diesem Browser löschen?',
+  'projects.openFailed': 'Das Objekt konnte nicht geöffnet werden.',
+  'projects.opened': 'Geöffnet: {name}',
+  'projects.kept': 'Das bisherige Objekt bleibt unter „Meine Objekte“ gespeichert.',
   'footer.text':
     'Koordinaten bleiben im Ausgangssystem. Es wird keine Koordinatentransformation durchgeführt.',
 

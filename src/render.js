@@ -2,10 +2,10 @@ import { coordinate, validate } from './core.js?v=__BUILD__';
 import { fullQuad, cellPolygon } from './imaging.js?v=__BUILD__';
 import { state, errors, source } from './state.js?v=__BUILD__';
 import { $, esc, toast } from './dom.js?v=__BUILD__';
-import { save } from './storage.js?v=__BUILD__';
+import { save, listProjects } from './storage.js?v=__BUILD__';
 import { renderFlow } from './flow.js?v=__BUILD__';
 import { activeCorner } from './frame.js?v=__BUILD__';
-import { t, tp } from './i18n.js?v=__BUILD__';
+import { t, tp, lang } from './i18n.js?v=__BUILD__';
 
 export function snapshot() {
   state.history.push({
@@ -32,6 +32,23 @@ export function render() {
   $('undoBtn').disabled = state.busy || !state.history.length;
   $('emptyState').hidden = !!(state.project.sources.length || state.project.rows.length);
   $('imageWorkspace').hidden = !source();
+  renderRecent();
+}
+
+// Saved projects of this browser: thumbnail, name, date and how far the review got.
+export function projectItems(items = listProjects()) {
+  const date = new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' });
+  return items
+    .map((p) => {
+      const name = p.name || t('project.untitled');
+      return `<li class="project-item"><button type="button" class="project-open" data-project-open="${esc(p.id)}"><span class="project-thumb">${p.thumb ? `<img src="${p.thumb}" alt="">` : '▧'}</span><span class="project-text"><strong>${esc(name)}</strong><small>${esc(t('projects.meta', { date: p.updated ? date.format(p.updated) : '', points: tp('n.points', p.points), verified: p.verified }))}</small></span></button><button type="button" class="project-delete" data-project-delete="${esc(p.id)}" aria-label="${esc(t('projects.delete', { name }))}">×</button></li>`;
+    })
+    .join('');
+}
+export function renderRecent() {
+  const items = listProjects();
+  $('recentProjects').hidden = !items.length;
+  $('recentList').innerHTML = projectItems(items);
 }
 export function renderSources() {
   $('sourceCount').textContent = state.project.sources.length;

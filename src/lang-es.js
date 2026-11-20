@@ -29,12 +29,8 @@ export default {
   'project.save': 'Guardar proyecto',
   'project.new': 'Nuevo',
   'project.more': 'Más acciones del proyecto',
-  'project.newConfirm':
-    '¿Empezar un proyecto nuevo? El borrador actual se sustituirá. Si lo necesitas, guárdalo antes en un archivo.',
   'project.savedToast': 'El proyecto con sus fotos está listo para guardarse.',
   'project.tooBig': 'Archivo demasiado grande (más de 120 MB).',
-  'project.replaceConfirm':
-    '¿Sustituir el borrador actual? Si aún lo necesitas, guárdalo antes en un archivo.',
   'project.opened':
     'Proyecto abierto. Se ha restablecido el estado de revisión de los puntos importados: revisa los datos antes de exportar.',
   'project.openFailed': 'No se pudo abrir el proyecto de PunktScan. ',
@@ -63,8 +59,6 @@ export default {
   'empty.titleHtml': 'Coordenadas desde fotos.<br /><em>Sin teclearlas.</em>',
   'empty.text':
     'Añade una foto de la tabla, revisa los puntos reconocidos y guarda el archivo para CAPLAN o Leica.',
-  'empty.paperFooter': 'CADA DÍGITO BAJO CONTROL',
-  'empty.fileTag': 'Formato GSI exacto',
   'empty.card1Title': 'Foto de la tabla',
   'empty.card1Text': 'Varias fotos en un mismo proyecto.',
   'empty.card2Title': 'Comparación con el original',
@@ -309,6 +303,21 @@ export default {
   'file.unitMm': 'GSI en milímetros',
   'file.unitTenth': 'GSI en 0,1 mm (4 decimales)',
   'file.hint': 'Abajo: enviar o guardar el GSI; CSV para Excel.',
+  'theme.label': 'Apariencia',
+  'theme.auto': 'Automático',
+  'theme.light': 'Claro',
+  'theme.dark': 'Oscuro',
+  'theme.sun': 'Sol (alto contraste)',
+  'projects.recent': 'Editados recientemente',
+  'projects.title': 'Mis obras',
+  'projects.button': 'Mis obras',
+  'projects.meta': '{date} · {points} · {verified} revisados',
+  'projects.none': 'Todavía no hay otras obras en este navegador.',
+  'projects.delete': 'Eliminar {name}',
+  'projects.deleteConfirm': '¿Eliminar «{name}» y todas sus fotos de este navegador?',
+  'projects.openFailed': 'No se pudo abrir la obra.',
+  'projects.opened': 'Abierta: {name}',
+  'projects.kept': 'La obra anterior sigue guardada en «Mis obras».',
   'footer.text':
     'Las coordenadas se mantienen en el sistema de origen. No se realiza ninguna transformación de coordenadas.',
 

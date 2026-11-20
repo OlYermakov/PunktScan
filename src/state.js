@@ -5,6 +5,8 @@ import { t } from './i18n.js?v=__BUILD__';
 export const uid = () =>
   crypto.randomUUID?.() || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2);
 export const blank = () => ({
+  // Each project in the browser's list has its own id.
+  id: uid(),
   format: 'PunktScan',
   version: PROJECT_VERSION,
   // An empty name shows the translated placeholder ("Neues Objekt", "New site", …).

@@ -20,7 +20,14 @@ import {
   esc,
   shareFile,
 } from './dom.js?v=__BUILD__';
-import { save, restore, flushSave } from './storage.js?v=__BUILD__';
+import {
+  save,
+  restore,
+  flushSave,
+  startProject,
+  switchProject,
+  deleteProject,
+} from './storage.js?v=__BUILD__';
 import { snapshot, undo, render, renderPhoto, renderRows, setBusy } from './render.js?v=__BUILD__';
 import { addPhotos } from './photos.js?v=__BUILD__';
 import { initFrameDrag } from './frame.js?v=__BUILD__';
@@ -46,6 +53,7 @@ import {
   editReview,
   verifyAllConfident,
   toggleSign,
+  projectsDialog,
 } from './dialogs.js?v=__BUILD__';
 
 // The interface language must be loaded before anything renders text.
@@ -60,6 +68,34 @@ $('langSelect').onchange = async (e) => {
   // Reload so every message, including ones already on screen, uses the new language.
   await flushSave();
   location.reload();
+};
+
+// Display: automatic (follows the system), light, dark, or high contrast for bright sunlight.
+const THEMES = ['auto', 'light', 'dark', 'sun'];
+function storedTheme() {
+  try {
+    return localStorage.getItem('punktscan-theme');
+  } catch {
+    return null;
+  }
+}
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const dark =
+    theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#101615' : '#172e30';
+}
+const theme = THEMES.includes(storedTheme()) ? storedTheme() : 'auto';
+for (const code of THEMES)
+  $('themeSelect').append(new Option(t('theme.' + code), code, code === theme, code === theme));
+applyTheme(theme);
+$('themeSelect').onchange = (e) => {
+  applyTheme(e.target.value);
+  try {
+    localStorage.setItem('punktscan-theme', e.target.value);
+  } catch {
+    // Private mode: the choice lasts for this page only.
+  }
 };
 
 $('uploadBtn').onclick = () => $('photoInput').click();
@@ -271,21 +307,38 @@ $('pasteBtn').onclick = pasteDialog;
 $('saveProjectBtn').onclick = saveProject;
 $('openProjectBtn').onclick = () => $('projectInput').click();
 $('projectInput').onchange = (e) => openProject(e.target.files[0]);
-$('newProjectBtn').onclick = () => {
-  if (
-    (state.project.rows.length || state.project.sources.length) &&
-    !confirm(t('project.newConfirm'))
-  )
-    return;
-  snapshot();
-  state.project = blank();
-  state.selected = null;
-  state.filter = 'all';
-  $('projectName').value = state.project.name;
+// A new project leaves the open one in the project list (an empty one is simply dropped).
+async function newProject() {
+  if (state.busy) return;
+  const kept = state.project.rows.length || state.project.sources.length;
+  closeDialog();
+  await startProject(blank());
   notice();
   render();
-  save();
-};
+  if (kept) toast(t('projects.kept'));
+}
+$('newProjectBtn').onclick = newProject;
+$('projectsBtn').onclick = projectsDialog;
+document.addEventListener('click', async (e) => {
+  if (e.target.closest('#dialogNewProject')) return newProject();
+  const open = e.target.closest('[data-project-open]'),
+    remove = e.target.closest('[data-project-delete]');
+  if (state.busy || !(open || remove)) return;
+  if (open) {
+    if (!(await switchProject(open.dataset.projectOpen))) return notice(t('projects.openFailed'));
+    closeDialog();
+    notice();
+    render();
+    toast(t('projects.opened', { name: state.project.name || t('project.untitled') }));
+    return;
+  }
+  const item = remove.closest('.project-item'),
+    name = item.querySelector('strong').textContent;
+  if (!confirm(t('projects.deleteConfirm', { name }))) return;
+  await deleteProject(remove.dataset.projectDelete);
+  if ($('dialog').open && document.querySelector('#dialog .project-list')) projectsDialog();
+  render();
+});
 $('exportBtn').onclick = () => exportDialog('GSI');
 $('csvBtn').onclick = () => exportDialog('CSV');
 $('mapBtn').onclick = mapDialog;

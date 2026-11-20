@@ -30,12 +30,8 @@ export default {
   'project.save': 'Enregistrer le projet',
   'project.new': 'Nouveau',
   'project.more': 'Autres actions du projet',
-  'project.newConfirm':
-    'Commencer un nouveau projet ? Le brouillon actuel sera remplacé. Enregistrez-le d’abord dans un fichier si nécessaire.',
   'project.savedToast': 'Le projet et ses photos sont prêts à être enregistrés.',
   'project.tooBig': 'Fichier trop volumineux (plus de 120 Mo).',
-  'project.replaceConfirm':
-    'Remplacer le brouillon actuel ? Enregistrez-le d’abord dans un fichier si vous en avez besoin.',
   'project.opened':
     'Projet ouvert. Le statut de contrôle des points importés a été réinitialisé — vérifiez les données avant l’export.',
   'project.openFailed': 'Impossible d’ouvrir le projet PunktScan. ',
@@ -66,8 +62,6 @@ export default {
   'empty.titleHtml': 'Des coordonnées depuis une photo.<br /><em>Sans ressaisie.</em>',
   'empty.text':
     'Ajoutez une photo du tableau, contrôlez les points reconnus et enregistrez le fichier pour CAPLAN ou Leica.',
-  'empty.paperFooter': 'CHAQUE CHIFFRE CONTRÔLÉ',
-  'empty.fileTag': 'Format GSI exact',
   'empty.card1Title': 'Photo du tableau',
   'empty.card1Text': 'Plusieurs photos dans un même projet.',
   'empty.card2Title': 'Contrôle sur l’original',
@@ -318,6 +312,21 @@ export default {
   'file.unitMm': 'GSI en millimètres',
   'file.unitTenth': 'GSI en 0,1 mm (4 décimales)',
   'file.hint': 'En bas : envoyer ou enregistrer le GSI ; CSV pour Excel.',
+  'theme.label': 'Affichage',
+  'theme.auto': 'Automatique',
+  'theme.light': 'Clair',
+  'theme.dark': 'Sombre',
+  'theme.sun': 'Soleil (contraste élevé)',
+  'projects.recent': 'Modifiés récemment',
+  'projects.title': 'Mes chantiers',
+  'projects.button': 'Mes chantiers',
+  'projects.meta': '{date} · {points} · {verified} vérifiés',
+  'projects.none': 'Aucun autre chantier dans ce navigateur.',
+  'projects.delete': 'Supprimer {name}',
+  'projects.deleteConfirm': 'Supprimer « {name} » et toutes ses photos de ce navigateur ?',
+  'projects.openFailed': 'Impossible d’ouvrir le chantier.',
+  'projects.opened': 'Ouvert : {name}',
+  'projects.kept': 'Le chantier précédent reste enregistré dans « Mes chantiers ».',
   'footer.text':
     'Les coordonnées restent dans le système d’origine. Aucune transformation de coordonnées n’est effectuée.',
 
