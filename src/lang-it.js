@@ -74,6 +74,10 @@ export default {
 
   'photo.viewOriginal': 'Originale',
   'photo.viewFrame': 'Cornice',
+  'photo.viewResult': 'Risultato',
+  'photo.captionResult':
+    'Verde: sicuro · giallo: da verificare · rosso: errore. Tocca un valore per verificarlo.',
+  'photo.resultLabel': 'Valori riconosciuti sulla foto',
   'photo.viewProcessed': 'Raddrizzata',
   'photo.rotate': 'Ruota la foto di 90 gradi',
   'photo.rotateTitle': 'Ruota di 90°',
@@ -104,9 +108,10 @@ export default {
   'recog.title': 'Prepara la tabella',
   'recog.hint':
     'Controlla che tutte le righe siano dentro la cornice. Nella scheda «Cornice» puoi trascinarne gli angoli.',
+  'recog.advanced': 'Altre impostazioni',
   'recog.autoFrame': 'Trova la cornice automaticamente',
   'recog.orderLabel': 'Ordine delle coordinate nella foto',
-  'recog.orderAuto': 'Dalle intestazioni · E, N predefinito',
+  'recog.orderAuto': 'Automatico (dai valori, altrimenti dalle intestazioni)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Rimuovi moiré e griglia',
@@ -303,6 +308,10 @@ export default {
   'offline.button': 'Offline ✓',
   'offline.failed': 'Download non completato. Controlla la connessione e lo spazio libero. ',
 
+  'file.withHeight': 'con quota: {n}',
+  'file.unitMm': 'GSI in millimetri',
+  'file.unitTenth': 'GSI in 0,1 mm (4 decimali)',
+  'file.hint': 'In basso: invia o salva il GSI; CSV per Excel.',
   'footer.text':
     'Le coordinate restano nel sistema di origine. Non viene eseguita alcuna trasformazione di coordinate.',
 

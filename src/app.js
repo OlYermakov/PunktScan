@@ -24,6 +24,7 @@ import { save, restore, flushSave } from './storage.js?v=__BUILD__';
 import { snapshot, undo, render, renderPhoto, renderRows, setBusy } from './render.js?v=__BUILD__';
 import { addPhotos } from './photos.js?v=__BUILD__';
 import { initFrameDrag } from './frame.js?v=__BUILD__';
+import { showScreen, renderFlow } from './flow.js?v=__BUILD__';
 import { recognize, cancelOcr } from './ocr.js?v=__BUILD__';
 import {
   showDialog,
@@ -393,7 +394,20 @@ $('nextStepBtn').onclick = (e) => {
 };
 $('nextCsvBtn').onclick = () => exportDialog('CSV');
 $('flowSteps').onclick = (e) => {
-  const target = $(e.target.closest('[data-step-target]')?.dataset.stepTarget);
+  const button = e.target.closest('[data-step-target]');
+  // Phones: the step bar switches between the photo, review and file screens.
+  if (button && matchMedia('(max-width: 760px)').matches) {
+    const screen = {
+      uploadBtn: 'photo',
+      imageWorkspace: 'photo',
+      pointsSection: 'review',
+      exportBar: 'file',
+    }[button.dataset.stepTarget];
+    showScreen(screen);
+    renderFlow();
+    return;
+  }
+  const target = $(button?.dataset.stepTarget);
   // The export bar is hidden on phones; its actions are in the bottom bar there.
   if (target?.checkVisibility()) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
@@ -417,4 +431,26 @@ document.addEventListener('keydown', (e) => {
     toggleMoreMenu(false);
     $('moreBtn').focus();
   }
+});
+
+// Recognised cells on the photo: tap one to review its point; hovering links photo and table.
+$('resultOverlay').addEventListener('click', (e) => {
+  const cell = e.target.closest('[data-row]');
+  if (cell && !state.busy) showReview(cell.dataset.row);
+});
+const highlight = (id) => {
+  for (const el of document.querySelectorAll('#resultOverlay .hover, #pointsBody tr.hover'))
+    el.classList.remove('hover');
+  if (!id) return;
+  for (const el of document.querySelectorAll(
+    `#resultOverlay [data-row="${CSS.escape(id)}"], #pointsBody tr[data-row="${CSS.escape(id)}"]`,
+  ))
+    el.classList.add('hover');
+};
+for (const el of [$('resultOverlay'), $('pointsBody')]) {
+  el.addEventListener('pointerover', (e) => highlight(e.target.closest('[data-row]')?.dataset.row));
+  el.addEventListener('pointerleave', () => highlight(null));
+}
+$('fileSummary').addEventListener('click', (e) => {
+  if (e.target.closest('[data-open-map]')) mapDialog();
 });

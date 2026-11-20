@@ -545,7 +545,8 @@ export async function recognizeOne(s, signal) {
     autoOrder,
   });
   state.selected = s.id;
-  state.view = 'processed';
+  // Show what was read, over the photo itself.
+  state.view = 'result';
   state.zoom = 1;
   const message = rows.length
     ? t('ocr.found', { points: tp('n.points', rows.length) })

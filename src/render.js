@@ -1,5 +1,5 @@
 import { coordinate, validate } from './core.js?v=__BUILD__';
-import { fullQuad } from './imaging.js?v=__BUILD__';
+import { fullQuad, cellPolygon } from './imaging.js?v=__BUILD__';
 import { state, errors, source } from './state.js?v=__BUILD__';
 import { $, esc, toast } from './dom.js?v=__BUILD__';
 import { save } from './storage.js?v=__BUILD__';
@@ -45,11 +45,13 @@ export function renderSources() {
 export function renderPhoto() {
   const s = source();
   if (!s) return;
+  if (state.view === 'result' && !s.recognized) state.view = 'original';
   const img = state.view === 'processed' && s.processed ? s.processed : s.image;
   if ($('previewImg').getAttribute('src') !== img) $('previewImg').src = img;
   $('previewImg').alt = s.name;
   $('photoWrap').style.width = state.zoom * 100 + '%';
-  $('frameOverlay').hidden = state.view !== 'frame';
+  // SVG elements have no `hidden` property: the attribute is set directly.
+  $('frameOverlay').toggleAttribute('hidden', state.view !== 'frame');
   if (state.view === 'frame') {
     const q = s.quad || fullQuad();
     // Handles keep a finger-friendly size on screen whatever the photo's aspect ratio or zoom.
@@ -64,18 +66,26 @@ export function renderPhoto() {
   }
   for (const b of $('viewTabs').children) {
     b.classList.toggle('active', b.dataset.view === state.view);
-    b.disabled = b.dataset.view === 'processed' && !s.processed;
+    b.disabled =
+      (b.dataset.view === 'processed' && !s.processed) ||
+      (b.dataset.view === 'result' && !s.recognized);
   }
+  renderOverlay();
   $('photoCaption').textContent =
     state.view === 'frame'
       ? t('photo.captionFrame')
       : state.view === 'processed'
         ? t('photo.captionProcessed')
-        : s.name;
+        : state.view === 'result'
+          ? t('photo.captionResult')
+          : s.name;
   $('resetFrameBtn').hidden = state.view !== 'frame';
   $('recognizeBtn').textContent = t(s.recognized ? 'recog.rerun' : 'recog.run');
   $('columnOrder').value = s.order || 'auto';
   $('enhanceInput').checked = s.enhance !== false;
+  // Advanced settings stay folded unless one of them was changed.
+  if (s.order && s.order !== 'auto') $('advancedSettings').open = true;
+  if (s.enhance === false) $('advancedSettings').open = true;
   $('recognizeAllBtn').hidden = state.project.sources.filter((s) => !s.recognized).length < 2;
 }
 export function renderRows(paint = true) {
@@ -168,6 +178,8 @@ export function renderRows(paint = true) {
       : t('export.hintReview');
   $('mapBtn').disabled = !values.some((v) => v.e.ok && v.n.ok);
   $('rawTextBtn').hidden = !source()?.raw;
+  renderOverlay(values);
+  renderFileSummary(values);
   renderFlow();
 }
 export function setBusy(value) {
@@ -194,4 +206,60 @@ export function setBusy(value) {
   $('sourceList').style.pointerEvents = value ? 'none' : '';
   $('frameOverlay').style.pointerEvents = value ? 'none' : '';
   renderRows();
+}
+
+// Recognised cells drawn over the original photo: green = sure or checked, yellow = look again,
+// red = error. A row the recogniser missed stands out because nothing is drawn over it.
+export function cellStatus(v, i) {
+  const field = ['name', 'e', 'n', 'h'][i],
+    r = v.row;
+  if (v.issues.some((x) => x.field === field)) return 'error';
+  if (r.verified) return 'verified';
+  const doubtful =
+    r.uncertainChars?.[i]?.length || r.disputed?.[i] || (r.cellConfidence?.[i] ?? 100) < 70;
+  return doubtful ? 'check' : 'ok';
+}
+export function renderOverlay(values = validate(state.project.rows)) {
+  const s = source(),
+    svg = $('resultOverlay');
+  const off = !s || state.view !== 'result' || !s.resultQuad;
+  svg.toggleAttribute('hidden', off);
+  if (off) return;
+  const rank = { error: 3, check: 2, ok: 1, verified: 0 },
+    shapes = [];
+  for (const v of values) {
+    const r = v.row;
+    if (r.sourceId !== s.id) continue;
+    const cells = (r.cells ?? [])
+      .map((box, i) => [box, i])
+      .filter(
+        ([box, i]) => box && r[['name', 'e', 'n', 'h'][i]] !== undefined && box.x1 - box.x0 > 2,
+      );
+    // Rows read line by line have no cell boxes: the whole row is drawn with its worst status.
+    const parts = cells.length
+      ? cells.map(([box, i]) => [box, cellStatus(v, i)])
+      : r.bbox
+        ? [[r.bbox, [0, 1, 2, 3].map((i) => cellStatus(v, i)).sort((a, b) => rank[b] - rank[a])[0]]]
+        : [];
+    for (const [box, status] of parts) {
+      const pts = cellPolygon(s.resultQuad, box, s.pw, s.ph)
+        .map((p) => `${(p.x * 1000).toFixed(1)},${(p.y * 1000).toFixed(1)}`)
+        .join(' ');
+      shapes.push(
+        `<polygon class="cell-${status}" data-row="${esc(r.id)}" points="${pts}"><title>${esc(r.name || t('row.pointFallback'))}</title></polygon>`,
+      );
+    }
+  }
+  svg.innerHTML = shapes.join('');
+}
+
+// Phones, file step: a short summary of the file the bottom bar will send or save.
+function renderFileSummary(values) {
+  const box = $('fileSummary');
+  const ready = values.length && values.every((v) => v.row.verified && !v.issues.length);
+  box.hidden = !ready;
+  if (!ready) return;
+  const withH = values.filter((v) => !v.h.empty).length,
+    fine = values.some((v) => [v.e, v.n, v.h].some((c) => c.fine));
+  box.innerHTML = `<span class="eyebrow">${t('step.file')}</span><h2>${esc(state.project.name || t('project.untitled'))}</h2><p class="file-count">${tp('n.points', values.length)}</p><p class="small">${t('file.withHeight', { n: withH })} · ${t(fine ? 'file.unitTenth' : 'file.unitMm')}</p><p class="small">${t('file.hint')}</p><button class="text-btn" data-open-map>${t('table.map')}</button>`;
 }

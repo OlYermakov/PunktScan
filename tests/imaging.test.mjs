@@ -10,6 +10,7 @@ import {
   clearBorders,
   removeLines,
   hasBox,
+  cellPolygon,
 } from '../src/imaging.js';
 test('crossed or degenerate crop frames are rejected', () => {
   assert.ok(validQuad(fullQuad()));
@@ -106,4 +107,17 @@ test('values drawn inside their own box are told apart from plain values', () =>
   assert.equal(hasBox(p, w, h, word, 12), false);
   for (let y = 15; y < 65; y++) (ink(50, y), ink(150, y));
   assert.equal(hasBox(p, w, h, word, 12), true);
+});
+test('recognised cells map back onto the photo as polygons', () => {
+  // The frame covers the right half of the photo; a cell in the middle of the straightened image.
+  const quad = [
+    { x: 0.5, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: 1 },
+    { x: 0.5, y: 1 },
+  ];
+  const poly = cellPolygon(quad, { x0: 50, y0: 25, x1: 150, y1: 75 }, 200, 100);
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  assert.ok(near(poly[0].x, 0.625) && near(poly[0].y, 0.25));
+  assert.ok(near(poly[2].x, 0.875) && near(poly[2].y, 0.75));
 });

@@ -73,6 +73,10 @@ export default {
 
   'photo.viewOriginal': 'Оригінал',
   'photo.viewFrame': 'Межі',
+  'photo.viewResult': 'Результат',
+  'photo.captionResult':
+    'Зелене — впевнено · жовте — перевір · червоне — помилка. Торкнись значення, щоб звірити.',
+  'photo.resultLabel': 'Розпізнані значення на фото',
   'photo.viewProcessed': 'Вирівняне',
   'photo.rotate': 'Повернути фото на 90 градусів',
   'photo.rotateTitle': 'Повернути на 90°',
@@ -102,9 +106,10 @@ export default {
   'recog.eyebrow': 'РОЗПІЗНАВАННЯ',
   'recog.title': 'Підготуй таблицю',
   'recog.hint': 'Перевір, що всі рядки всередині рамки. На вкладці «Межі» перетягни її кути.',
+  'recog.advanced': 'Додаткові налаштування',
   'recog.autoFrame': 'Знайти межі автоматично',
   'recog.orderLabel': 'Порядок координат на фото',
-  'recog.orderAuto': 'За заголовками · типово E, N',
+  'recog.orderAuto': 'Автоматично (за значеннями, інакше за заголовками)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Очищення муару та сітки',
@@ -293,6 +298,10 @@ export default {
   'offline.button': 'Офлайн ✓',
   'offline.failed': 'Завантаження не завершено. Перевір інтернет і вільне місце. ',
 
+  'file.withHeight': 'з висотою: {n}',
+  'file.unitMm': 'GSI у міліметрах',
+  'file.unitTenth': 'GSI в 0,1 мм (4 десяткові знаки)',
+  'file.hint': 'Унизу: надіслати чи зберегти GSI; CSV для Excel.',
   'footer.text':
     'Координати зберігаються у вихідній системі. Перетворення систем координат не виконується.',
 

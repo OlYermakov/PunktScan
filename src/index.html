@@ -229,6 +229,7 @@
               <div class="segmented" id="viewTabs">
                 <button class="active" data-view="original" data-i18n="photo.viewOriginal">
                   Original</button
+                ><button data-view="result" data-i18n="photo.viewResult">Ergebnis</button
                 ><button data-view="frame" data-i18n="photo.viewFrame">Rahmen</button
                 ><button data-view="processed" data-i18n="photo.viewProcessed">Entzerrt</button>
               </div>
@@ -253,6 +254,13 @@
                   viewBox="0 0 1000 1000"
                   preserveAspectRatio="none"
                   data-i18n-attr="aria-label:photo.frameLabel"
+                ></svg
+                ><svg
+                  id="resultOverlay"
+                  viewBox="0 0 1000 1000"
+                  preserveAspectRatio="none"
+                  data-i18n-attr="aria-label:photo.resultLabel"
+                  hidden
                 ></svg>
               </div>
             </div>
@@ -270,31 +278,35 @@
               Prüfe, dass alle Zeilen im Rahmen liegen. Im Reiter „Rahmen“ kannst du die Ecken
               ziehen.
             </p>
-            <button id="autoFrameBtn" class="button subtle full" data-i18n="recog.autoFrame">
-              Rahmen automatisch finden
-            </button>
-            <label class="field-label" for="columnOrder" data-i18n="recog.orderLabel"
-              >Reihenfolge der Koordinaten im Foto</label
-            ><select id="columnOrder">
-              <option value="auto" data-i18n="recog.orderAuto">
-                Nach Überschriften · standardmäßig E, N
-              </option>
-              <option value="en" data-i18n="recog.orderEN">Rechtswert (E), Hochwert (N)</option>
-              <option value="ne" data-i18n="recog.orderNE">Hochwert (N), Rechtswert (E)</option>
-            </select>
-            <label class="checkbox-label"
-              ><input id="enhanceInput" type="checkbox" checked /><span
-                ><span data-i18n="recog.enhance">Moiré und Gitter entfernen</span
-                ><small data-i18n="recog.enhanceHint"
-                  >Für Bildschirmfotos und Papiertabellen</small
-                ></span
-              ></label
-            >
             <button id="recognizeBtn" class="button primary full" data-i18n="recog.run">
               Foto erkennen</button
             ><button id="recognizeAllBtn" class="text-btn full" data-i18n="recog.runAll">
               Alle neuen Fotos erkennen
             </button>
+            <!-- Rarely needed: open by itself when one of these was changed. -->
+            <details id="advancedSettings" class="advanced-settings">
+              <summary data-i18n="recog.advanced">Weitere Einstellungen</summary>
+              <button id="autoFrameBtn" class="button subtle full" data-i18n="recog.autoFrame">
+                Rahmen automatisch finden
+              </button>
+              <label class="field-label" for="columnOrder" data-i18n="recog.orderLabel"
+                >Reihenfolge der Koordinaten im Foto</label
+              ><select id="columnOrder">
+                <option value="auto" data-i18n="recog.orderAuto">
+                  Nach Überschriften · standardmäßig E, N
+                </option>
+                <option value="en" data-i18n="recog.orderEN">Rechtswert (E), Hochwert (N)</option>
+                <option value="ne" data-i18n="recog.orderNE">Hochwert (N), Rechtswert (E)</option>
+              </select>
+              <label class="checkbox-label"
+                ><input id="enhanceInput" type="checkbox" checked /><span
+                  ><span data-i18n="recog.enhance">Moiré und Gitter entfernen</span
+                  ><small data-i18n="recog.enhanceHint"
+                    >Für Bildschirmfotos und Papiertabellen</small
+                  ></span
+                ></label
+              >
+            </details>
             <div id="progressArea" hidden>
               <div class="progress-label">
                 <span id="progressText" data-i18n="recog.preparing">Vorbereitung…</span
@@ -310,6 +322,8 @@
             </p>
           </aside>
         </section>
+        <!-- Phones, file step: what goes into the file; the bottom bar sends or saves it. -->
+        <section id="fileSummary" class="file-summary panel" hidden></section>
         <section id="pointsSection" class="points-section panel">
           <div class="points-heading">
             <div>

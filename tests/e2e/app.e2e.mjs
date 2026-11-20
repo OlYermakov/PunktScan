@@ -795,3 +795,83 @@ test('without a share sheet the export dialog only offers saving', async () => {
   assert.equal(await page.locator('#shareExport').count(), 0);
   await context.close();
 });
+
+test('recognition settings stay folded and a phone shows only the photo screen before recognition', async () => {
+  const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+  await page.locator('#photoInput').setInputFiles(['tests/fixtures/table-1.jpg']);
+  await page.locator('#imageWorkspace:not([hidden])').waitFor();
+  assert.equal(await page.locator('#advancedSettings').evaluate((d) => d.open), false);
+  assert.equal(await page.locator('#columnOrder').isVisible(), false);
+  assert.equal(await page.locator('body').getAttribute('data-screen'), 'photo');
+  assert.equal(await page.locator('#pointsSection').isVisible(), false);
+  assert.equal(await page.locator('#recognizeBtn').isVisible(), true);
+  // The result view needs a recognised photo.
+  assert.equal(await page.locator('#viewTabs [data-view="result"]').isDisabled(), true);
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test(
+  'the result is drawn over the photo: tapping a value opens its card, screens and hover link both',
+  { skip: !process.env.E2E_OCR && 'set E2E_OCR=1 to run', timeout: 600000 },
+  async () => {
+    const photo = 'tests/fixtures/real/cad-boxed-13.jpg';
+    // Phone: one screen at a time.
+    {
+      const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+      await page.locator('#photoInput').setInputFiles([photo]);
+      await page.locator('#imageWorkspace:not([hidden])').waitFor();
+      await page.locator('#nextStepBtn').click();
+      await page.locator('body[data-step="review"]').waitFor({ timeout: 280000 });
+      const cells = page.locator('#resultOverlay polygon');
+      assert.ok((await cells.count()) >= 30, 'a box per recognised value');
+      const classes = await cells.evaluateAll((list) => list.map((p) => p.getAttribute('class')));
+      assert.ok(
+        classes.every((c) => /^cell-(ok|check|error|verified)$/.test(c)),
+        classes.join(),
+      );
+      assert.equal(await page.locator('#frameOverlay').isVisible(), false);
+      assert.equal(await page.locator('body').getAttribute('data-screen'), 'review');
+      assert.equal(await page.locator('.recognition-panel').isVisible(), false);
+      assert.equal(await page.locator('#pointsSection').isVisible(), true);
+      // The step bar goes back to the photo screen, where the table is hidden.
+      await page.locator('#flowSteps li:nth-child(1) button').click();
+      assert.equal(await page.locator('body').getAttribute('data-screen'), 'photo');
+      assert.equal(await page.locator('#pointsSection').isVisible(), false);
+      assert.equal(await page.locator('#resultOverlay').isVisible(), true);
+      // Tapping a value opens that point's review card.
+      const target = cells.nth(1),
+        id = await target.getAttribute('data-row');
+      const name = await page
+        .locator(`#pointsBody tr[data-row="${id}"] [data-field="name"]`)
+        .inputValue();
+      await target.click({ force: true });
+      await page.locator('#dialog').waitFor();
+      assert.equal(await page.locator('[data-value-field="name"]').textContent(), name);
+      assert.deepEqual(problems, []);
+      await context.close();
+    }
+    // Desktop: photo and table side by side, a table row highlights its cells on the photo.
+    {
+      const { context, page, problems } = await openApp({
+        context: { viewport: { width: 1440, height: 900 } },
+      });
+      await page.locator('#photoInput').setInputFiles([photo]);
+      await page.locator('#recognizeBtn').click();
+      await page.locator('body[data-step="review"]').waitFor({ timeout: 280000 });
+      const photoBox = await page.locator('#imageWorkspace').boundingBox(),
+        tableBox = await page.locator('#pointsSection').boundingBox();
+      assert.ok(tableBox.x > photoBox.x + photoBox.width - 1, 'table to the right of the photo');
+      assert.ok(tableBox.y < photoBox.y + photoBox.height, 'side by side, not stacked');
+      const row = page.locator('#pointsBody tr[data-row]').nth(2);
+      await row.hover();
+      const id = await row.getAttribute('data-row');
+      const lit = await page
+        .locator('#resultOverlay polygon.hover')
+        .evaluateAll((list) => list.map((p) => p.getAttribute('data-row')));
+      assert.ok(lit.length >= 1 && lit.every((x) => x === id), JSON.stringify(lit));
+      assert.deepEqual(problems, []);
+      await context.close();
+    }
+  },
+);

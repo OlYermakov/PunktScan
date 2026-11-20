@@ -2344,3 +2344,115 @@ td[data-label]::before {
     font-size: 1rem;
   }
 }
+
+/* Recognition result drawn over the photo: one outline per recognised cell. */
+#resultOverlay {
+  touch-action: auto;
+}
+#resultOverlay polygon {
+  fill: transparent;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+}
+#resultOverlay .cell-ok,
+#resultOverlay .cell-verified {
+  stroke: #2f9a4a;
+  fill: #2f9a4a14;
+}
+#resultOverlay .cell-check {
+  stroke: #e0a400;
+  fill: #f5c40026;
+  stroke-width: 2;
+}
+#resultOverlay .cell-error {
+  stroke: #d23b2f;
+  fill: #d23b2f2e;
+  stroke-width: 2.5;
+}
+#resultOverlay polygon.hover,
+#resultOverlay polygon:hover {
+  fill: #1f6fd333;
+  stroke: #1f6fd3;
+}
+#pointsBody tr.hover td {
+  background: #e8f1fc;
+}
+
+/* Rarely needed recognition settings stay folded away. */
+.advanced-settings {
+  margin-top: 12px;
+  font-size: 0.8rem;
+}
+.advanced-settings summary {
+  cursor: pointer;
+  color: #4d6a5b;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.advanced-settings[open] summary {
+  margin-bottom: 6px;
+}
+
+/* Short summary of the finished file (phones, last screen). */
+.file-summary {
+  display: none;
+}
+@media (max-width: 760px) {
+  .file-summary:not([hidden]) {
+    display: block;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .file-summary h2 {
+    margin: 4px 0 8px;
+    font-size: 1.25rem;
+    overflow-wrap: anywhere;
+  }
+  .file-summary p {
+    margin: 4px 0;
+    color: #4d6458;
+  }
+
+  /* One screen at a time: photo, review or file. */
+  body[data-screen='photo'] #pointsSection,
+  body[data-screen='photo'] #fileSummary,
+  body[data-screen='review'] .sidebar,
+  body[data-screen='review'] .recognition-panel,
+  body[data-screen='review'] #emptyState,
+  body[data-screen='review'] #fileSummary,
+  body[data-screen='file'] .sidebar,
+  body[data-screen='file'] #imageWorkspace,
+  body[data-screen='file'] #emptyState {
+    display: none !important;
+  }
+  .flow-steps li.shown button {
+    outline: 2px solid #bcf34e;
+    outline-offset: 1px;
+  }
+}
+
+/* Desktop: while reviewing, the photo and the table sit side by side. */
+@media (min-width: 1100px) {
+  main:has(#imageWorkspace:not([hidden])) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: start;
+  }
+  main:has(#imageWorkspace:not([hidden])) > * {
+    grid-column: 1 / -1;
+  }
+  body:is([data-step='review'], [data-step='file']) main > #imageWorkspace {
+    grid-column: 1;
+    grid-template-columns: minmax(0, 1fr);
+    position: sticky;
+    top: 12px;
+  }
+  body:is([data-step='review'], [data-step='file']) main > #imageWorkspace .photo-viewport {
+    height: min(68vh, 720px);
+  }
+  body:is([data-step='review'], [data-step='file']) main > #pointsSection {
+    grid-column: 2;
+  }
+}

@@ -74,6 +74,10 @@ export default {
 
   'photo.viewOriginal': 'Original',
   'photo.viewFrame': 'Marco',
+  'photo.viewResult': 'Resultado',
+  'photo.captionResult':
+    'Verde: seguro · amarillo: revisar · rojo: error. Toca un valor para revisarlo.',
+  'photo.resultLabel': 'Valores reconocidos sobre la foto',
   'photo.viewProcessed': 'Enderezada',
   'photo.rotate': 'Girar la foto 90 grados',
   'photo.rotateTitle': 'Girar 90°',
@@ -104,9 +108,10 @@ export default {
   'recog.title': 'Prepara la tabla',
   'recog.hint':
     'Comprueba que todas las filas están dentro del marco. En la pestaña «Marco» puedes arrastrar sus esquinas.',
+  'recog.advanced': 'Más ajustes',
   'recog.autoFrame': 'Buscar el marco automáticamente',
   'recog.orderLabel': 'Orden de las coordenadas en la foto',
-  'recog.orderAuto': 'Según los encabezados · E, N por defecto',
+  'recog.orderAuto': 'Automático (por los valores; si no, por los encabezados)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Eliminar muaré y cuadrícula',
@@ -300,6 +305,10 @@ export default {
   'offline.button': 'Sin conexión ✓',
   'offline.failed': 'La descarga no terminó. Revisa la conexión y el espacio libre. ',
 
+  'file.withHeight': 'con altura: {n}',
+  'file.unitMm': 'GSI en milímetros',
+  'file.unitTenth': 'GSI en 0,1 mm (4 decimales)',
+  'file.hint': 'Abajo: enviar o guardar el GSI; CSV para Excel.',
   'footer.text':
     'Las coordenadas se mantienen en el sistema de origen. No se realiza ninguna transformación de coordenadas.',
 

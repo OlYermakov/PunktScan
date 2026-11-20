@@ -73,6 +73,9 @@ export default {
 
   'photo.viewOriginal': 'Original',
   'photo.viewFrame': 'Frame',
+  'photo.viewResult': 'Result',
+  'photo.captionResult': 'Green: sure · yellow: check · red: error. Tap a value to review it.',
+  'photo.resultLabel': 'Recognised values on the photo',
   'photo.viewProcessed': 'Straightened',
   'photo.rotate': 'Rotate photo by 90 degrees',
   'photo.rotateTitle': 'Rotate by 90°',
@@ -102,9 +105,10 @@ export default {
   'recog.title': 'Prepare the table',
   'recog.hint':
     'Check that all rows are inside the frame. On the “Frame” tab you can drag its corners.',
+  'recog.advanced': 'More settings',
   'recog.autoFrame': 'Find frame automatically',
   'recog.orderLabel': 'Coordinate order in the photo',
-  'recog.orderAuto': 'From headings · E, N by default',
+  'recog.orderAuto': 'Automatic (from the values, else headings)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Remove moiré and grid',
@@ -294,6 +298,10 @@ export default {
   'offline.button': 'Offline ✓',
   'offline.failed': 'Download not finished. Check the internet connection and free space. ',
 
+  'file.withHeight': 'with height: {n}',
+  'file.unitMm': 'GSI in millimetres',
+  'file.unitTenth': 'GSI in 0.1 mm (4 decimals)',
+  'file.hint': 'Below: send or save the GSI; CSV for Excel.',
   'footer.text':
     'Coordinates stay in the source system. No coordinate transformation is performed.',
 

@@ -75,6 +75,10 @@ export default {
 
   'photo.viewOriginal': 'Oryginał',
   'photo.viewFrame': 'Ramka',
+  'photo.viewResult': 'Wynik',
+  'photo.captionResult':
+    'Zielony: pewne · żółty: sprawdź · czerwony: błąd. Dotknij wartości, aby ją sprawdzić.',
+  'photo.resultLabel': 'Rozpoznane wartości na zdjęciu',
   'photo.viewProcessed': 'Wyprostowane',
   'photo.rotate': 'Obróć zdjęcie o 90 stopni',
   'photo.rotateTitle': 'Obróć o 90°',
@@ -104,9 +108,10 @@ export default {
   'recog.title': 'Przygotuj tabelę',
   'recog.hint':
     'Sprawdź, czy wszystkie wiersze są wewnątrz ramki. Na karcie „Ramka” możesz przeciągać jej narożniki.',
+  'recog.advanced': 'Więcej ustawień',
   'recog.autoFrame': 'Znajdź ramkę automatycznie',
   'recog.orderLabel': 'Kolejność współrzędnych na zdjęciu',
-  'recog.orderAuto': 'Według nagłówków · domyślnie E, N',
+  'recog.orderAuto': 'Automatycznie (z wartości, inaczej z nagłówków)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Usuń mory i siatkę',
@@ -298,6 +303,10 @@ export default {
   'offline.button': 'Offline ✓',
   'offline.failed': 'Pobieranie nie zostało ukończone. Sprawdź internet i wolne miejsce. ',
 
+  'file.withHeight': 'z wysokością: {n}',
+  'file.unitMm': 'GSI w milimetrach',
+  'file.unitTenth': 'GSI w 0,1 mm (4 miejsca po przecinku)',
+  'file.hint': 'Na dole: wyślij lub zapisz GSI; CSV dla Excela.',
   'footer.text':
     'Współrzędne pozostają w układzie źródłowym. Nie jest wykonywana żadna transformacja współrzędnych.',
 

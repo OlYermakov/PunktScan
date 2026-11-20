@@ -507,3 +507,16 @@ export function hasBox(p, w, h, box, pad) {
   };
   return line(box.x0 - pad, box.x0 - 1) && line(box.x1 + 1, box.x1 + pad);
 }
+
+// A box of the straightened (pw×ph) image as a four-corner polygon on the original photo, in
+// 0..1 photo coordinates — for drawing recognised cells over the photo itself.
+export function cellPolygon(quad, box, pw, ph) {
+  const m = homography(quad);
+  const map = (x, y) => {
+    const u = x / pw,
+      v = y / ph,
+      d = m[6] * u + m[7] * v + 1;
+    return { x: (m[0] * u + m[1] * v + m[2]) / d, y: (m[3] * u + m[4] * v + m[5]) / d };
+  };
+  return [map(box.x0, box.y0), map(box.x1, box.y0), map(box.x1, box.y1), map(box.x0, box.y1)];
+}

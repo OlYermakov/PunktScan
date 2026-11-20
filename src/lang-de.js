@@ -75,6 +75,10 @@ export default {
 
   'photo.viewOriginal': 'Original',
   'photo.viewFrame': 'Rahmen',
+  'photo.viewResult': 'Ergebnis',
+  'photo.captionResult':
+    'Grün: sicher · Gelb: prüfen · Rot: Fehler. Tippe auf einen Wert, um ihn zu prüfen.',
+  'photo.resultLabel': 'Erkannte Werte auf dem Foto',
   'photo.viewProcessed': 'Entzerrt',
   'photo.rotate': 'Foto um 90 Grad drehen',
   'photo.rotateTitle': 'Um 90° drehen',
@@ -105,9 +109,10 @@ export default {
   'recog.title': 'Tabelle vorbereiten',
   'recog.hint':
     'Prüfe, dass alle Zeilen im Rahmen liegen. Im Reiter „Rahmen“ kannst du die Ecken ziehen.',
+  'recog.advanced': 'Weitere Einstellungen',
   'recog.autoFrame': 'Rahmen automatisch finden',
   'recog.orderLabel': 'Reihenfolge der Koordinaten im Foto',
-  'recog.orderAuto': 'Nach Überschriften · standardmäßig E, N',
+  'recog.orderAuto': 'Automatisch (aus den Werten, sonst Überschriften)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Moiré und Gitter entfernen',
@@ -303,6 +308,10 @@ export default {
   'offline.button': 'Offline ✓',
   'offline.failed': 'Download nicht abgeschlossen. Prüfe Internet und freien Speicher. ',
 
+  'file.withHeight': 'mit Höhe: {n}',
+  'file.unitMm': 'GSI in Millimetern',
+  'file.unitTenth': 'GSI in 0,1 mm (4 Dezimalstellen)',
+  'file.hint': 'Unten: GSI senden oder speichern; CSV für Excel.',
   'footer.text':
     'Koordinaten bleiben im Ausgangssystem. Es wird keine Koordinatentransformation durchgeführt.',
 

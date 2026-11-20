@@ -77,6 +77,10 @@ export default {
 
   'photo.viewOriginal': 'Original',
   'photo.viewFrame': 'Cadre',
+  'photo.viewResult': 'Résultat',
+  'photo.captionResult':
+    'Vert : sûr · jaune : à vérifier · rouge : erreur. Touchez une valeur pour la contrôler.',
+  'photo.resultLabel': 'Valeurs reconnues sur la photo',
   'photo.viewProcessed': 'Redressée',
   'photo.rotate': 'Faire pivoter la photo de 90 degrés',
   'photo.rotateTitle': 'Pivoter de 90°',
@@ -107,9 +111,10 @@ export default {
   'recog.title': 'Préparer le tableau',
   'recog.hint':
     'Vérifiez que toutes les lignes sont dans le cadre. Dans l’onglet « Cadre », vous pouvez déplacer ses coins.',
+  'recog.advanced': 'Autres réglages',
   'recog.autoFrame': 'Trouver le cadre automatiquement',
   'recog.orderLabel': 'Ordre des coordonnées sur la photo',
-  'recog.orderAuto': 'D’après les en-têtes · E, N par défaut',
+  'recog.orderAuto': 'Automatique (d’après les valeurs, sinon les en-têtes)',
   'recog.orderEN': 'Rechtswert (E), Hochwert (N)',
   'recog.orderNE': 'Hochwert (N), Rechtswert (E)',
   'recog.enhance': 'Supprimer le moiré et la grille',
@@ -309,6 +314,10 @@ export default {
   'offline.button': 'Hors ligne ✓',
   'offline.failed': 'Téléchargement inachevé. Vérifiez la connexion Internet et l’espace libre. ',
 
+  'file.withHeight': 'avec altitude : {n}',
+  'file.unitMm': 'GSI en millimètres',
+  'file.unitTenth': 'GSI en 0,1 mm (4 décimales)',
+  'file.hint': 'En bas : envoyer ou enregistrer le GSI ; CSV pour Excel.',
   'footer.text':
     'Les coordonnées restent dans le système d’origine. Aucune transformation de coordonnées n’est effectuée.',
 

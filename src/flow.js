@@ -45,16 +45,32 @@ export function nextAction() {
   return { step, label: t('flow.export'), action: 'export' };
 }
 
+// Phones show one screen at a time: photo (photo + frame steps), review or file. The screen
+// follows the work as it progresses; the step bar can go back to an earlier one.
+const screenOf = (step) => (step === 'frame' ? 'photo' : step);
+let lastStep = null;
+export function showScreen(screen) {
+  state.screen = screen;
+  document.body.dataset.screen = screen;
+  window.scrollTo?.(0, 0);
+}
+
 export function renderFlow() {
   const next = nextAction(),
     current = STEPS.indexOf(next.step);
   document.body.dataset.step = next.step;
+  if (next.step !== lastStep) {
+    lastStep = next.step;
+    state.screen = screenOf(next.step);
+  }
+  document.body.dataset.screen = state.screen ?? screenOf(next.step);
   for (const [i, li] of [...$('flowSteps').children].entries()) {
     li.classList.toggle('done', i < current);
     li.classList.toggle('current', i === current);
     const button = li.querySelector('button');
     if (i === current) button.setAttribute('aria-current', 'step');
     else button.removeAttribute('aria-current');
+    li.classList.toggle('shown', screenOf(STEPS[i]) === document.body.dataset.screen);
     button.disabled = i > current;
   }
   $('nextStepCaption').textContent = t('flow.caption', {
