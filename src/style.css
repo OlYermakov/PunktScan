@@ -2391,6 +2391,12 @@ td[data-label]::before {
     overscroll-behavior: contain;
   }
 
+  /* A scrolling box cuts off whatever reaches outside it: the soft outer shadows of these cards
+     would end in straight edges and square corners. Here the cards keep their edge and inner
+     light only. */
+  body:is([data-step='review'], [data-step='file']) main > #imageWorkspace > .panel {
+    box-shadow: var(--glass-shine);
+  }
   body:is([data-step='review'], [data-step='file']) main > #imageWorkspace .photo-viewport {
     height: min(68vh, 720px);
   }
