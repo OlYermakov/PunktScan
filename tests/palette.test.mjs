@@ -68,11 +68,23 @@ const PAIRS = [
   ['on-accent', 'accent'],
   ['on-accent', 'mark'],
 ];
+// Borders of controls against what they sit on (WCAG 1.4.11: 3:1).
+const EDGES = [
+  ['control-line', 'surface'],
+  ['control-line', 'surface-soft'],
+  ['control-line', 'canvas'],
+  ['ok', 'canvas'],
+  ['ok', 'ok-soft'],
+];
 
 for (const [name, palette] of Object.entries(themes))
-  test(`${name} theme: every text role is readable on its surfaces`, () => {
+  test(`${name} theme: every text role is readable and every control edge visible`, () => {
     const low = PAIRS.map(([text, bg]) => [text, bg, contrast(palette[text], palette[bg])])
       .filter(([, , ratio]) => ratio < 4.5)
       .map(([text, bg, ratio]) => `${text} on ${bg}: ${ratio.toFixed(2)}`);
     assert.deepEqual(low, []);
+    const faint = EDGES.map(([edge, bg]) => [edge, bg, contrast(palette[edge], palette[bg])])
+      .filter(([, , ratio]) => ratio < 3)
+      .map(([edge, bg, ratio]) => `${edge} against ${bg}: ${ratio.toFixed(2)}`);
+    assert.deepEqual(faint, []);
   });

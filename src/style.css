@@ -9,11 +9,13 @@
    colours mean the same everywhere: ok = checked or sure, warn = look again, err = error. */
 :root {
   /* Neutrals: warm sand in the light theme */
-  --canvas: #f6f1ea;
+  --canvas: #e8dfd0;
   --surface: #ffffff;
   --surface-soft: #f1eadf;
   --line: #d9ccb7;
   --line-strong: #bfae94;
+  /* Borders of buttons, fields and switches: at least 3:1 on cards and on the page (WCAG 1.4.11). */
+  --control-line: #8a7a61;
   --ink: #0a0f14;
   --ink-soft: #16282b;
   --muted: #414c4e;
@@ -2559,16 +2561,16 @@ td[data-label]::before {
    and capsule controls. Behind the glass: soft spots of teal, orange and lime on sand, so the glass
    has something to show. Text stays on near-opaque glass, so it keeps its contrast. */
 html {
-  --glass: color-mix(in srgb, var(--surface) 68%, transparent);
-  --glass-strong: color-mix(in srgb, var(--surface) 86%, transparent);
-  --glass-edge: color-mix(in srgb, var(--surface) 80%, transparent);
+  --glass: color-mix(in srgb, var(--surface) 90%, transparent);
+  --glass-strong: color-mix(in srgb, var(--surface) 95%, transparent);
+  --glass-edge: color-mix(in srgb, var(--line-strong) 85%, transparent);
   --glass-blur: blur(22px) saturate(170%);
   --glass-shine:
     inset 0 1px 0 color-mix(in srgb, var(--surface) 90%, transparent),
     inset 0 -1px 0 color-mix(in srgb, var(--shadow) 5%, transparent);
   --glass-lift:
-    0 12px 36px color-mix(in srgb, var(--shadow) 10%, transparent),
-    0 2px 6px color-mix(in srgb, var(--shadow) 5%, transparent);
+    0 12px 32px color-mix(in srgb, var(--shadow) 14%, transparent),
+    0 2px 6px color-mix(in srgb, var(--shadow) 9%, transparent);
   --radius-panel: 22px;
   --radius-control: 999px;
 }
@@ -2638,17 +2640,17 @@ thead,
 }
 .subtle,
 .icon-btn {
-  background: var(--glass);
+  background: var(--glass-strong);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border-color: var(--glass-edge);
+  border-color: var(--control-line);
   box-shadow:
     var(--glass-shine),
     0 1px 3px color-mix(in srgb, var(--shadow) 8%, transparent);
 }
 .subtle:hover,
 .icon-btn:hover {
-  background: var(--glass-strong);
+  background: var(--surface-soft);
 }
 .icon-btn {
   border-radius: var(--radius-control);
@@ -2666,7 +2668,8 @@ thead,
     0 6px 18px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 .segmented {
-  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  background: var(--surface-soft);
+  border: 1px solid var(--control-line);
   border-radius: var(--radius-control);
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--shadow) 8%, transparent);
 }
@@ -2695,15 +2698,15 @@ select,
 /* Step bar: glass capsules */
 .flow-steps button {
   border-radius: var(--radius-control);
-  background: var(--glass);
+  background: var(--glass-strong);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border-color: var(--glass-edge);
+  border-color: var(--control-line);
   box-shadow: var(--glass-shine);
 }
 .flow-steps .done button {
-  background: color-mix(in srgb, var(--ok-soft) 72%, transparent);
-  border-color: color-mix(in srgb, var(--ok-line) 70%, transparent);
+  background: var(--ok-soft);
+  border-color: var(--ok);
 }
 .flow-steps .current button {
   background-image: linear-gradient(
@@ -2812,4 +2815,12 @@ dialog::backdrop {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* Fields and selects are framed so they read as controls on cards and on the page. */
+.table-tools input,
+select,
+.paste-area,
+.review-fields input {
+  border-color: var(--control-line);
 }
