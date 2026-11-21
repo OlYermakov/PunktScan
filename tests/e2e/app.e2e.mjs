@@ -256,6 +256,35 @@ test('a new deployment shows the update banner instead of switching silently', a
   await context.close();
 });
 
+test('a page that already runs the new version does not offer the update again', async () => {
+  const { context, page, problems } = await openApp();
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller)
+      await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r));
+  });
+  await page.reload();
+  const sw = await fs.readFile('dist/sw.js', 'utf8');
+  try {
+    // A new worker of the same version as the page (the page loaded the new HTML, the new
+    // worker installs after it): it takes over, but there is nothing to update.
+    await fs.writeFile('dist/sw.js', sw + '\n// same version, new worker\n');
+    await page.evaluate(async () => {
+      const changed = new Promise((r) =>
+        navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }),
+      );
+      await (await navigator.serviceWorker.getRegistration()).update();
+      await changed;
+    });
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator('#updateBar').isHidden(), true);
+  } finally {
+    await fs.writeFile('dist/sw.js', sw);
+  }
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
 test('on a phone every point is a card with E, N and H visible without sideways scrolling', async () => {
   const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
   await openPaste(page);

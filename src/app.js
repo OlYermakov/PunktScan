@@ -392,10 +392,23 @@ document.addEventListener('keydown', (e) => {
 });
 if ('serviceWorker' in navigator) {
   // A new service worker takes over after a deploy. Pages that were already running keep the old
-  // code in memory, so offer a reload instead of switching versions under the user's feet.
+  // code in memory, so offer a reload instead of switching versions under the user's feet. A page
+  // opened after the deploy already runs the new code (its HTML came from the network) while the
+  // new worker takes over: it asks the worker's version and offers nothing when it is its own.
   const hadController = Boolean(navigator.serviceWorker.controller);
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController) $('updateBar').hidden = false;
+  const workerVersion = () =>
+    new Promise((resolve) => {
+      const channel = new MessageChannel(),
+        timer = setTimeout(() => resolve(null), 2000);
+      channel.port1.onmessage = (e) => {
+        clearTimeout(timer);
+        resolve(e.data);
+      };
+      navigator.serviceWorker.controller?.postMessage({ type: 'version' }, [channel.port2]);
+    });
+  navigator.serviceWorker.addEventListener('controllerchange', async () => {
+    if (!hadController) return;
+    if ((await workerVersion()) !== '__BUILD__') $('updateBar').hidden = false;
   });
   navigator.serviceWorker
     .register('./sw.js')

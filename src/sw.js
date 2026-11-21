@@ -15,6 +15,10 @@ const ASSETS = [
   './offline-assets.json',
   './licenses.txt',
 ];
+// A page asks which version took over: it offers a reload only when that is not its own version.
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'version') e.ports[0]?.postMessage(SHELL.replace('punktscan-shell-', ''));
+});
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(ASSETS)));
   self.skipWaiting();
