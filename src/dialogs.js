@@ -404,7 +404,7 @@ export function exportDialog(format) {
   showDialog(
     t('export.title', { format }),
     `<div class="export-summary"><div><strong>${state.project.rows.length}</strong><span>${t('export.verified')}</span></div><div><strong>${withH}</strong><span>${t('export.withH')}</span></div><div><strong>${state.project.rows.length - withH}</strong><span>${t('export.withoutH')}</span></div></div><label class="field-label" for="exportName">${t('export.fileName')}</label><input id="exportName" class="file-name" value="${esc(state.project.name || 'Absteckpunkte')}" maxlength="100"><p class="small">${format === 'GSI' ? t('export.gsiInfo', { step: (fine ? 0.0001 : 0.001).toLocaleString(lang, { minimumFractionDigits: fine ? 4 : 3 }) }) + (fine ? ' ' + t('export.unitNote') : '') : t('export.csvInfo')}</p><div class="export-preview">${esc(text.split('\r\n').slice(0, 3).join('\n'))}${state.project.rows.length > 3 ? '\n…' : ''}</div><p class="small">${t('export.note')}</p>`,
-    canShareFiles()
+    canShareFiles(safeFilename('x', format), format === 'GSI' ? 'text/plain' : 'text/csv')
       ? `<button class="button subtle" data-close>${t('common.cancel')}</button><button class="button subtle" id="confirmExport" data-format="${format}">${t('export.save', { format })}</button><button class="button primary" id="shareExport" data-format="${format}">${t('export.share')}</button>`
       : `<button class="button subtle" data-close>${t('common.cancel')}</button><button class="button primary" id="confirmExport" data-format="${format}">${t('export.save', { format })}</button>`,
     'export',

@@ -55,9 +55,12 @@ export function download(content, type, name) {
 
 // System share sheet (iPhone, Android): sends a file straight to mail, AirDrop, Teams, a drive…
 // Downloads on iOS end up in the Files app and are easy to lose.
-export function canShareFiles() {
+// Whether the browser can send this kind of file. The probe has the real extension and type:
+// Chrome and Edge on Windows send .txt and .csv but refuse other extensions such as .GSI, and a
+// refused share would only end in a plain download next to the Save button.
+export function canShareFiles(name = 'x.txt', type = 'text/plain') {
   try {
-    const probe = new File(['x'], 'x.txt', { type: 'text/plain' });
+    const probe = new File(['x'], name, { type });
     return Boolean(navigator.canShare?.({ files: [probe] }));
   } catch {
     return false;

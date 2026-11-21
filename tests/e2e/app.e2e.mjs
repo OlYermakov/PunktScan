@@ -1234,3 +1234,27 @@ test('dialogs close with × only: no second close or OK button at the bottom', a
   assert.deepEqual(problems, []);
   await context.close();
 });
+
+test('the send button appears only for files the browser can really send (GSI on Windows: save only)', async () => {
+  // Like Chrome and Edge on Windows: files can be shared, but not with the .GSI extension.
+  const windowsShare = () => {
+    Object.defineProperty(navigator, 'canShare', {
+      value: (data) => (data?.files ?? []).every((f) => /\.(txt|csv)$/i.test(f.name)),
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'share', { value: async () => {}, configurable: true });
+  };
+  const { context, page, problems } = await openApp({ init: windowsShare });
+  await openPaste(page);
+  await page.locator('#pasteText').fill('A;1.000;2.000');
+  await page.locator('#pasteApply').click();
+  await verifyAll(page, 1);
+  await page.locator('#exportBtn').click();
+  assert.equal(await page.locator('#shareExport').count(), 0, 'GSI: no send button');
+  assert.equal(await page.locator('#confirmExport').isVisible(), true);
+  await page.locator('#dialog .dialog-head [data-close]').click();
+  await page.locator('#csvBtn').click();
+  assert.equal(await page.locator('#shareExport').count(), 1, 'CSV can be sent');
+  assert.deepEqual(problems, []);
+  await context.close();
+});
