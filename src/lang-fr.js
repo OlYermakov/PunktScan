@@ -301,6 +301,11 @@ export default {
   'raw.skipped': 'Lignes ignorées',
   'map.note':
     'Croquis local sans carte. E vers la droite, N vers le haut. Même échelle sur les deux axes ; les altitudes ne sont pas affichées.',
+  'map.zoomIn': 'Agrandir',
+  'map.zoomOut': 'Réduire',
+  'map.fit': 'Afficher tous les points',
+  'map.hint':
+    'Molette ou deux doigts : zoomer · glisser : déplacer · toucher un point : le vérifier.',
   'map.label': 'Disposition des points',
   'map.extent':
     'Étendue : ΔE {de} m · ΔN {dn} m. Un point anormalement éloigné peut signaler une erreur de reconnaissance.',

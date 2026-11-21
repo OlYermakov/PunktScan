@@ -1258,3 +1258,106 @@ test('the send button appears only for files the browser can really send (GSI on
   assert.deepEqual(problems, []);
   await context.close();
 });
+
+test('point map: zoom with the wheel, buttons and two fingers, move by dragging, tap a point', async () => {
+  const { context, page, problems } = await openApp();
+  await openPaste(page);
+  // Two points 1 cm apart, one 40 m away: at first the close pair overlaps.
+  await page
+    .locator('#pasteText')
+    .fill('A;3415030.210;5545557.311\nB;3415030.220;5545557.311\nC;3415070.000;5545590.000');
+  await page.locator('#pasteApply').click();
+  await page.locator('#mapBtn').click();
+  const map = page.locator('#pointMap');
+  await map.waitFor();
+  const gap = () =>
+    page.evaluate(() => {
+      const [a, b] = [...document.querySelectorAll('#pointMap circle')].map((c) =>
+        Number(c.getAttribute('cx')),
+      );
+      return Math.abs(a - b);
+    });
+  const scale = () => page.locator('#pointMap .map-scale text').textContent();
+  const before = await gap();
+  assert.ok(before < 1, 'the close points overlap at first: ' + before);
+  // The wheel zooms in around the pointer.
+  const box = await map.boundingBox();
+  const a = await page.locator('#pointMap circle').first().boundingBox();
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  for (let i = 0; i < 12; i++) await page.mouse.wheel(0, -400);
+  assert.ok((await gap()) > 15, 'close points apart after zooming: ' + (await gap()));
+  // Points keep their size.
+  assert.equal(await page.locator('#pointMap circle').first().getAttribute('r'), '5');
+  const zoomedScale = await scale();
+  // Dragging moves the map.
+  const cx = async () => Number(await page.locator('#pointMap circle').first().getAttribute('cx'));
+  const x0 = await cx();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  assert.ok((await cx()) - x0 > 40, 'dragged to the right');
+  // The fit button shows all points again; zoom buttons change the scale bar.
+  await page.locator('#mapFit').click();
+  assert.ok((await gap()) < 1);
+  const fitScale = await scale();
+  assert.notEqual(fitScale, zoomedScale);
+  await page.locator('#mapZoomIn').click();
+  await page.locator('#mapZoomIn').click();
+  assert.notEqual(await scale(), fitScale);
+  // A tap on a point opens its review card.
+  await page.locator('#mapFit').click();
+  const c = await page.locator('#pointMap .map-mark').nth(2).locator('circle').boundingBox();
+  await page.mouse.click(c.x + c.width / 2, c.y + c.height / 2);
+  await page.locator('#reviewCard').waitFor();
+  assert.equal(await page.locator('[data-value-field="name"]').textContent(), 'C');
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
+test('point map on a phone: two fingers zoom in', async () => {
+  const { context, page, problems } = await openApp({ context: devices['iPhone 13'] });
+  await openPaste(page);
+  await page
+    .locator('#pasteText')
+    .fill('A;3415030.210;5545557.311\nB;3415030.220;5545557.311\nC;3415070.000;5545590.000');
+  await page.locator('#pasteApply').click();
+  await page
+    .locator('#moreBtn')
+    .click()
+    .catch(() => {});
+  await page.evaluate(() => document.getElementById('mapBtn').click());
+  await page.locator('#pointMap').waitFor();
+  const f = () =>
+    page.evaluate(() => document.querySelector('#pointMap .map-scale text').textContent);
+  const start = await f();
+  // A pinch: two pointers moving apart.
+  await page.evaluate(() => {
+    const svg = document.getElementById('pointMap'),
+      r = svg.getBoundingClientRect(),
+      x = r.left + r.width / 2,
+      y = r.top + r.height / 2;
+    const fire = (type, id, dx) =>
+      svg.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: id,
+          clientX: x + dx,
+          clientY: y,
+          bubbles: true,
+          pointerType: 'touch',
+        }),
+      );
+    fire('pointerdown', 1, -20);
+    fire('pointerdown', 2, 20);
+    for (let d = 20; d <= 120; d += 10) {
+      fire('pointermove', 1, -d);
+      fire('pointermove', 2, d);
+    }
+    fire('pointerup', 1, -120);
+    fire('pointerup', 2, 120);
+  });
+  assert.notEqual(await f(), start, 'the scale changed with the pinch');
+  assert.equal(await page.locator('#reviewCard').count(), 0, 'a pinch does not open a point');
+  assert.deepEqual(problems, []);
+  await context.close();
+});

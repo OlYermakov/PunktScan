@@ -297,6 +297,10 @@ export default {
   'raw.skipped': 'Übersprungene Zeilen',
   'map.note':
     'Lokale Skizze ohne Karte. E nach rechts, N nach oben. Gleicher Maßstab auf beiden Achsen; Höhen werden nicht gezeigt.',
+  'map.zoomIn': 'Vergrößern',
+  'map.zoomOut': 'Verkleinern',
+  'map.fit': 'Alle Punkte zeigen',
+  'map.hint': 'Mausrad oder zwei Finger: zoomen · ziehen: verschieben · Punkt antippen: prüfen.',
   'map.label': 'Lage der Punkte',
   'map.extent':
     'Ausdehnung: ΔE {de} m · ΔN {dn} m. Ein ungewöhnlich weit entfernter Punkt kann auf einen Erkennungsfehler hinweisen.',

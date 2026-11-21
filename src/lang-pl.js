@@ -293,6 +293,11 @@ export default {
   'raw.skipped': 'Pominięte wiersze',
   'map.note':
     'Lokalny szkic bez mapy. E w prawo, N w górę. Ta sama skala na obu osiach; wysokości nie są pokazane.',
+  'map.zoomIn': 'Powiększ',
+  'map.zoomOut': 'Pomniejsz',
+  'map.fit': 'Pokaż wszystkie punkty',
+  'map.hint':
+    'Kółko myszy lub dwa palce: powiększanie · przeciągnij: przesuń · dotknij punktu: sprawdź go.',
   'map.label': 'Rozmieszczenie punktów',
   'map.extent':
     'Zasięg: ΔE {de} m · ΔN {dn} m. Nietypowo odległy punkt może oznaczać błąd rozpoznawania.',

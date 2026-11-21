@@ -298,6 +298,10 @@ export default {
   'raw.skipped': 'Righe saltate',
   'map.note':
     'Schema locale senza mappa. E verso destra, N verso l’alto. Stessa scala su entrambi gli assi; le quote non sono mostrate.',
+  'map.zoomIn': 'Ingrandisci',
+  'map.zoomOut': 'Riduci',
+  'map.fit': 'Mostra tutti i punti',
+  'map.hint': 'Rotella o due dita: zoom · trascina: sposta · tocca un punto: verificalo.',
   'map.label': 'Disposizione dei punti',
   'map.extent':
     'Estensione: ΔE {de} m · ΔN {dn} m. Un punto insolitamente lontano può indicare un errore di riconoscimento.',

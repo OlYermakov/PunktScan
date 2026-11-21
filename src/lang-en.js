@@ -289,6 +289,10 @@ export default {
   'raw.skipped': 'Skipped rows',
   'map.note':
     'Local sketch without a map. E to the right, N up. Same scale on both axes; heights are not shown.',
+  'map.zoomIn': 'Zoom in',
+  'map.zoomOut': 'Zoom out',
+  'map.fit': 'Show all points',
+  'map.hint': 'Mouse wheel or two fingers: zoom · drag: move · tap a point: review it.',
   'map.label': 'Point layout',
   'map.extent':
     'Extent: ΔE {de} m · ΔN {dn} m. An unusually distant point may indicate a recognition error.',

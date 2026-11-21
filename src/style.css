@@ -2830,3 +2830,40 @@ select,
 .review-fields input {
   border-color: var(--control-line);
 }
+
+/* Point map: zoom with the wheel, two fingers or the buttons; drag to move. */
+.map-wrap {
+  position: relative;
+}
+.map-wrap svg {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.map-wrap svg:active {
+  cursor: grabbing;
+}
+.map-wrap svg:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.map-tools {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-mark {
+  cursor: pointer;
+}
+.map-scale path {
+  stroke: var(--ink);
+  stroke-width: 2;
+  fill: none;
+}
+.map-scale text {
+  fill: var(--ink);
+  font-size: 13px;
+}

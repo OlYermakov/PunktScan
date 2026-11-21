@@ -20,6 +20,7 @@ import {
 import { $, toast, notice, imageFrom, download, esc, canShareFiles } from './dom.js?v=__BUILD__';
 import { save, startProject, storageReady } from './storage.js?v=__BUILD__';
 import { t, lang } from './i18n.js?v=__BUILD__';
+import { attachMap } from './map.js?v=__BUILD__';
 import {
   snapshot,
   render,
@@ -464,25 +465,26 @@ export async function openProject(file) {
   }
 }
 export function mapDialog() {
-  const pts = validate(state.project.rows)
-    .filter((v) => v.e.ok && v.n.ok)
-    .map((v) => ({
-      x: Number(v.e.value),
-      y: Number(v.n.value),
-      name: v.name.name,
-      ok: v.row.verified,
-    }));
+  const values = validate(state.project.rows).filter(
+    (v) => v.e.ok && v.n.ok && !v.e.empty && !v.n.empty,
+  );
+  const pts = values.map((v) => ({
+    id: v.row.id,
+    x: Number(v.e.value),
+    y: Number(v.n.value),
+    name: v.name.name,
+    ok: v.row.verified,
+  }));
   if (!pts.length) return;
-  const minX = Math.min(...pts.map((p) => p.x)),
-    maxX = Math.max(...pts.map((p) => p.x)),
-    minY = Math.min(...pts.map((p) => p.y)),
-    maxY = Math.max(...pts.map((p) => p.y));
-  const span = Math.max(maxX - minX, maxY - minY, 1),
-    cx = (minX + maxX) / 2,
-    cy = (minY + maxY) / 2,
-    f = 360 / span;
-  const html = `<p class="small">${t('map.note')}</p><div class="map-wrap" style="margin-top:15px"><svg viewBox="0 0 800 480" role="img" aria-label="${t('map.label')}"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" class="map-grid"/></pattern></defs><rect width="800" height="480" fill="url(#grid)"/><text x="400" y="25" text-anchor="middle" class="map-axis">N</text><text x="770" y="240" class="map-axis">E</text>${pts.map((p) => `<g><circle cx="${400 + (p.x - cx) * f}" cy="${240 - (p.y - cy) * f}" r="5" class="map-point ${p.ok ? 'ok' : 'check'}"><title>${esc(p.name)}: E ${p.x.toFixed(3)}, N ${p.y.toFixed(3)}</title></circle><text x="${409 + (p.x - cx) * f}" y="${236 - (p.y - cy) * f}" class="map-label">${esc(p.name)}</text></g>`).join('')}</svg></div><p class="batch-note">${t('map.extent', { de: (maxX - minX).toFixed(3), dn: (maxY - minY).toFixed(3) })}</p>`;
+  const extent = (k) => Math.max(...pts.map((p) => p[k])) - Math.min(...pts.map((p) => p[k]));
+  const tool = (id, label, sign) =>
+    `<button type="button" class="icon-btn" id="${id}" aria-label="${esc(label)}" title="${esc(label)}">${sign}</button>`;
+  const html = `<p class="small">${t('map.note')}</p><div class="map-wrap" style="margin-top:15px"><svg id="pointMap" viewBox="0 0 800 480" role="img" tabindex="0" aria-label="${t('map.label')}"></svg><div class="map-tools">${tool('mapZoomIn', t('map.zoomIn'), '+')}${tool('mapZoomOut', t('map.zoomOut'), '−')}${tool('mapFit', t('map.fit'), '⤢')}</div></div><p class="batch-note">${t('map.hint')} ${t('map.extent', { de: extent('x').toFixed(3), dn: extent('y').toFixed(3) })}</p>`;
   showDialog(t('table.map'), html, '', 'map');
+  const map = attachMap($('pointMap'), pts, (id) => showReview(id));
+  $('mapZoomIn').onclick = map.zoomIn;
+  $('mapZoomOut').onclick = map.zoomOut;
+  $('mapFit').onclick = map.fit;
 }
 export function helpDialog() {
   showDialog(

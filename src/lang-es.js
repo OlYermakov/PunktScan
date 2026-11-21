@@ -295,6 +295,10 @@ export default {
   'raw.skipped': 'Filas omitidas',
   'map.note':
     'Croquis local sin mapa. E hacia la derecha, N hacia arriba. Misma escala en ambos ejes; no se muestran las alturas.',
+  'map.zoomIn': 'Acercar',
+  'map.zoomOut': 'Alejar',
+  'map.fit': 'Mostrar todos los puntos',
+  'map.hint': 'Rueda del ratón o dos dedos: zoom · arrastrar: mover · tocar un punto: revisarlo.',
   'map.label': 'Disposición de los puntos',
   'map.extent':
     'Extensión: ΔE {de} m · ΔN {dn} m. Un punto inusualmente alejado puede indicar un error de reconocimiento.',
