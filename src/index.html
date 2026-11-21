@@ -317,78 +317,87 @@
         </section>
         <!-- Phones, file step: what goes into the file; the bottom bar sends or saves it. -->
         <section id="fileSummary" class="file-summary panel" hidden></section>
-        <section id="pointsSection" class="points-section panel">
-          <div class="points-heading">
-            <div>
-              <h2>
-                <span data-i18n="points.title">Punkte</span>
-                <span id="pointCount" class="light-count">0</span>
-              </h2>
-              <p id="pointSummary" data-i18n="points.summaryEmpty">
-                Hier erscheinen die erkannten Koordinaten.
-              </p>
-            </div>
-            <button id="addPointBtn" class="button subtle" data-i18n="points.add">＋ Punkt</button>
-          </div>
-          <div class="table-tools">
-            <div class="filter-tabs" id="filters">
-              <button data-filter="all" class="active" data-i18n="filter.all">Alle</button
-              ><button data-filter="review">
-                <span data-i18n="filter.review">Zu prüfen</span>
-                <span id="reviewCount">0</span></button
-              ><button data-filter="errors">
-                <span data-i18n="filter.errors">Fehler</span> <span id="errorCount">0</span>
+        <!-- Points, export and the note form one column next to the photo on wide screens. -->
+        <div class="review-pane">
+          <section id="pointsSection" class="points-section panel">
+            <div class="points-heading">
+              <div>
+                <h2>
+                  <span data-i18n="points.title">Punkte</span>
+                  <span id="pointCount" class="light-count">0</span>
+                </h2>
+                <p id="pointSummary" data-i18n="points.summaryEmpty">
+                  Hier erscheinen die erkannten Koordinaten.
+                </p>
+              </div>
+              <button id="addPointBtn" class="button subtle" data-i18n="points.add">
+                ＋ Punkt
               </button>
             </div>
-            <input
-              type="search"
-              id="searchInput"
-              placeholder="Punkt suchen…"
-              data-i18n-attr="placeholder:search.placeholder;aria-label:search.label"
-            />
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th class="status-col" data-i18n="table.status">Prüfung</th>
-                  <th data-i18n="table.point">Punkt</th>
-                  <th>Rechtswert <small>E · m</small></th>
-                  <th>Hochwert <small>N · m</small></th>
-                  <th>Höhe <small>H · m</small></th>
-                  <th class="delete-col"></th>
-                </tr>
-              </thead>
-              <tbody id="pointsBody"></tbody>
-            </table>
-            <div id="tableEmpty" class="table-empty" data-i18n="table.emptyNone">
-              Füge ein Foto hinzu oder füge eine fertige Tabelle als Text ein.
+            <div class="table-tools">
+              <div class="filter-tabs" id="filters">
+                <button data-filter="all" class="active" data-i18n="filter.all">Alle</button
+                ><button data-filter="review">
+                  <span data-i18n="filter.review">Zu prüfen</span>
+                  <span id="reviewCount">0</span></button
+                ><button data-filter="errors">
+                  <span data-i18n="filter.errors">Fehler</span> <span id="errorCount">0</span>
+                </button>
+              </div>
+              <input
+                type="search"
+                id="searchInput"
+                placeholder="Punkt suchen…"
+                data-i18n-attr="placeholder:search.placeholder;aria-label:search.label"
+              />
             </div>
-          </div>
-          <div class="table-bottom">
-            <span data-i18n="table.heightNote"
-              >Leere Höhe — sie wird nicht ins GSI geschrieben.</span
-            ><button id="mapBtn" class="text-btn" data-i18n="table.map" disabled>
-              Punkteskizze</button
-            ><button id="rawTextBtn" class="text-btn" data-i18n="table.raw" hidden>
-              Erkennungsergebnis
-            </button>
-          </div>
-        </section>
-        <section id="exportBar" class="export-bar">
-          <div>
-            <strong id="exportStatus" data-i18n="export.notReady">Datei noch nicht bereit</strong>
-            <p id="exportHint" data-i18n="export.hintStart">
-              Prüfe vor dem Export jeden Punkt mit dem Original.
-            </p>
-          </div>
-          <div>
-            <button id="csvBtn" class="button subtle" disabled>CSV</button
-            ><button id="exportBtn" class="button export-button" disabled>
-              <span data-i18n="export.gsi">GSI herunterladen</span> <span>↓</span>
-            </button>
-          </div>
-        </section>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="status-col" data-i18n="table.status">Prüfung</th>
+                    <th data-i18n="table.point">Punkt</th>
+                    <th>Rechtswert <small>E · m</small></th>
+                    <th>Hochwert <small>N · m</small></th>
+                    <th>Höhe <small>H · m</small></th>
+                    <th class="delete-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="pointsBody"></tbody>
+              </table>
+              <div id="tableEmpty" class="table-empty" data-i18n="table.emptyNone">
+                Füge ein Foto hinzu oder füge eine fertige Tabelle als Text ein.
+              </div>
+            </div>
+            <div class="table-bottom">
+              <span data-i18n="table.heightNote"
+                >Leere Höhe — sie wird nicht ins GSI geschrieben.</span
+              ><button id="mapBtn" class="text-btn" data-i18n="table.map" disabled>
+                Punkteskizze</button
+              ><button id="rawTextBtn" class="text-btn" data-i18n="table.raw" hidden>
+                Erkennungsergebnis
+              </button>
+            </div>
+          </section>
+          <section id="exportBar" class="export-bar">
+            <div>
+              <strong id="exportStatus" data-i18n="export.notReady">Datei noch nicht bereit</strong>
+              <p id="exportHint" data-i18n="export.hintStart">
+                Prüfe vor dem Export jeden Punkt mit dem Original.
+              </p>
+            </div>
+            <div>
+              <button id="csvBtn" class="button subtle" disabled>CSV</button
+              ><button id="exportBtn" class="button export-button" disabled>
+                <span data-i18n="export.gsi">GSI herunterladen</span> <span>↓</span>
+              </button>
+            </div>
+          </section>
+          <footer class="main-footer" data-i18n="footer.text">
+            Koordinaten bleiben im Ausgangssystem. Es wird keine Koordinatentransformation
+            durchgeführt.
+          </footer>
+        </div>
         <div id="nextStepBar" class="next-step-bar">
           <span id="nextStepCaption"></span>
           <div class="next-step-actions">
@@ -396,10 +405,6 @@
             ><button id="nextStepBtn" class="button primary"></button>
           </div>
         </div>
-        <footer class="main-footer" data-i18n="footer.text">
-          Koordinaten bleiben im Ausgangssystem. Es wird keine Koordinatentransformation
-          durchgeführt.
-        </footer>
       </main>
     </div>
     <dialog id="dialog"><div id="dialogContent"></div></dialog>

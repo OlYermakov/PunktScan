@@ -876,6 +876,38 @@ test(
         .locator('#resultOverlay polygon.hover')
         .evaluateAll((list) => list.map((p) => p.getAttribute('data-row')));
       assert.ok(lit.length >= 1 && lit.every((x) => x === id), JSON.stringify(lit));
+      // With the settings open the photo column is taller than the window: while it stays in
+      // view it never covers the export bar or the note, which follow the table directly.
+      await page.evaluate(() => {
+        document.getElementById('advancedSettings').open = true;
+      });
+      for (const y of [0, 400, 100000]) {
+        await page.evaluate((y) => window.scrollTo(0, y), y);
+        const layout = await page.evaluate(() => {
+          const box = (el) => el.getBoundingClientRect(),
+            photo = box(document.getElementById('imageWorkspace'));
+          const overlap = (el) => {
+            const b = box(el);
+            return (
+              Math.max(0, Math.min(photo.right, b.right) - Math.max(photo.left, b.left)) *
+              Math.max(0, Math.min(photo.bottom, b.bottom) - Math.max(photo.top, b.top))
+            );
+          };
+          return {
+            covered: ['#pointsSection', '#exportBar', '.main-footer'].map((s) =>
+              overlap(document.querySelector(s)),
+            ),
+            gap:
+              box(document.getElementById('exportBar')).top -
+              box(document.getElementById('pointsSection')).bottom,
+          };
+        });
+        assert.deepEqual(layout.covered, [0, 0, 0], 'scroll ' + y);
+        assert.ok(
+          layout.gap >= 0 && layout.gap < 60,
+          'export bar right under the table: ' + layout.gap,
+        );
+      }
       assert.deepEqual(problems, []);
       await context.close();
     }

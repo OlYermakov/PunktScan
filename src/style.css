@@ -2376,16 +2376,25 @@ td[data-label]::before {
   main:has(#imageWorkspace:not([hidden])) > * {
     grid-column: 1 / -1;
   }
+  /* The photo column stays in view while the table scrolls. Everything after it goes into the
+     table's column (.review-pane), so the sticky photo never slides over the export bar or the footer; a photo
+     column taller than the window scrolls on its own. */
   body:is([data-step='review'], [data-step='file']) main > #imageWorkspace {
     grid-column: 1;
     grid-template-columns: minmax(0, 1fr);
     position: sticky;
     top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
+
   body:is([data-step='review'], [data-step='file']) main > #imageWorkspace .photo-viewport {
     height: min(68vh, 720px);
   }
-  body:is([data-step='review'], [data-step='file']) main > #pointsSection {
+  body:is([data-step='review'], [data-step='file'])
+    main:has(#imageWorkspace:not([hidden]))
+    > .review-pane {
     grid-column: 2;
   }
 }
