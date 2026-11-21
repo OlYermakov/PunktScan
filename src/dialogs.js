@@ -167,7 +167,8 @@ export function showReview(id, mode = 'view') {
   const body = `<div class="review-card ${editing ? 'editing' : ''}" id="reviewCard"><div class="review-top"><span class="eyebrow">${t(s ? 'review.eyebrowPhoto' : 'review.eyebrowManual')}</span><span class="review-left">${t('review.left', { n: left })}</span></div>${photo}<div class="review-fields">${['name', 'e', 'n', 'h'].map(field).join('')}</div>${!editing && anyMarks ? `<p class="review-legend"><mark>0</mark> ${t('review.unsureLegend')}</p>` : ''}<div id="reviewErrors"></div>${warn.length ? `<div class="review-message">${warn.map(esc).join('<br>')}</div>` : ''}${editing ? `<p class="small">${t('review.note')}</p>` : `<p class="small swipe-hint">${t('review.swipeHint')}</p>`}${s ? `<details style="margin-top:15px"><summary class="small">${esc(t('review.fullPhoto', { name: s.name }))}</summary><div class="review-original"><img src="${s.image}" alt="${t('review.originalAlt')}"></div></details>` : ''}</div>`;
   const nav = `<div class="review-navigation"><button class="icon-btn" id="prevReview" aria-label="${t('review.prev')}" ${index === 0 ? 'disabled' : ''}>‹</button><span>${index + 1} / ${state.project.rows.length}</span><button class="icon-btn" id="nextReview" aria-label="${t('review.next')}" ${index === state.project.rows.length - 1 ? 'disabled' : ''}>›</button></div>`;
   const actions = editing
-    ? `${v.issues.length ? `<button class="button subtle" data-close>${t('common.close')}</button>` : `<button class="button subtle" id="reviewViewBtn">${t('common.cancel')}</button>`}<button class="button primary" id="verifyNextBtn">${t(morePending ? 'review.verifiedNext' : 'review.verified')}</button>`
+    ? // With errors the card opens for editing: × in the head closes it, no second close button.
+      `${v.issues.length ? '' : `<button class="button subtle" id="reviewViewBtn">${t('common.cancel')}</button>`}<button class="button primary" id="verifyNextBtn">${t(morePending ? 'review.verifiedNext' : 'review.verified')}</button>`
     : `<button class="button subtle" id="reviewEditBtn">${t('review.edit')}</button><button class="button primary review-correct" id="verifyNextBtn">${t('review.correct')}</button>`;
   showDialog(t('review.title'), body, nav + actions, 'review');
   if (s) drawReview(s, r);
@@ -427,7 +428,7 @@ export function projectsDialog() {
         ? `<ul class="project-list">${items}</ul>`
         : `<p class="small">${t('projects.none')}</p>`
       : `<p class="small">${t('save.unavailable')}</p>`,
-    `<button class="button subtle" data-close>${t('common.close')}</button><button class="button primary" id="dialogNewProject">${t('menu.new')}</button>`,
+    `<button class="button primary" id="dialogNewProject">${t('menu.new')}</button>`,
   );
 }
 export async function openProject(file) {
@@ -481,18 +482,13 @@ export function mapDialog() {
     cy = (minY + maxY) / 2,
     f = 360 / span;
   const html = `<p class="small">${t('map.note')}</p><div class="map-wrap" style="margin-top:15px"><svg viewBox="0 0 800 480" role="img" aria-label="${t('map.label')}"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" class="map-grid"/></pattern></defs><rect width="800" height="480" fill="url(#grid)"/><text x="400" y="25" text-anchor="middle" class="map-axis">N</text><text x="770" y="240" class="map-axis">E</text>${pts.map((p) => `<g><circle cx="${400 + (p.x - cx) * f}" cy="${240 - (p.y - cy) * f}" r="5" class="map-point ${p.ok ? 'ok' : 'check'}"><title>${esc(p.name)}: E ${p.x.toFixed(3)}, N ${p.y.toFixed(3)}</title></circle><text x="${409 + (p.x - cx) * f}" y="${236 - (p.y - cy) * f}" class="map-label">${esc(p.name)}</text></g>`).join('')}</svg></div><p class="batch-note">${t('map.extent', { de: (maxX - minX).toFixed(3), dn: (maxY - minY).toFixed(3) })}</p>`;
-  showDialog(
-    t('table.map'),
-    html,
-    `<button class="button subtle" data-close>${t('common.close')}</button>`,
-    'map',
-  );
+  showDialog(t('table.map'), html, '', 'map');
 }
 export function helpDialog() {
   showDialog(
     t('help.title'),
     `<div class="help-content">${t('help.html', { version: '__TESSERACT_VERSION__' })}</div>`,
-    `<button class="button primary" data-close>${t('common.ok')}</button>`,
+    '',
     'help',
   );
 }
@@ -500,7 +496,7 @@ export async function prepareOffline() {
   showDialog(
     t('offline.title'),
     `<p class="small">${t('offline.text', { mb: '__OFFLINE_MB__' })}</p><p id="offlineStatus" class="offline-progress">${t('offline.checking')}</p>`,
-    `<button class="button subtle" data-close>${t('common.close')}</button><button class="button primary" id="cacheOfflineBtn">${t('offline.download')}</button>`,
+    `<button class="button primary" id="cacheOfflineBtn">${t('offline.download')}</button>`,
     'offline',
   );
   try {

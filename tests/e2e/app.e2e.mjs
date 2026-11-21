@@ -1203,3 +1203,34 @@ test('implausible points are marked and reviewed first: far away, odd height, na
   assert.deepEqual(problems, []);
   await context.close();
 });
+
+test('dialogs close with × only: no second close or OK button at the bottom', async () => {
+  const { context, page, problems } = await openApp();
+  await openPaste(page);
+  await page.locator('#pasteText').fill('A;1.000;2.000\nB;x;4.000');
+  await page.locator('#pasteApply').click();
+  const openers = [
+    () => page.locator('#helpBtn').click(),
+    () => page.locator('#mapBtn').click(),
+    () => page.locator('#offlineBtn').click(),
+    () => page.locator('#projectsBtn').click(),
+    // A point with an error opens its card for editing.
+    () => page.locator('[data-review]').nth(1).click(),
+  ];
+  for (const open of openers) {
+    await open();
+    await page.locator('#dialog').waitFor();
+    const title = await page.locator('#dialog h2').textContent();
+    const duplicates = await page
+      .locator('#dialog .dialog-footer [data-close]')
+      .evaluateAll((list) =>
+        list.map((b) => b.textContent.trim()).filter((t) => /^(Schließen|OK)$/.test(t)),
+      );
+    assert.deepEqual(duplicates, [], title);
+    assert.equal(await page.locator('#dialog .dialog-head [data-close]').count(), 1, title);
+    await page.locator('#dialog .dialog-head [data-close]').click();
+    await page.locator('#dialog').waitFor({ state: 'hidden' });
+  }
+  assert.deepEqual(problems, []);
+  await context.close();
+});

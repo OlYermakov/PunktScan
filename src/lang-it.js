@@ -304,7 +304,6 @@ export default {
 
   'common.close': 'Chiudi',
   'common.cancel': 'Annulla',
-  'common.ok': 'Ho capito',
 
   'offline.title': 'Lavorare senza Internet',
   'offline.text':

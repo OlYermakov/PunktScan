@@ -292,7 +292,6 @@ export default {
 
   'common.close': 'Закрити',
   'common.cancel': 'Скасувати',
-  'common.ok': 'Зрозуміло',
 
   'offline.title': 'Робота без інтернету',
   'offline.text':

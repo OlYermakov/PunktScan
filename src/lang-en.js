@@ -295,7 +295,6 @@ export default {
 
   'common.close': 'Close',
   'common.cancel': 'Cancel',
-  'common.ok': 'Got it',
 
   'offline.title': 'Working without internet',
   'offline.text':

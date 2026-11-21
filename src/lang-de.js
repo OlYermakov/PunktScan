@@ -303,7 +303,6 @@ export default {
 
   'common.close': 'Schließen',
   'common.cancel': 'Abbrechen',
-  'common.ok': 'Verstanden',
 
   'offline.title': 'Arbeiten ohne Internet',
   'offline.text':

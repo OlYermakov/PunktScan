@@ -328,7 +328,7 @@ $('rawTextBtn').onclick = () => {
   showDialog(
     t('table.raw'),
     `<p class="small">${t('raw.text')}</p><pre class="raw-text">${esc(s.raw)}</pre>${s.skipped ? `<h3>${t('raw.skipped')}</h3><pre class="raw-text">${esc(s.skipped)}</pre>` : ''}`,
-    `<button class="button subtle" data-close>${t('common.close')}</button>`,
+    '',
     'raw',
   );
 };
