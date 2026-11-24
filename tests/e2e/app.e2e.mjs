@@ -615,8 +615,9 @@ test(
   },
 );
 
-// Real photos from the field (tests/fixtures/real): screens photographed at an angle, CAD tables
-// with a box around every value and 4 decimals, and a folded paper sheet outdoors.
+// Real photos from the field (tests/fixtures/real): screens photographed at an angle or close up
+// with strong moiré, CAD tables with a box around every value and 4 decimals, and a folded
+// paper sheet outdoors.
 test(
   'real field photos: no wrong value goes unflagged, and accuracy does not regress',
   { skip: !process.env.E2E_OCR && 'set E2E_OCR=1 to run', timeout: 600000 },
@@ -667,9 +668,8 @@ test(
     console.log(report.join('\n') + `\nTOTAL ${correct}/${total}`);
     // The safety property: a value read wrongly is always marked for review.
     assert.deepEqual(silent, []);
-    // 310/313 with the second recogniser (283 with Tesseract alone); allow small differences
-    // between browser builds.
-    assert.ok(correct >= 300, `accuracy regressed: ${correct}/${total}`);
+    // 332/337 with the second recogniser; allow small differences between browser builds.
+    assert.ok(correct >= 322, `accuracy regressed: ${correct}/${total}`);
     // The second recogniser (PaddleOCR) ran on every photo and reported how many values agreed.
     for (const [file, text] of Object.entries(notices))
       assert.match(text, /Zweite Erkennung: \d+ von \d+ Werten gleich gelesen/, file);

@@ -11,6 +11,7 @@ import {
   removeLines,
   hasBox,
   cellPolygon,
+  gridCells,
 } from '../src/imaging.js';
 test('crossed or degenerate crop frames are rejected', () => {
   assert.ok(validQuad(fullQuad()));
@@ -120,4 +121,27 @@ test('recognised cells map back onto the photo as polygons', () => {
   const near = (a, b) => Math.abs(a - b) < 1e-9;
   assert.ok(near(poly[0].x, 0.625) && near(poly[0].y, 0.25));
   assert.ok(near(poly[2].x, 0.875) && near(poly[2].y, 0.75));
+});
+
+test('table lines are found through screen moiré and digits standing under each other', () => {
+  // 900 × 480 table: 3 columns, 6 rows. The first column carries 3 px moiré stripes, and every
+  // row has a "1" at the same place in the second column, the way coordinate digits line up.
+  const w = 900,
+    h = 480,
+    p = new Uint8ClampedArray(w * h * 4).fill(235);
+  const dot = (x, y, v) => {
+    const i = (y * w + x) * 4;
+    p[i] = p[i + 1] = p[i + 2] = v;
+  };
+  for (let y = 0; y < h; y++) for (let x = 0; x < 290; x++) if (x % 3 === 0) dot(x, y, 90);
+  for (let r = 0; r < 6; r++)
+    for (let y = r * 80 + 20; y < r * 80 + 60; y++) for (let x = 450; x < 455; x++) dot(x, y, 20);
+  for (const x of [0, 1, 300, 301, 600, 601, 898, 899]) for (let y = 0; y < h; y++) dot(x, y, 30);
+  for (let r = 0; r <= 6; r++)
+    for (const y of [Math.min(r * 80, h - 2), Math.min(r * 80 + 1, h - 1)])
+      for (let x = 0; x < w; x++) dot(x, y, 30);
+  const grid = gridCells(p, w, h);
+  assert.ok(grid);
+  assert.deepEqual(grid.xs, [0, 301, 601, 899]);
+  assert.equal(grid.rows.length, 6);
 });

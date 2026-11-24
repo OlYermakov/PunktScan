@@ -324,7 +324,9 @@ export function combineReadings(rows, second, { minConfidence = 50 } = {}) {
   const clean = (k, v) => {
     const s = String(v ?? '')
       .normalize('NFKC')
-      .replace(/\s/g, '');
+      .replace(/\s/g, '')
+      // A piece of a grid line at the cell edge reads as a bracket or a bar.
+      .replace(/^[[\]|()]+|[[\]|()]+$/g, '');
     return k === 'name' ? s.replace(/^[-.]+|[-.]+$/g, '') : s.replace(/^\+/, '').replace(',', '.');
   };
   const stored = (k, v) =>
@@ -351,6 +353,26 @@ export function combineReadings(rows, second, { minConfidence = 50 } = {}) {
     }
     const [best] = [...counts].sort((a, b) => b[1] - a[1]);
     return best && best[1] >= Math.max(3, rows.length * 0.5) ? best[0] : null;
+  });
+  // The shape of each column as both readers see it. It settles a disagreement, and one
+  // reader's repeated mistake (a 9 for every leading 5) cannot outvote the other this way.
+  const bothShape = fields.map((k, i) => {
+    const counts = new Map();
+    let n = 0;
+    rows.forEach((r, j) => {
+      const p = second[j]?.[i];
+      for (const v of [stored(k, r[k]), p == null ? '' : clean(k, p)]) {
+        const sh = v && shape(k, v);
+        if (!sh) continue;
+        n++;
+        counts.set(sh, (counts.get(sh) ?? 0) + 1);
+      }
+    });
+    // Wrong readings rarely share a shape: a clear lead with a third of the readings is enough.
+    const [best, next] = [...counts].sort((a, b) => b[1] - a[1]);
+    return best && best[1] >= Math.max(3, n / 3) && best[1] > (next?.[1] ?? 0) * 1.5
+      ? best[0]
+      : null;
   });
   let compared = 0,
     agreed = 0,
@@ -382,7 +404,10 @@ export function combineReadings(rows, second, { minConfidence = 50 } = {}) {
         }
         return;
       }
-      const value = valid(k, p) ? p : t,
+      // The second reading wins when it is valid, unless only Tesseract's has the column's shape
+      // (DT202 among DT2xx names against 6166 read from a moiré cell).
+      const fits = (v) => bothShape[i] !== null && shape(k, v) === bothShape[i];
+      const value = valid(k, p) && !(valid(k, t) && fits(t) && !fits(p)) ? p : t,
         other = value === p ? t : p;
       if (value !== t) {
         r[k] = value;

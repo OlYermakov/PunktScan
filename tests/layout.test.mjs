@@ -293,3 +293,28 @@ test('second reading: a difference keeps the field marked, the valid reading win
   assert.equal(rows[0].disputed[2], true);
   assert.equal(counts.replaced, 2);
 });
+
+test('second reading: column shape keeps a good name, edge brackets are dropped', () => {
+  const rows = ['DT201', 'DT202', 'DT203', 'DT204'].map((name, i) => ({
+    name,
+    e: `34127${96 + i}.346`,
+    n: '5547121.629',
+    h: '',
+    cellConfidence: [80, 80, 80, 80],
+  }));
+  rows[0].e = '3412596.346';
+  const r = combineReadings(rows, [
+    ['6166', '[3412796.346', '5547121.629', null],
+    ['DT202]', '3412797.346', '5547121.629', null],
+    ['DT203', '3412798.346', '5547121.629', null],
+    ['DT204', '3412799.346', '5547121.629', null],
+  ]);
+  // A moiré cell read as 6166 does not replace DT201, which fits DT2xx.
+  assert.equal(rows[0].name, 'DT201');
+  assert.equal(rows[0].disputed[0], true);
+  // "[3412796.346" is a grid line plus a valid value: it replaces Tesseract's misread digit.
+  assert.equal(rows[0].e, '3412796.346');
+  assert.equal(rows[1].name, 'DT202');
+  assert.equal(rows[1].second[0], 'DT202');
+  assert.equal(r.replaced, 1);
+});

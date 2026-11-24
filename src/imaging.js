@@ -305,31 +305,64 @@ export function otsu(p, w, h) {
   return { data: out, width: w, height: h };
 }
 
+// Table lines. A line is a row or column of the photo that is dark across 40 % of the table.
+// The plain count is exact on clean tables. On a photographed screen, moiré stripes and digits
+// standing exactly under each other (every "1" of a coordinate column) are counted as lines
+// too, and no grid is found. Then a second look blurs across the line, which turns fine
+// stripes into even grey, and needs one long dark stretch, which digits in separate rows never
+// make.
 export function gridCells(p, w, h) {
+  return gridFrom(p, w, h, false) ?? gridFrom(p, w, h, true);
+}
+
+function gridFrom(p, w, h, steady) {
+  function dark(vertical, a, b) {
+    const span = vertical ? w : h;
+    if (!steady) return p[(vertical ? b * w + a : a * w + b) * 4] < 135;
+    let sum = 0,
+      n = 0;
+    for (let aa = Math.max(0, a - 1); aa <= Math.min(span - 1, a + 1); aa++, n++)
+      sum += p[(vertical ? b * w + aa : aa * w + b) * 4];
+    return sum / n < 135;
+  }
   function peaks(vertical) {
     const span = vertical ? w : h,
       length = vertical ? h : w,
       positions = [];
     for (let a = 0; a < span; a++) {
-      let count = 0;
+      // Plain: dark pixels in total. Steady: the longest dark stretch, gaps up to 6 px bridged.
+      let count = 0,
+        run = 0,
+        gap = 0;
       for (let b = 0; b < length; b++) {
-        const i = (vertical ? b * w + a : a * w + b) * 4;
-        if (p[i] < 135) count++;
+        if (dark(vertical, a, b)) {
+          if (!steady) count++;
+          else {
+            run += gap + 1;
+            gap = 0;
+            count = Math.max(count, run);
+          }
+        } else if (steady && ++gap > 6) run = gap = 0;
       }
-      if (count > length * (vertical ? 0.4 : 0.4)) positions.push(a);
+      if (count > length * 0.4) positions.push(a);
     }
     const groups = [];
     for (const pos of positions) {
       if (!groups.length || pos - groups.at(-1).at(-1) > 10) groups.push([]);
       groups.at(-1).push(pos);
     }
-    const centers = groups
-      .map((g) => Math.round((g[0] + g.at(-1)) / 2))
-      .filter((x) => x > 12 && x < span - 12);
-    return [0, ...centers, span - 1];
+    // A line is a few pixels wide. A dark band of 40 px or more inside the table is moiré or
+    // shading merged with the lines next to it: this way of looking cannot be trusted here.
+    const inside = groups.filter((g) => {
+      const center = (g[0] + g.at(-1)) / 2;
+      return center > 12 && center < span - 12;
+    });
+    if (!steady && inside.some((g) => g.at(-1) - g[0] >= 40)) return null;
+    return [0, ...inside.map((g) => Math.round((g[0] + g.at(-1)) / 2)), span - 1];
   }
   const xs = peaks(true),
     ys = peaks(false);
+  if (!xs || !ys) return null;
   if (xs.length < 4 || xs.length > 5 || ys.length < 4) return null;
   if (xs.some((x, i) => i > 0 && x - xs[i - 1] < w * 0.1)) return null;
   const rows = [];
