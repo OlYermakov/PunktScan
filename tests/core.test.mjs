@@ -132,6 +132,7 @@ test('Punkt Nr. headers are excluded without dropping numeric or incomplete poin
   for (const name of ['Punkt Nr.', 'PunktNr.', 'Absteckpunkt Nr.', 'Point No.'])
     assert.equal(isTableHeader([name, 'Rechtswert', 'Hochwert']), true);
   assert.equal(isTableHeader(['Punkt', '12.000', '44.000']), false);
+  assert.equal(isTableHeader(['Absteckpunkt', 'Rechtswert', 'Position Y 1']), true);
   assert.equal(isTableHeader(['Punkt001', '', '44.000']), false);
   assert.equal(isTableHeader(['Af201', '', '']), false);
   assert.equal(detectOrder('Punkt Nr. Hochwert Rechtswert'), 'ne');

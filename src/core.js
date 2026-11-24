@@ -223,8 +223,9 @@ export function isTableHeader(cells) {
   const label = (values[0] || '').replace(/\s/g, '');
   // Table titles ("Koordinaten Absteckpunkte - Bstg. 2") may contain numbers but no coordinates.
   if (/^koordinat/i.test(label) && !values.slice(1).some((v) => /\d{5}/.test(v))) return true;
-  // A point named "Punkt" with numeric coordinates is still a data row.
-  if (values.slice(1).some((value) => /\d/.test(value))) return false;
+  // A point named "Punkt" with numeric coordinates is still a data row. A stray digit read from a
+  // grid line ("Position Y 1") does not make the headings a point.
+  if (values.slice(1).some((value) => /\d{3}/.test(value))) return false;
   return (
     Boolean(detectOrder(values.join(' '))) ||
     /^(?:koordinat|absteckpunkt)/i.test(label) ||

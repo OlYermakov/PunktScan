@@ -1,5 +1,23 @@
 // Bounded, dependency-free table detection and perspective correction.
+//
+// A photographed screen with dark, uneven light around the table (grey bezel, dark corners)
+// gives a frame round almost the whole photo. Then the table is looked for once more with the
+// light evened out, where its border stands out.
 export function findTable(pixels, width, height) {
+  const area = (q) =>
+    Math.abs(
+      q.reduce((sum, a, i) => {
+        const b = q[(i + 1) % q.length];
+        return sum + a.x * b.y - b.x * a.y;
+      }, 0),
+    ) / 2;
+  const quad = tableQuad(pixels, width, height);
+  if (quad && area(quad) <= 0.9) return quad;
+  const even = tableQuad(evenLight(pixels, width, height), width, height, 200);
+  return even && area(even) <= 0.9 ? even : quad;
+}
+
+function tableQuad(pixels, width, height, level = 165) {
   const scale = Math.min(1, 640 / Math.max(width, height)),
     w = Math.round(width * scale),
     h = Math.round(height * scale);
@@ -13,7 +31,7 @@ export function findTable(pixels, width, height) {
         const i = (oy * width + ox) * 4 + d;
         v += pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
       }
-      if (v / 4 < 165) points.push([x, y]);
+      if (v / 4 < level) points.push([x, y]);
     }
   function lines(vertical) {
     const length = vertical ? h : w,
@@ -312,19 +330,55 @@ export function otsu(p, w, h) {
 // stripes into even grey, and needs one long dark stretch, which digits in separate rows never
 // make. Coarser stripes (the same screen photographed at another size) survive the blur but stay
 // broken: only lines nearly as long as the longest line inside the table count.
+//
+// A grey, unevenly lit photo (a screen with dark corners) is darker than the fixed level in
+// whole regions. Then the same two looks run once more on a copy with the light evened out:
+// every pixel against the mean brightness around it.
 export function gridCells(p, w, h) {
-  return gridFrom(p, w, h, false) ?? gridFrom(p, w, h, true);
+  const looks = (q, level) => gridFrom(q, w, h, false, level) ?? gridFrom(q, w, h, true, level);
+  // Evened out, a thin line is a quarter darker than its surroundings, not black.
+  return looks(p, 135) ?? looks(evenLight(p, w, h), 190);
 }
 
-function gridFrom(p, w, h, steady) {
+// Each pixel scaled by the mean of the 61 × 61 pixels around it: background becomes white, a
+// line stays clearly darker than its surroundings.
+export function evenLight(p, w, h, radius = 30) {
+  const sums = new Float64Array((w + 1) * (h + 1));
+  for (let y = 0; y < h; y++)
+    for (let x = 0, row = 0; x < w; x++) {
+      row += p[(y * w + x) * 4];
+      sums[(y + 1) * (w + 1) + x + 1] = sums[y * (w + 1) + x + 1] + row;
+    }
+  const out = new Uint8ClampedArray(p.length);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.max(0, y - radius),
+      y1 = Math.min(h, y + radius + 1);
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - radius),
+        x1 = Math.min(w, x + radius + 1),
+        sum =
+          sums[y1 * (w + 1) + x1] -
+          sums[y0 * (w + 1) + x1] -
+          sums[y1 * (w + 1) + x0] +
+          sums[y0 * (w + 1) + x0],
+        mean = sum / ((x1 - x0) * (y1 - y0)),
+        i = (y * w + x) * 4;
+      out[i] = out[i + 1] = out[i + 2] = (255 * p[i]) / Math.max(1, mean);
+      out[i + 3] = 255;
+    }
+  }
+  return out;
+}
+
+function gridFrom(p, w, h, steady, level = 135) {
   function dark(vertical, a, b) {
     const span = vertical ? w : h;
-    if (!steady) return p[(vertical ? b * w + a : a * w + b) * 4] < 135;
+    if (!steady) return p[(vertical ? b * w + a : a * w + b) * 4] < level;
     let sum = 0,
       n = 0;
     for (let aa = Math.max(0, a - 1); aa <= Math.min(span - 1, a + 1); aa++, n++)
       sum += p[(vertical ? b * w + aa : aa * w + b) * 4];
-    return sum / n < 135;
+    return sum / n < level;
   }
   function peaks(vertical) {
     const span = vertical ? w : h,
@@ -447,34 +501,55 @@ export function clearStripes(p, w, h, stride = 4) {
     }
   if (runs.length < 12) return 0;
   // Stripes also cross the letters; there they stay, or the letters would lose strokes. Only
-  // what lies clear of the writing goes. Writing is dark in the middle of the cell and not in its
-  // margins, in stretches as wide as a letter; stripes alone make stretches of a pixel or two.
-  const middle = [];
-  for (let x = 0; x < w; x++) middle.push(!stripe[x] && darkIn(x, band, h - band));
-  const spans = [];
-  for (let x = 0; x < w; x++) {
-    if (!middle[x]) continue;
-    let end = x;
-    for (let y = x + 1, gap = 0; y < w && gap <= 2; y++)
-      if (middle[y]) {
-        end = y;
-        gap = 0;
-      } else gap++;
-    spans.push([x, end]);
-    x = end;
-  }
-  // Letter-wide stretches mark the writing; a narrow one (a 1) right next to it belongs to it.
-  const wide = spans.filter(([a, b]) => b - a + 1 >= h * 0.12);
-  if (!wide.length) return 0;
-  let left = Math.min(...wide.map(([a]) => a)),
-    right = Math.max(...wide.map(([, b]) => b));
-  const narrow = spans.filter(([a, b]) => b - a + 1 >= Math.max(3, h * 0.05)),
-    near = h * 0.25;
-  for (let grew = true; grew;) {
-    grew = false;
-    for (const [a, b] of narrow) {
-      if (a > right && a <= right + near) [right, grew] = [b, true];
-      if (b < left && b >= left - near) [left, grew] = [a, true];
+  // what lies clear of the writing goes. With the light evened out inside the cell (a grey left
+  // side, a white right side), writing is dark in the middle of the cell and not in its
+  // margins; stripes are about as dark in both. Averaged over half a letter's height, the
+  // difference marks the writing, the gap between DT and 201 included.
+  const radius = Math.max(8, Math.round(h * 0.35)),
+    sums = new Float64Array((w + 1) * (h + 1));
+  for (let y = 0; y < h; y++)
+    for (let x = 0, row = 0; x < w; x++) {
+      row += p[at(x, y)];
+      sums[(y + 1) * (w + 1) + x + 1] = sums[y * (w + 1) + x + 1] + row;
+    }
+  const darkEven = (x, y) => {
+    const x0 = Math.max(0, x - radius),
+      x1 = Math.min(w, x + radius + 1),
+      y0 = Math.max(0, y - radius),
+      y1 = Math.min(h, y + radius + 1),
+      mean =
+        (sums[y1 * (w + 1) + x1] -
+          sums[y0 * (w + 1) + x1] -
+          sums[y1 * (w + 1) + x0] +
+          sums[y0 * (w + 1) + x0]) /
+        ((x1 - x0) * (y1 - y0));
+    return p[at(x, y)] < 0.8 * mean;
+  };
+  const evenShare = (x, from, to) => {
+    let n = 0;
+    for (let y = from; y < to; y++) if (darkEven(x, y)) n++;
+    return n / (to - from);
+  };
+  const lead = [];
+  for (let x = 0; x < w; x++)
+    lead.push(
+      Math.max(
+        0,
+        evenShare(x, band, h - band) - Math.max(evenShare(x, 0, band), evenShare(x, h - band, h)),
+      ),
+    );
+  const reach = Math.max(1, Math.round(h * 0.25));
+  let left = w,
+    right = -1;
+  for (let x = 0, sum = 0; x < w + reach; x++) {
+    if (x < w) sum += lead[x];
+    if (x - 2 * reach - 1 >= 0) sum -= lead[x - 2 * reach - 1];
+    const center = x - reach;
+    if (center < 0 || center >= w) continue;
+    const n = Math.min(w, x + 1) - Math.max(0, x - 2 * reach);
+    if (sum / n >= 0.08) {
+      left = Math.min(left, center);
+      right = Math.max(right, center);
     }
   }
   if (right < 0) return 0;

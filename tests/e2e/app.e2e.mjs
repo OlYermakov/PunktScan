@@ -616,7 +616,7 @@ test(
 );
 
 // Real photos from the field (tests/fixtures/real): screens photographed at an angle or close up
-// with strong moiré, CAD tables with a box around every value and 4 decimals, and a folded
+// with strong moiré (one with a title and grey, unevenly lit screen around it), CAD tables with a box around every value and 4 decimals, and a folded
 // paper sheet outdoors.
 test(
   'real field photos: no wrong value goes unflagged, and accuracy does not regress',
@@ -668,8 +668,8 @@ test(
     console.log(report.join('\n') + `\nTOTAL ${correct}/${total}`);
     // The safety property: a value read wrongly is always marked for review.
     assert.deepEqual(silent, []);
-    // 335/337 with the second recogniser; allow small differences between browser builds.
-    assert.ok(correct >= 325, `accuracy regressed: ${correct}/${total}`);
+    // 359/361 with the second recogniser; allow small differences between browser builds.
+    assert.ok(correct >= 349, `accuracy regressed: ${correct}/${total}`);
     // The second recogniser (PaddleOCR) ran on every photo and reported how many values agreed.
     for (const [file, text] of Object.entries(notices))
       assert.match(text, /Zweite Erkennung: \d+ von \d+ Werten gleich gelesen/, file);

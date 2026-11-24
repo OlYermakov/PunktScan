@@ -269,6 +269,10 @@ async function readGrid(w, grid, src, signal, width) {
     raw.push(line);
     if (isTableHeader(texts)) {
       autoOrder = detectOrder(texts.join(' ')) || autoOrder;
+      // Above the column headings sits the table's title (Koordinaten … Gleis 2), not points.
+      for (const r of rows.splice(0).reverse())
+        if (goodRow(r)) rows.unshift(r);
+        else skipped.unshift(r.raw);
       continue;
     }
     if (!texts.some(Boolean)) {
