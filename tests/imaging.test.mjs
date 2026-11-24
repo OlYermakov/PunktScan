@@ -12,6 +12,7 @@ import {
   hasBox,
   cellPolygon,
   gridCells,
+  clearStripes,
 } from '../src/imaging.js';
 test('crossed or degenerate crop frames are rejected', () => {
   assert.ok(validQuad(fullQuad()));
@@ -144,4 +145,28 @@ test('table lines are found through screen moiré and digits standing under each
   assert.ok(grid);
   assert.deepEqual(grid.xs, [0, 301, 601, 899]);
   assert.equal(grid.rows.length, 6);
+});
+
+test('moiré stripes beside a name are cleared, the writing and plain cells stay', () => {
+  // Grey 300 × 80 cell: 1 px stripes every 4 px in x < 150, through the whole height; a
+  // "letter" block at 200–230 in the middle rows.
+  const w = 300,
+    h = 80,
+    make = (stripes) => {
+      const g = new Uint8Array(w * h).fill(240);
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++) {
+          if (stripes && x < 150 && x % 4 === 0) g[y * w + x] = 60;
+          if (x >= 200 && x < 230 && y >= 20 && y < 60) g[y * w + x] = 20;
+        }
+      return g;
+    };
+  const g = make(true);
+  assert.ok(clearStripes(g, w, h, 1) > 100);
+  for (let x = 0; x < 150; x++) assert.equal(g[40 * w + x], 240);
+  assert.equal(g[40 * w + 210], 20);
+  // Without stripes nothing changes.
+  const plain = make(false);
+  assert.equal(clearStripes(plain, w, h, 1), 0);
+  assert.deepEqual(plain, make(false));
 });

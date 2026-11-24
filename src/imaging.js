@@ -310,7 +310,8 @@ export function otsu(p, w, h) {
 // standing exactly under each other (every "1" of a coordinate column) are counted as lines
 // too, and no grid is found. Then a second look blurs across the line, which turns fine
 // stripes into even grey, and needs one long dark stretch, which digits in separate rows never
-// make.
+// make. Coarser stripes (the same screen photographed at another size) survive the blur but stay
+// broken: only lines nearly as long as the longest line inside the table count.
 export function gridCells(p, w, h) {
   return gridFrom(p, w, h, false) ?? gridFrom(p, w, h, true);
 }
@@ -328,7 +329,8 @@ function gridFrom(p, w, h, steady) {
   function peaks(vertical) {
     const span = vertical ? w : h,
       length = vertical ? h : w,
-      positions = [];
+      positions = [],
+      score = [];
     for (let a = 0; a < span; a++) {
       // Plain: dark pixels in total. Steady: the longest dark stretch, gaps up to 6 px bridged.
       let count = 0,
@@ -344,6 +346,7 @@ function gridFrom(p, w, h, steady) {
           }
         } else if (steady && ++gap > 6) run = gap = 0;
       }
+      score[a] = count / length;
       if (count > length * 0.4) positions.push(a);
     }
     const groups = [];
@@ -353,16 +356,23 @@ function gridFrom(p, w, h, steady) {
     }
     // A line is a few pixels wide. A dark band of 40 px or more inside the table is moiré or
     // shading merged with the lines next to it: this way of looking cannot be trusted here.
-    const inside = groups.filter((g) => {
+    let inside = groups.filter((g) => {
       const center = (g[0] + g.at(-1)) / 2;
       return center > 12 && center < span - 12;
     });
     if (!steady && inside.some((g) => g.at(-1) - g[0] >= 40)) return null;
+    if (steady) {
+      const strength = (g) => Math.max(...g.map((a) => score[a])),
+        strongest = Math.max(0, ...inside.map(strength));
+      inside = inside.filter((g) => strength(g) >= strongest * 0.7);
+    }
     return [0, ...inside.map((g) => Math.round((g[0] + g.at(-1)) / 2)), span - 1];
   }
-  const xs = peaks(true),
-    ys = peaks(false);
+  let xs = peaks(true);
+  const ys = peaks(false);
   if (!xs || !ys) return null;
+  // The table's own border a little inside the frame is the edge, not one more narrow column.
+  xs = xs.filter((x, i) => i === 0 || i === xs.length - 1 || (x > w * 0.05 && x < w * 0.95));
   if (xs.length < 4 || xs.length > 5 || ys.length < 4) return null;
   if (xs.some((x, i) => i > 0 && x - xs[i - 1] < w * 0.1)) return null;
   const rows = [];
@@ -399,6 +409,99 @@ export function thresholdCell(p, w, h, threshold = 140) {
       out[i + 3] = 255;
     }
   return { data: out, width: w, height: h };
+}
+
+// Clears moiré stripes from a cell crop (in place; `stride` 4 for RGBA, 1 for grey). On a close-up
+// of a screen, thin dark stripes run through the whole cell, also through its empty top and
+// bottom margins, and OCR reads them as letters (HHT 202). Writing stays off those margins. A
+// column dark in both margins is a stripe only when there are many thin ones side by side:
+// letters never make a dozen. Returns the number of columns cleared.
+export function clearStripes(p, w, h, stride = 4) {
+  const at = (x, y) => (y * w + x) * stride;
+  const levels = new Uint32Array(256);
+  for (let i = 0; i < w * h; i++) levels[p[i * stride]]++;
+  let background = 255;
+  for (let v = 255, seen = 0; v >= 0; v--) {
+    seen += levels[v];
+    if (seen >= w * h * 0.1) {
+      background = v;
+      break;
+    }
+  }
+  const limit = background * 0.85,
+    band = Math.max(2, Math.round(h * 0.18));
+  const share = (x, from, to) => {
+    let n = 0;
+    for (let y = from; y < to; y++) if (p[at(x, y)] < limit) n++;
+    return n / (to - from);
+  };
+  const darkIn = (x, from, to) => share(x, from, to) >= 0.3;
+  const stripe = [];
+  for (let x = 0; x < w; x++) stripe.push(darkIn(x, 0, band) && darkIn(x, h - band, h));
+  const runs = [];
+  for (let x = 0; x < w; x++)
+    if (stripe[x] && !stripe[x - 1]) {
+      let end = x;
+      while (stripe[end + 1]) end++;
+      if (end - x < 4) runs.push([x, end]);
+    }
+  if (runs.length < 12) return 0;
+  // Stripes also cross the letters; there they stay, or the letters would lose strokes. Only
+  // what lies clear of the writing goes. Writing is dark in the middle of the cell and not in its
+  // margins, in stretches as wide as a letter; stripes alone make stretches of a pixel or two.
+  const middle = [];
+  for (let x = 0; x < w; x++) middle.push(!stripe[x] && darkIn(x, band, h - band));
+  const spans = [];
+  for (let x = 0; x < w; x++) {
+    if (!middle[x]) continue;
+    let end = x;
+    for (let y = x + 1, gap = 0; y < w && gap <= 2; y++)
+      if (middle[y]) {
+        end = y;
+        gap = 0;
+      } else gap++;
+    spans.push([x, end]);
+    x = end;
+  }
+  // Letter-wide stretches mark the writing; a narrow one (a 1) right next to it belongs to it.
+  const wide = spans.filter(([a, b]) => b - a + 1 >= h * 0.12);
+  if (!wide.length) return 0;
+  let left = Math.min(...wide.map(([a]) => a)),
+    right = Math.max(...wide.map(([, b]) => b));
+  const narrow = spans.filter(([a, b]) => b - a + 1 >= Math.max(3, h * 0.05)),
+    near = h * 0.25;
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [a, b] of narrow) {
+      if (a > right && a <= right + near) [right, grew] = [b, true];
+      if (b < left && b >= left - near) [left, grew] = [a, true];
+    }
+  }
+  if (right < 0) return 0;
+  const keep = Math.round(h * 0.3);
+  let cleared = 0;
+  // Everything beside the writing is stripes and background: all of it is cleared.
+  for (let x = 0; x < w; x++)
+    if (x < left - keep || x > right + keep) {
+      cleared++;
+      for (let y = 0; y < h; y++) {
+        const i = at(x, y);
+        for (let c = 0; c < Math.min(3, stride); c++) p[i + c] = background;
+      }
+    }
+  // Under and between the letters, stripes are 1–2 px wide and letter strokes wider: dark
+  // stretches narrower than 3 px along a row go.
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      if (p[at(x, y)] >= limit) continue;
+      let end = x;
+      while (end + 1 < w && p[at(end + 1, y)] < limit) end++;
+      if (end - x < 2)
+        for (let xx = x; xx <= end; xx++)
+          for (let c = 0; c < Math.min(3, stride); c++) p[at(xx, y) + c] = background;
+      x = end;
+    }
+  return cleared;
 }
 
 // Clears box and grid lines along the edges of a cell crop (RGBA, in place): a row or column in

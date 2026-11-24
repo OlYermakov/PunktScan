@@ -13,6 +13,7 @@ import {
   gridCells,
   thresholdCell,
   clearBorders,
+  clearStripes,
   removeLines,
   otsu,
   hasBox,
@@ -92,7 +93,9 @@ const goodRow = (r) => Boolean(r.name) && numeric(r.e) && numeric(r.n);
 
 // Copies a region of a canvas onto white with a margin, clearing box or grid lines along its
 // edges, optionally stretched horizontally (narrow condensed digits read better wider).
-function cropRegion(source, rect, stretch = 1, boxed = null) {
+// `name`: a point name cell, cleared of moiré stripes beside the writing (numbers keep theirs:
+// clearing there cut off end digits).
+function cropRegion(source, rect, stretch = 1, boxed = null, name = false) {
   const w = Math.max(4, Math.round(rect.width)),
     h = Math.max(4, Math.round(rect.height)),
     raw = canvas(w, h),
@@ -100,6 +103,7 @@ function cropRegion(source, rect, stretch = 1, boxed = null) {
   rc.drawImage(source, rect.left, rect.top, w, h, 0, 0, w, h);
   const pixels = rc.getImageData(0, 0, w, h);
   clearBorders(pixels.data, w, h, { boxed });
+  if (name) clearStripes(pixels.data, w, h);
   rc.putImageData(pixels, 0, 0);
   // Small text (low-resolution photos) is enlarged: Tesseract reads best at ~30–50 px glyphs.
   const zoom = Math.min(3, Math.max(1, 64 / h)),
@@ -160,7 +164,7 @@ async function readRegion(w, src, signal, rect, kind, boxed = null, hint = null)
     preserve_interword_spaces: '1',
     tessedit_char_whitelist: kind === 'number' ? NUMBER_CHARS : NAME_CHARS,
   });
-  const first = cropRegion(src.c, rect, 1, boxed);
+  const first = cropRegion(src.c, rect, 1, boxed, kind !== 'number');
   if (first.blank) return { text: '', confidence: 0, disputed: false, candidates: [] };
   let reading = { ...(await ocrText(w, first.canvas, signal)), disputed: false };
   // Test hook: a benchmark page can set globalThis.__ocrDebug = [] to collect what OCR saw.
@@ -200,12 +204,12 @@ async function readRegion(w, src, signal, rect, kind, boxed = null, hint = null)
 // disagreement between passes is flagged for review.
 async function readName(w, src, signal, rect, first, boxed, hints = []) {
   if (first.confidence >= 85 && first.text && !hints.length) return first;
-  const plain = cropRegion(src.plain, rect, 1, boxed).pixels;
+  const plain = cropRegion(src.plain, rect, 1, boxed, true).pixels;
   const candidates = [
     first,
     ...hints,
     await ocrText(w, wholeCrop(canvasFrom(otsu(plain.data, plain.width, plain.height))), signal),
-    await ocrText(w, cropRegion(src.c, rect, 1.3, boxed).canvas, signal),
+    await ocrText(w, cropRegion(src.c, rect, 1.3, boxed, true).canvas, signal),
   ].filter((c) => c.text);
   if (!candidates.length) return first;
   const best = candidates.reduce((a, b) => (b.confidence > a.confidence ? b : a));
@@ -489,6 +493,7 @@ function cellImages(rows, plain) {
       for (let y = 0; y < h; y++)
         for (let x = 0; x < w; x++)
           gray[y * w + x] = plain.data[((y0 + y) * plain.width + x0 + x) * 4];
+      if (i === 0) clearStripes(gray, w, h, 1);
       return { w, h, gray };
     }),
   );

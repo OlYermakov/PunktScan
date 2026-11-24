@@ -407,7 +407,11 @@ export function combineReadings(rows, second, { minConfidence = 50 } = {}) {
       // The second reading wins when it is valid, unless only Tesseract's has the column's shape
       // (DT202 among DT2xx names against 6166 read from a moiré cell).
       const fits = (v) => bothShape[i] !== null && shape(k, v) === bothShape[i];
-      const value = valid(k, p) && !(valid(k, t) && fits(t) && !fits(p)) ? p : t,
+      // A confident Tesseract name that contains the second reading (DT201 against 201) keeps
+      // what the second reader lost at the edge of a striped cell.
+      const lost =
+        k === 'name' && t.length > p.length && t.includes(p) && (r.cellConfidence[i] ?? 0) >= 85;
+      const value = valid(k, p) && !lost && !(valid(k, t) && fits(t) && !fits(p)) ? p : t,
         other = value === p ? t : p;
       if (value !== t) {
         r[k] = value;

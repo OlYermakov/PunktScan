@@ -668,8 +668,8 @@ test(
     console.log(report.join('\n') + `\nTOTAL ${correct}/${total}`);
     // The safety property: a value read wrongly is always marked for review.
     assert.deepEqual(silent, []);
-    // 332/337 with the second recogniser; allow small differences between browser builds.
-    assert.ok(correct >= 322, `accuracy regressed: ${correct}/${total}`);
+    // 335/337 with the second recogniser; allow small differences between browser builds.
+    assert.ok(correct >= 325, `accuracy regressed: ${correct}/${total}`);
     // The second recogniser (PaddleOCR) ran on every photo and reported how many values agreed.
     for (const [file, text] of Object.entries(notices))
       assert.match(text, /Zweite Erkennung: \d+ von \d+ Werten gleich gelesen/, file);

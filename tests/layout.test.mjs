@@ -318,3 +318,24 @@ test('second reading: column shape keeps a good name, edge brackets are dropped'
   assert.equal(rows[1].second[0], 'DT202');
   assert.equal(r.replaced, 1);
 });
+
+test('second reading: a confident name is kept when the second reader lost its start', () => {
+  const rows = ['DT201', 'DT202', 'DT203'].map((name) => ({
+    name,
+    e: '3412796.346',
+    n: '5547121.629',
+    h: '',
+    cellConfidence: [95, 80, 80, 0],
+  }));
+  rows[2].cellConfidence[0] = 40;
+  combineReadings(rows, [
+    ['201', null, null, null],
+    ['202', null, null, null],
+    ['203', null, null, null],
+  ]);
+  assert.deepEqual(
+    rows.map((r) => r.name),
+    ['DT201', 'DT202', '203'],
+  );
+  assert.ok(rows.every((r) => r.disputed[0]));
+});
